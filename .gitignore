@@ -4,6 +4,7 @@
 /.idea
 .DS_Store
 build/
+node_modules/
 /captures
 .externalNativeBuild
 .cxx
@@ -11,3 +12,4 @@ build/
 
 # Firebase-Konfiguration nicht committen
 app/google-services.json
+firestore-debug.log

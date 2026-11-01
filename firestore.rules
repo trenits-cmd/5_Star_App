@@ -64,7 +64,8 @@ service cloud.firestore {
       }
 
       // Aufgaben: der Besitzer legt an und ändert nichts an der Aufgabe selbst.
-      // Der Partner darf nur den Status auf CONFIRMED setzen.
+      // Der Partner setzt den Status auf CONFIRMED.
+      // Nach 48 Stunden darf jedes Mitglied eine offene Aufgabe auf AUTO_CONFIRMED setzen.
       match /tasks/{taskId} {
         allow read: if isMember(coupleId);
         allow create: if isMember(coupleId) && request.resource.data.ownerUid == request.auth.uid;
@@ -78,6 +79,11 @@ service cloud.firestore {
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
               && resource.data.status == 'OPEN'
               && request.resource.data.status == 'CONFIRMED')
+            ||
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+              && resource.data.status == 'OPEN'
+              && request.resource.data.status == 'AUTO_CONFIRMED'
+              && request.time.toMillis() >= resource.data.createdAt.toMillis() + 172800000)
           );
         allow delete: if false;
       }

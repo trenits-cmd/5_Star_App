@@ -37,7 +37,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.trenits.fivestar.BuildConfig
 import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
@@ -71,7 +70,7 @@ fun DashboardScreen(vm: AppViewModel) {
     val catalog by vm.myCatalog.collectAsState()
 
     val stored = myToday?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
-    val openTasks = tasks.items.filter { it.status == TaskStatus.OPEN }
+    val openTasks = tasks.items.filter { it.status == TaskStatus.OPEN && it.appliesTo(vm.uid) }
 
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -83,11 +82,6 @@ fun DashboardScreen(vm: AppViewModel) {
                 Text(
                     dateHeader(LocalDate.now()),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    stringResource(R.string.app_version, BuildConfig.VERSION_NAME),
-                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (partnerUid != null) {
@@ -141,7 +135,7 @@ fun DashboardScreen(vm: AppViewModel) {
             item { HintCard(stringResource(R.string.no_open_tasks)) }
         }
         items(openTasks, key = { it.id }) { task ->
-            TaskCard(vm, task, catalog)
+            TaskCard(vm, task, catalog, partnerUid)
         }
     }
 }
@@ -423,7 +417,7 @@ private fun HintCard(text: String) {
 }
 
 @Composable
-private fun TaskCard(vm: AppViewModel, task: Task, catalog: List<CatalogItem>) {
+private fun TaskCard(vm: AppViewModel, task: Task, catalog: List<CatalogItem>, partnerUid: String?) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Text(
@@ -434,6 +428,16 @@ private fun TaskCard(vm: AppViewModel, task: Task, catalog: List<CatalogItem>) {
                 } else {
                     MaterialTheme.colorScheme.error
                 },
+            )
+            Text(
+                when {
+                    task.targets.size > 1 -> stringResource(R.string.target_both)
+                    task.targets.firstOrNull() == vm.uid -> stringResource(R.string.target_me)
+                    partnerUid != null && task.targets.firstOrNull() == partnerUid -> stringResource(R.string.target_partner)
+                    else -> stringResource(R.string.target_partner)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(6.dp))
             val isMine = task.ownerUid == vm.uid

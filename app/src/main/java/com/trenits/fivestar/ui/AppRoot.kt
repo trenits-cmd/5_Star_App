@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -50,6 +51,7 @@ fun AppRoot(viewModel: AppViewModel) {
 private enum class Tab(val labelRes: Int, val icon: ImageVector) {
     TODAY(R.string.tab_today, Icons.Filled.Home),
     WEEK(R.string.tab_week, Icons.Filled.DateRange),
+    PARTNER(R.string.tab_partner, Icons.Filled.Person),
     SETTINGS(R.string.tab_settings, Icons.Filled.Settings),
 }
 
@@ -67,7 +69,11 @@ private fun MainTabs(viewModel: AppViewModel) {
         if (!granted) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
-    val visibleTabs = listOf(Tab.TODAY, Tab.WEEK, Tab.SETTINGS)
+    val visibleTabs = if (partnerUid == null) {
+        listOf(Tab.TODAY, Tab.WEEK, Tab.SETTINGS)
+    } else {
+        listOf(Tab.TODAY, Tab.WEEK, Tab.PARTNER, Tab.SETTINGS)
+    }
 
     Scaffold(
         bottomBar = {
@@ -88,6 +94,7 @@ private fun MainTabs(viewModel: AppViewModel) {
             when (tab) {
                 Tab.TODAY -> DashboardScreen(viewModel)
                 Tab.WEEK -> WeeklyScreen(viewModel)
+                Tab.PARTNER -> PartnerTodayScreen(viewModel)
                 Tab.SETTINGS -> SettingsScreen(viewModel)
             }
         }

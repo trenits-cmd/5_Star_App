@@ -146,6 +146,7 @@ class CoupleRepository(private val coupleId: String) {
     }
 
     fun tasks(): Flow<Listed<Task>> = listen(couple.collection("tasks")) { doc ->
+        val targets = (doc.get("targets") as? List<*>)?.filterIsInstance<String>()
         Task(
             id = doc.id,
             ownerUid = doc.getString("ownerUid") ?: return@listen null,
@@ -154,6 +155,7 @@ class CoupleRepository(private val coupleId: String) {
             dayKey = doc.getString("dayKey") ?: "",
             status = doc.getString("status")?.let { TaskStatus.valueOf(it) } ?: TaskStatus.OPEN,
             createdAt = doc.getTimestamp("createdAt")?.toInstant() ?: return@listen null,
+            targets = if (targets.isNullOrEmpty()) listOf(ownerUid) else targets,
         )
     }
 
@@ -167,6 +169,7 @@ class CoupleRepository(private val coupleId: String) {
                 "dayKey" to task.dayKey,
                 "status" to task.status.name,
                 "createdAt" to Timestamp(task.createdAt.epochSecond, task.createdAt.nano),
+                "targets" to task.targets,
             ),
         )
     }

@@ -15,7 +15,11 @@ data class Task(
     val dayKey: String,
     val status: TaskStatus,
     val createdAt: Instant,
-)
+    val targets: List<String> = listOf(ownerUid),
+) {
+    /** Gilt die Aufgabe für diese Person? */
+    fun appliesTo(uid: String): Boolean = uid in targets
+}
 
 val AUTO_CONFIRM_AFTER: Duration = Duration.ofHours(48)
 

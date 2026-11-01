@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.trenits.fivestar.BuildConfig
 import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryKind
@@ -294,6 +295,13 @@ fun SettingsScreen(vm: AppViewModel) {
         item {
             Button(onClick = { vm.signOut() }) { Text(stringResource(R.string.settings_sign_out)) }
             Spacer(Modifier.height(16.dp))
+        }
+        item {
+            Text(
+                stringResource(R.string.app_version, BuildConfig.VERSION_NAME),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 

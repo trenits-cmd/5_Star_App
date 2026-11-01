@@ -23,9 +23,12 @@ import com.trenits.fivestar.domain.DayRecord
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
+import com.trenits.fivestar.domain.WeekOutcome
 import com.trenits.fivestar.domain.buildDayRecord
 import com.trenits.fivestar.domain.dayKeyOf
 import com.trenits.fivestar.domain.dayOutcomeFor
+import com.trenits.fivestar.domain.weekKeyOf
+import com.trenits.fivestar.domain.weekOutcomeFor
 import com.trenits.fivestar.domain.withAutoConfirmation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -73,7 +76,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     /** Mindestzahl erfolgreicher Tage für das Wochenziel (z. B. 5 von 7). */
-    const val MIN_SUCCESSFUL_DAYS_PER_WEEK = 5
+    val minSuccessfulDaysPerWeek = 5
 
     val uid: String = Firebase.auth.currentUser?.uid.orEmpty()
     private val zone = ZoneId.systemDefault()
@@ -128,27 +131,27 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     /** Die 7 Tage der aktuellen Woche (Montag bis Sonntag) als Tages-Schlüssel. */
     val weekDays: StateFlow<List<String>> = clock.map { now ->
         val monday = now.atZone(zone).toLocalDate().with(DayOfWeek.MONDAY)
-        (0 until 7).map { monday.plusDays(it).toString() }
+        (0L until 7L).map { monday.plusDays(it).toString() }
     }.share(emptyList())
 
     /** Tages-Ergebnisse der aktuellen Woche (Tag → DayOutcome). */
-    val weekOutcomes: StateFlow<Map<String, DayOutcome>> = combine(days, weekDays) { list, keys ->
-        keys.associateNotNull { dayKey ->
+    val weekOutcomes: StateFlow<Map<String, DayOutcome>> = combine(days, weekDays, targeted) { list, keys, cats ->
+        keys.mapNotNull { dayKey ->
             val record = list.items.firstOrNull { it.ownerUid == uid && it.dayKey == dayKey }
-            dayOutcomeFor(record, targeted.value)?.let { dayKey to it }
-        }
+            dayOutcomeFor(record, cats)?.let { dayKey to it }
+        }.toMap()
     }.share(emptyMap())
 
     /** Anzahl erfolgreicher Tage der aktuellen Woche. */
     val weekSuccessfulDays: StateFlow<Int> = weekOutcomes
-        .map { it.values.count { it == DayOutcome.REWARD } }
+        .map { it.values.count { outcome -> outcome == DayOutcome.REWARD } }
         .share(0)
 
     /** Ob die Wochenbelohnung für die aktuelle Woche bereits freigeschaltet ist. */
     val weekRewardUnlocked: StateFlow<Boolean> = combine(weekOutcomes, tasks, weekKey) { outcomes, taskList, wk ->
         if (outcomes.isEmpty()) false
-        else if (weekOutcomeFor(outcomes, MIN_SUCCESSFUL_DAYS_PER_WEEK) != WeekOutcome.SUCCESS) false
-        else taskList.any { it.ownerUid == uid && it.dayKey == wk && it.type == TaskType.REWARD }
+        else if (weekOutcomeFor(outcomes, minSuccessfulDaysPerWeek) != WeekOutcome.SUCCESS) false
+        else taskList.items.any { it.ownerUid == uid && it.dayKey == wk && it.type == TaskType.REWARD }
     }.share(false)
 
     /** Die freigeschaltete Wochenbelohnung der aktuellen Woche (falls vorhanden). */
@@ -307,13 +310,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         if (today.dayOfWeek != DayOfWeek.MONDAY) return
 
         val lastMonday = today.minusWeeks(1).with(DayOfWeek.MONDAY)
-        val lastSunday = lastMonday.plusDays(6)
-        val weekKeys = (lastMonday..lastSunday).map { it.toString() }
+        val weekKeys = (0L..6L).map { lastMonday.plusDays(it).toString() }
 
-        val dayOutcomes = weekKeys.associateNotNull { dayKey ->
+        val dayOutcomes = weekKeys.mapNotNull { dayKey ->
             val record = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == dayKey }
             dayOutcomeFor(record, targeted.value)?.let { dayKey to it }
-        }
+        }.toMap()
         if (dayOutcomes.isEmpty()) return
 
         val weekKey = weekKeyOf(Instant.now().minus(Duration.ofDays(7)), zone)
@@ -321,7 +323,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 it.ownerUid == uid && it.dayKey == weekKey && it.type == TaskType.REWARD
             }) return
 
-        if (weekOutcomeFor(dayOutcomes, MIN_SUCCESSFUL_DAYS_PER_WEEK) == WeekOutcome.SUCCESS) {
+        if (weekOutcomeFor(dayOutcomes, minSuccessfulDaysPerWeek) == WeekOutcome.SUCCESS) {
             repo.createTask(
                 Task(
                     id = "weekly_reward_${weekKey}_$uid",

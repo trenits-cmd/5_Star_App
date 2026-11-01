@@ -12,18 +12,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextStyle
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.DayOutcome
-import com.trenits.fivestar.domain.Task
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
@@ -83,7 +84,7 @@ fun WeeklyScreen(vm: AppViewModel) {
                         Text(
                             weekdayShort(dayKey),
                             style = MaterialTheme.typography.bodyMedium,
-                            modifier = width(40.dp),
+                            modifier = Modifier.width(40.dp),
                         )
                         when (outcome) {
                             DayOutcome.REWARD -> {
@@ -118,7 +119,7 @@ fun WeeklyScreen(vm: AppViewModel) {
         if (weekRewardUnlocked) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = androidx.compose.material3.CardDefaults.cardColors(
+                colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 ),
             ) {
@@ -128,17 +129,20 @@ fun WeeklyScreen(vm: AppViewModel) {
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
-                    currentWeeklyReward?.let { task ->
+                    val reward = currentWeeklyReward
+                    if (reward != null) {
                         Text(
-                            task.title,
+                            reward.title,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
-                    } ?: Text(
-                        stringResource(R.string.week_no_reward),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
+                    } else {
+                        Text(
+                            stringResource(R.string.week_no_reward),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
                 }
             }
         } else if (weekOutcomes.isNotEmpty()) {

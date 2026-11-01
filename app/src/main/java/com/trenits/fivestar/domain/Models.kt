@@ -64,9 +64,10 @@ fun waterStars(liters: Double, goal: Double): Int {
 /** Schlüssel der ISO-Woche in der Zeitzone des Nutzers, z. B. "2026-W44". */
 fun weekKeyOf(instant: Instant, zone: ZoneId): String {
     val date = instant.atZone(zone).toLocalDate()
-    // ISO-Woche beginnt am Montag.
     val monday = date.with(DayOfWeek.MONDAY)
-    return "${monday.year}-W${String("%02d").format(monday.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASE_YEAR))}"
+    val weekYear = monday.get(java.time.temporal.WeekFields.ISO.weekBasedYear())
+    val weekNum = monday.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear())
+    return "%d-W%02d".format(weekYear, weekNum)
 }
 
 /** Ergebnis einer Woche: erfolgreich, wenn genug Tage das Tagesziel erreichten. */

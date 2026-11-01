@@ -307,7 +307,7 @@ fun SettingsScreen(vm: AppViewModel) {
 
     /** Zielgruppe einer bestehenden Kategorie ändern (Für mich / Partner / Beide). */
     editTargetCategory?.let { category ->
-        val audience by remember(category.id) {
+        var audience by remember(category.id) {
             mutableStateOf(
                 when {
                     category.targets.size > 1 -> Audience.BOTH

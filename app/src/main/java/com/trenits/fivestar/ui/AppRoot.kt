@@ -60,6 +60,7 @@ private fun MainTabs(viewModel: AppViewModel) {
     var tab by rememberSaveable { mutableStateOf(Tab.TODAY) }
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val partnerUid by viewModel.partnerUid.collectAsState()
 
     LaunchedEffect(Unit) {
         ReminderScheduler.schedule(context, ReminderPrefs(context).time())

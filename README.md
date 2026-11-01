@@ -43,8 +43,8 @@ Two people track their daily goals together. Each person rates their own categor
 
 ## Releases
 
-- Latest: `v0.6.0` (this release: version bump to 0.6.0, README in English, version visible in app).
-- Previous: `v0.5.1` (i18n DE/EN/FR + all features), `v0.5.0`, `v0.3.1`, `v0.3.0`, `v0.2.0`, `v0.1.0`.
+- Latest: `v0.6.1` (counters in history and partner view, invite deletion limited to the couple).
+- Previous: `v0.6.0` (version bump to 0.6.0, README in English, version visible in app), `v0.5.1` (i18n DE/EN/FR + all features), `v0.5.0`, `v0.3.1`, `v0.3.0`, `v0.2.0`, `v0.1.0`.
 
 ## Notes
 

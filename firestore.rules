@@ -21,9 +21,9 @@ service cloud.firestore {
       allow write: if signedIn() && request.auth.uid == uid;
     }
 
-    // Einladungscodes: Einlösen durch jeden angemeldeten Nutzer, Erstellen nur für Paar-Mitglieder.
+    // Einladungscodes: Einlösen durch Partner, Erstellen nur für Paar-Mitglieder.
     match /invites/{code} {
-      allow read: if signedIn();
+      allow read: if isMember(resource.data.coupleId);
       allow create: if signedIn()
         && isMember(request.resource.data.coupleId)
         && request.resource.data.createdBy == request.auth.uid;
@@ -38,12 +38,12 @@ service cloud.firestore {
         && request.resource.data.members == [request.auth.uid];
 
       // Beitritt: nur wenn genau ein Mitglied vorhanden ist und man sich selbst hinzufügt.
-      allow update: if isMember(coupleId)
-        || (signedIn()
-          && resource.data.members.size() == 1
-          && request.resource.data.members.size() == 2
-          && request.auth.uid in request.resource.data.members
-          && resource.data.members[0] in request.resource.data.members);
+      // Mitglieder voller Paare dürfen den Beitritt nicht verändern.
+      allow update: if signedIn()
+        && resource.data.members.size() == 1
+        && request.resource.data.members.size() == 2
+        && request.auth.uid in request.resource.data.members
+        && resource.data.members[0] in request.resource.data.members;
 
       allow delete: if false;
 
@@ -77,7 +77,8 @@ service cloud.firestore {
           && (
             (resource.data.ownerUid == request.auth.uid
               && request.resource.data.ownerUid == resource.data.ownerUid
-              && request.resource.data.status == resource.data.status)
+              && request.resource.data.status == resource.data.status
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title']))
             ||
             (resource.data.ownerUid != request.auth.uid
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])

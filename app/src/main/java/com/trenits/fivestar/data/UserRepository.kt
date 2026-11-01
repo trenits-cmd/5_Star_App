@@ -57,4 +57,23 @@ class UserRepository(private val uid: String) {
     fun markCatalogSeeded() {
         user.set(mapOf("catalogSeeded" to true), SetOptions.merge())
     }
+
+    fun setDisplayName(name: String) {
+        user.set(mapOf("displayName" to name.trim()), SetOptions.merge())
+    }
+
+    /** Anzeigename einer anderen Person, sonst deren E-Mail. Nur im selben Paar lesbar. */
+    fun nameOf(otherUid: String): Flow<String?> = callbackFlow {
+        val registration = Firebase.firestore.collection("users").document(otherUid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val name = snapshot?.getString("displayName")?.takeIf { it.isNotBlank() }
+                    ?: snapshot?.getString("email")
+                trySend(name)
+            }
+        awaitClose { registration.remove() }
+    }
 }

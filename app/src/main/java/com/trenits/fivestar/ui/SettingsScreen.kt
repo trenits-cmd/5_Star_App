@@ -32,22 +32,30 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.trenits.fivestar.R
+import com.trenits.fivestar.domain.Category
+import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.TaskType
 import com.trenits.fivestar.reminder.ReminderPrefs
 import com.trenits.fivestar.reminder.ReminderScheduler
 import java.time.LocalTime
 
+private enum class Audience { ME, PARTNER, BOTH }
+
 @Composable
 fun SettingsScreen(vm: AppViewModel) {
     val context = LocalContext.current
-    val categories by vm.myCategories.collectAsState()
+    val created by vm.created.collectAsState()
     val catalog by vm.myCatalog.collectAsState()
     val days by vm.days.collectAsState()
     val lastSync by vm.lastSync.collectAsState()
+    val partnerUid by vm.partnerUid.collectAsState()
     var reminder by remember { mutableStateOf(ReminderPrefs(context).time()) }
 
     var categoryName by rememberSaveable { mutableStateOf("") }
     var categoryWeight by rememberSaveable { mutableStateOf(1) }
+    var categoryKind by remember { mutableStateOf(CategoryKind.STARS) }
+    var audience by remember { mutableStateOf(Audience.ME) }
+    var displayName by rememberSaveable { mutableStateOf("") }
     var catalogTitle by rememberSaveable { mutableStateOf("") }
     var catalogType by remember { mutableStateOf(TaskType.REWARD) }
 
@@ -57,15 +65,37 @@ fun SettingsScreen(vm: AppViewModel) {
     ) {
         item {
             Spacer(Modifier.height(40.dp))
-            Text(stringResource(R.string.settings_categories), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.settings_categories_hint))
+            Text(stringResource(R.string.settings_display_name), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_display_name_hint))
+            OutlinedTextField(
+                value = displayName,
+                onValueChange = { displayName = it },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedButton(
+                onClick = { vm.saveDisplayName(displayName) },
+                enabled = displayName.isNotBlank(),
+            ) { Text(stringResource(R.string.settings_save)) }
         }
-        items(categories, key = { it.id }) { category ->
+
+        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+
+        item { Text(stringResource(R.string.settings_categories), style = MaterialTheme.typography.titleMedium) }
+        item { Text(stringResource(R.string.settings_categories_hint)) }
+        items(created, key = { it.id }) { category ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "${category.name} (${stringResource(R.string.weight_label, category.weight)})",
-                    modifier = Modifier.weight(1f),
-                )
+                Column(Modifier.weight(1f)) {
+                    Text("${category.name} (${stringResource(R.string.weight_label, category.weight)})")
+                    Text(
+                        stringResource(
+                            R.string.settings_target_label,
+                            kindLabel(category.kind),
+                            targetLabel(category, vm.uid, partnerUid),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
                 TextButton(onClick = { vm.archiveCategory(category.id) }) {
                     Text(stringResource(R.string.settings_archive))
                 }
@@ -88,12 +118,52 @@ fun SettingsScreen(vm: AppViewModel) {
             }
         }
         item {
+            Text(stringResource(R.string.settings_kind))
+            Row {
+                CategoryKind.entries.forEach { kind ->
+                    FilterChip(
+                        selected = categoryKind == kind,
+                        onClick = { categoryKind = kind },
+                        label = { Text(kindLabel(kind)) },
+                    )
+                }
+            }
+        }
+        item {
+            Text(stringResource(R.string.settings_targets))
+            Row {
+                FilterChip(
+                    selected = audience == Audience.ME,
+                    onClick = { audience = Audience.ME },
+                    label = { Text(stringResource(R.string.target_me)) },
+                )
+                if (partnerUid != null) {
+                    FilterChip(
+                        selected = audience == Audience.PARTNER,
+                        onClick = { audience = Audience.PARTNER },
+                        label = { Text(stringResource(R.string.target_partner)) },
+                    )
+                    FilterChip(
+                        selected = audience == Audience.BOTH,
+                        onClick = { audience = Audience.BOTH },
+                        label = { Text(stringResource(R.string.target_both)) },
+                    )
+                }
+            }
+        }
+        item {
             Button(
                 onClick = {
-                    vm.saveCategory(categoryName, categoryWeight)
+                    val partner = partnerUid
+                    val targets = when (audience) {
+                        Audience.ME -> listOf(vm.uid)
+                        Audience.PARTNER -> listOfNotNull(partner)
+                        Audience.BOTH -> listOfNotNull(vm.uid, partner)
+                    }
+                    vm.saveCategory(categoryName, categoryWeight, categoryKind, targets)
                     categoryName = ""
                 },
-                enabled = categoryName.isNotBlank(),
+                enabled = categoryName.isNotBlank() && (audience == Audience.ME || partnerUid != null),
             ) { Text(stringResource(R.string.settings_add_category)) }
         }
 
@@ -193,3 +263,22 @@ fun SettingsScreen(vm: AppViewModel) {
         }
     }
 }
+
+@Composable
+private fun kindLabel(kind: CategoryKind): String = stringResource(
+    when (kind) {
+        CategoryKind.STARS -> R.string.kind_stars
+        CategoryKind.ALCOHOL -> R.string.kind_alcohol
+        CategoryKind.WATER -> R.string.kind_water
+    },
+)
+
+@Composable
+private fun targetLabel(category: Category, uid: String, partnerUid: String?): String = stringResource(
+    when {
+        category.targets.size > 1 -> R.string.target_both
+        category.targets.firstOrNull() == uid -> R.string.target_me
+        partnerUid != null && category.targets.firstOrNull() == partnerUid -> R.string.target_partner
+        else -> R.string.target_partner
+    },
+)

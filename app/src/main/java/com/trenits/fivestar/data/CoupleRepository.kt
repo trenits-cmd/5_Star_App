@@ -7,7 +7,9 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
+import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.CategorySnapshot
+import com.trenits.fivestar.domain.Counters
 import com.trenits.fivestar.domain.DayRecord
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
@@ -41,19 +43,37 @@ class CoupleRepository(private val coupleId: String) {
     }
 
     fun categories(): Flow<Listed<Category>> = listen(couple.collection("categories")) { doc ->
+        val owner = doc.getString("ownerUid") ?: return@listen null
+        val targets = (doc.get("targets") as? List<*>)?.filterIsInstance<String>()
         Category(
             id = doc.id,
-            ownerUid = doc.getString("ownerUid") ?: return@listen null,
+            ownerUid = owner,
             name = doc.getString("name") ?: "",
             weight = doc.getLong("weight")?.toInt() ?: 1,
             archived = doc.getBoolean("archived") ?: false,
+            kind = doc.getString("kind")?.let { CategoryKind.valueOf(it) } ?: CategoryKind.STARS,
+            targets = if (targets.isNullOrEmpty()) listOf(owner) else targets,
         )
     }
 
-    fun saveCategory(ownerUid: String, name: String, weight: Int, id: String? = null) {
+    fun saveCategory(
+        ownerUid: String,
+        name: String,
+        weight: Int,
+        kind: CategoryKind,
+        targets: List<String>,
+        id: String? = null,
+    ) {
         val collection = couple.collection("categories")
         collection.document(id ?: collection.document().id).set(
-            mapOf("ownerUid" to ownerUid, "name" to name, "weight" to weight, "archived" to false),
+            mapOf(
+                "ownerUid" to ownerUid,
+                "name" to name,
+                "weight" to weight,
+                "archived" to false,
+                "kind" to kind.name,
+                "targets" to targets,
+            ),
         )
     }
 
@@ -91,10 +111,16 @@ class CoupleRepository(private val coupleId: String) {
                 stars = (m["stars"] as? Number)?.toInt() ?: 0,
             )
         } ?: emptyList()
+        @Suppress("UNCHECKED_CAST")
+        val rawCounters = doc.get("counters") as? Map<String, Map<String, Any>>
+        val counters: Counters = rawCounters.orEmpty().mapValues { (_, values) ->
+            values.mapValues { (_, n) -> (n as? Number)?.toDouble() ?: 0.0 }
+        }
         DayRecord(
             dayKey = doc.getString("dayKey") ?: return@listen null,
             ownerUid = doc.getString("ownerUid") ?: return@listen null,
             snapshots = snapshots,
+            counters = counters,
         )
     }
 
@@ -111,6 +137,7 @@ class CoupleRepository(private val coupleId: String) {
                         "stars" to it.stars,
                     )
                 },
+                "counters" to record.counters,
             ),
         )
     }

@@ -43,6 +43,26 @@ class DayRecordTest {
     }
 
     @Test
+    fun `Kategorie fuer den Partner taucht nur in dessen Eintrag auf`() {
+        val forBob = Category("bob-only", alice, "Joggen", 2, targets = listOf("bob"))
+        val forBoth = Category("both", alice, "Lesen", 1, targets = listOf(alice, "bob"))
+        val aliceRecord = buildDayRecord("2026-11-01", alice, listOf(forBob, forBoth), emptyMap())
+        val bobRecord = buildDayRecord("2026-11-01", "bob", listOf(forBob, forBoth), emptyMap())
+        assertEquals(listOf("both"), aliceRecord.snapshots.map { it.categoryId })
+        assertEquals(listOf("bob-only", "both"), bobRecord.snapshots.map { it.categoryId })
+    }
+
+    @Test
+    fun `Zaehlerkategorien fliessen nicht in den Score und bleiben als Zaehler erhalten`() {
+        val alcohol = Category("alc", alice, "Alkohol", 1, kind = CategoryKind.ALCOHOL)
+        val counters = mapOf("alc" to mapOf(PINT to 2.0, DEMI to 1.0))
+        val record = buildDayRecord("2026-11-01", alice, listOf(sport, alcohol), mapOf("sport" to 5), counters)
+        assertEquals(listOf("sport"), record.snapshots.map { it.categoryId })
+        assertEquals(2.0, record.counters["alc"]?.get(PINT) ?: 0.0, 0.0)
+        assertEquals(100.0, record.scorePercent, 0.0001)
+    }
+
+    @Test
     fun `Tagesschluessel richtet sich nach der Zeitzone`() {
         val berlin = ZoneId.of("Europe/Berlin")
         // 2026-10-31 23:30 UTC ist in Berlin bereits der 1. November.

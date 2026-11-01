@@ -13,8 +13,12 @@ service cloud.firestore {
     }
 
     // Eigenes Nutzerprofil: nur der Besitzer liest und schreibt es.
+    // Eigenes Profil: Besitzer schreibt. Lesen erlaubt auch dem Partner im selben Paar (Anzeigename).
     match /users/{uid} {
-      allow read, write: if signedIn() && request.auth.uid == uid;
+      allow read: if signedIn()
+        && (request.auth.uid == uid
+          || (resource.data.coupleId != null && isMember(resource.data.coupleId)));
+      allow write: if signedIn() && request.auth.uid == uid;
     }
 
     // Einladungscodes: Einlösen durch jeden angemeldeten Nutzer, Erstellen nur für Paar-Mitglieder.

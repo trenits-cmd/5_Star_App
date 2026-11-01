@@ -154,6 +154,28 @@ describe("Beitritt per arrayUnion und Aufgabentitel", () => {
   });
 });
 
+describe("Anzeigename des Partners", () => {
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, "users", BOB), { coupleId: COUPLE, displayName: "Bob" });
+      await setDoc(doc(db, "users", EVE), { coupleId: "other", displayName: "Eve" });
+    });
+  });
+
+  it("Mitglied liest den Profilnamen des Partners", async () => {
+    await assertSucceeds(getDoc(doc(db(ALICE), "users", BOB)));
+  });
+
+  it("Fremder liest kein fremdes Profil", async () => {
+    await assertFails(getDoc(doc(db(ALICE), "users", EVE)));
+  });
+
+  it("Niemand schreibt das Profil des Partners", async () => {
+    await assertFails(updateDoc(doc(db(ALICE), "users", BOB), { displayName: "Hack" }));
+  });
+});
+
 describe("Einladungen", () => {
   it("Mitglied erstellt Einladungscode für das eigene Paar", async () => {
     await assertSucceeds(

@@ -12,8 +12,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -32,7 +39,12 @@ import androidx.compose.ui.unit.sp
 import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
+import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.CategorySnapshot
+import com.trenits.fivestar.domain.DEMI
+import com.trenits.fivestar.domain.GLASSES
+import com.trenits.fivestar.domain.LITERS
+import com.trenits.fivestar.domain.PINT
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
@@ -41,7 +53,10 @@ import java.time.LocalDate
 
 @Composable
 fun DashboardScreen(vm: AppViewModel) {
-    val categories by vm.myCategories.collectAsState()
+    val targeted by vm.targeted.collectAsState()
+    val categories = targeted.filter { it.kind == CategoryKind.STARS }
+    val counterCategories = targeted.filter { it.kind != CategoryKind.STARS }
+    val partnerName by vm.partnerName.collectAsState()
     val myToday by vm.myToday.collectAsState()
     val partnerToday by vm.partnerToday.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
@@ -65,6 +80,16 @@ fun DashboardScreen(vm: AppViewModel) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (partnerUid != null) {
+                    Text(
+                        stringResource(
+                            R.string.connected_with,
+                            partnerName ?: stringResource(R.string.who_partner),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         }
 
@@ -80,6 +105,14 @@ fun DashboardScreen(vm: AppViewModel) {
         }
         items(categories, key = { it.id }) { category ->
             CategoryCard(category, stored[category.id] ?: 0) { vm.setStars(category.id, it) }
+        }
+
+        items(counterCategories, key = { it.id }) { category ->
+            CounterCard(
+                category = category,
+                values = myToday?.counters?.get(category.id).orEmpty(),
+                onChange = { key, value -> vm.setCounter(category.id, key, value) },
+            )
         }
 
         item { SectionTitle(stringResource(R.string.section_partner)) }
@@ -195,6 +228,63 @@ private fun CategoryCard(category: Category, value: Int, onChange: (Int) -> Unit
             StarRating(value, onChange)
         }
     }
+}
+
+@Composable
+private fun CounterCard(category: Category, values: Map<String, Double>, onChange: (String, Double) -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Text(category.name, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            if (category.kind == CategoryKind.ALCOHOL) {
+                CounterRow(stringResource(R.string.counter_pint), values[PINT] ?: 0.0, step = 1.0) {
+                    onChange(PINT, it)
+                }
+                CounterRow(stringResource(R.string.counter_demi), values[DEMI] ?: 0.0, step = 1.0) {
+                    onChange(DEMI, it)
+                }
+            } else {
+                CounterRow(stringResource(R.string.counter_glasses), values[GLASSES] ?: 0.0, step = 1.0) {
+                    onChange(GLASSES, it)
+                }
+                LitersField(values[LITERS] ?: 0.0) { onChange(LITERS, it) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CounterRow(label: String, value: Double, step: Double, onChange: (Double) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(label, modifier = Modifier.weight(1f))
+        OutlinedButton(onClick = { onChange((value - step).coerceAtLeast(0.0)) }) { Text("−") }
+        Text(
+            "%d".format(value.toInt()),
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+        Button(onClick = { onChange(value + step) }) { Text("+") }
+    }
+}
+
+@Composable
+private fun LitersField(value: Double, onChange: (Double) -> Unit) {
+    var text by remember { mutableStateOf(if (value == 0.0) "" else value.toString()) }
+    OutlinedTextField(
+        value = text,
+        onValueChange = { input ->
+            text = input
+            input.replace(',', '.').toDoubleOrNull()?.let(onChange)
+        },
+        label = { Text(stringResource(R.string.counter_liters)) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable

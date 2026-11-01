@@ -102,4 +102,22 @@
 
     <string name="reminder_channel">Daily reminder</string>
     <string name="reminder_text">Your rating for today is still missing.</string>
+
+    <string name="connected_with">Connected with %1$s</string>
+    <string name="kind_stars">Stars</string>
+    <string name="kind_alcohol">Alcohol (pint/demi)</string>
+    <string name="kind_water">Water (glasses/liters)</string>
+    <string name="target_me">For me</string>
+    <string name="target_partner">For partner</string>
+    <string name="target_both">For both</string>
+    <string name="settings_kind">Type</string>
+    <string name="settings_targets">Applies to</string>
+    <string name="counter_pint">Pint</string>
+    <string name="counter_demi">Demi</string>
+    <string name="counter_glasses">Glasses</string>
+    <string name="counter_liters">Liters</string>
+    <string name="settings_display_name">Your name</string>
+    <string name="settings_display_name_hint">Your partner sees this name.</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_target_label">%1$s · %2$s</string>
 </resources>

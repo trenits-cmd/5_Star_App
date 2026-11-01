@@ -17,6 +17,7 @@ import com.trenits.fivestar.data.UserProfile
 import com.trenits.fivestar.data.UserRepository
 import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
+import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.DayOutcome
 import com.trenits.fivestar.domain.DayRecord
 import com.trenits.fivestar.domain.Task
@@ -76,9 +77,24 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         .map { list -> list.items.firstOrNull { it != uid } }
         .share(null)
 
-    val myCategories: StateFlow<List<Category>> = categories
+    /** Kategorien, die für mich gelten. */
+    val targeted: StateFlow<List<Category>> = categories
+        .map { list -> list.items.filter { it.appliesTo(uid) } }
+        .share(emptyList())
+
+    /** Sternkategorien, die für mich gelten. Grundlage für Score und Tagesergebnis. */
+    private val targetedStars: StateFlow<List<Category>> = targeted
+        .map { list -> list.filter { it.kind == CategoryKind.STARS } }
+        .share(emptyList())
+
+    /** Kategorien, die ich angelegt habe, unabhängig davon, für wen sie gelten. */
+    val created: StateFlow<List<Category>> = categories
         .map { list -> list.items.filter { it.ownerUid == uid && !it.archived } }
         .share(emptyList())
+
+    val partnerName: StateFlow<String?> = partnerUid
+        .flatMapLatest { id -> if (id == null) flowOf(null) else userRepository.nameOf(id) }
+        .share(null)
 
     val myCatalog: StateFlow<List<CatalogItem>> = catalog
         .map { list -> list.items.filter { it.ownerUid == uid } }
@@ -135,11 +151,26 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun setStars(categoryId: String, stars: Int) {
         val repo = repo() ?: return
         val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
-        repo.saveDay(buildDayRecord(todayKey.value, uid, myCategories.value, stored + (categoryId to stars)))
+        val counters = myToday.value?.counters.orEmpty()
+        repo.saveDay(
+            buildDayRecord(todayKey.value, uid, categories.value.items, stored + (categoryId to stars), counters),
+        )
     }
 
-    fun saveCategory(name: String, weight: Int, id: String? = null) {
-        repo()?.saveCategory(uid, name.trim(), weight.coerceIn(1, 5), id)
+    fun setCounter(categoryId: String, key: String, value: Double) {
+        val repo = repo() ?: return
+        val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = myToday.value?.counters.orEmpty().toMutableMap()
+        counters[categoryId] = counters[categoryId].orEmpty() + (key to value.coerceAtLeast(0.0))
+        repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+    }
+
+    fun saveCategory(name: String, weight: Int, kind: CategoryKind, targets: List<String>, id: String? = null) {
+        repo()?.saveCategory(uid, name.trim(), weight.coerceIn(1, 5), kind, targets, id)
+    }
+
+    fun saveDisplayName(name: String) {
+        userRepository.setDisplayName(name)
     }
 
     fun archiveCategory(id: String) {
@@ -190,7 +221,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val yesterday = dayKeyOf(Instant.now().minus(Duration.ofDays(1)), zone)
         if (tasks.value.items.any { it.ownerUid == uid && it.dayKey == yesterday }) return
         val record = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == yesterday }
-        val outcome = dayOutcomeFor(record, myCategories.value) ?: return
+        val outcome = dayOutcomeFor(record, targetedStars.value) ?: return
         repo.createTask(
             Task(
                 id = "eval_${yesterday}_$uid",

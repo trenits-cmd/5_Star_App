@@ -8,10 +8,14 @@ data class CategorySnapshot(
     val stars: Int,
 )
 
+/** Zählerwerte je Kategorie, z. B. categoryId → (pint → 2.0). */
+typealias Counters = Map<String, Map<String, Double>>
+
 data class DayRecord(
     val dayKey: String,
     val ownerUid: String,
     val snapshots: List<CategorySnapshot>,
+    val counters: Counters = emptyMap(),
 ) {
     val scorePercent: Double
         get() = dayScorePercent(

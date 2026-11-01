@@ -102,4 +102,22 @@
 
     <string name="reminder_channel">Rappel quotidien</string>
     <string name="reminder_text">Ton évaluation d\'aujourd\'hui manque encore.</string>
+
+    <string name="connected_with">Connecté avec %1$s</string>
+    <string name="kind_stars">Étoiles</string>
+    <string name="kind_alcohol">Alcool (pinte/demi)</string>
+    <string name="kind_water">Eau (verres/litres)</string>
+    <string name="target_me">Pour moi</string>
+    <string name="target_partner">Pour le partenaire</string>
+    <string name="target_both">Pour les deux</string>
+    <string name="settings_kind">Type</string>
+    <string name="settings_targets">S\'applique à</string>
+    <string name="counter_pint">Pinte</string>
+    <string name="counter_demi">Demi</string>
+    <string name="counter_glasses">Verres</string>
+    <string name="counter_liters">Litres</string>
+    <string name="settings_display_name">Ton nom</string>
+    <string name="settings_display_name_hint">Ton partenaire voit ce nom.</string>
+    <string name="settings_save">Enregistrer</string>
+    <string name="settings_target_label">%1$s · %2$s</string>
 </resources>

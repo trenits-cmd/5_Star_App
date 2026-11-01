@@ -20,16 +20,17 @@ import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.DayOutcome
 import com.trenits.fivestar.domain.DayRecord
+import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
-import com.trenits.fivestar.domain.WeekOutcome
+import com.trenits.fivestar.domain.availablePoolOptions
 import com.trenits.fivestar.domain.buildDayRecord
+import com.trenits.fivestar.domain.consecutiveSuccessDays
 import com.trenits.fivestar.domain.dayKeyOf
 import com.trenits.fivestar.domain.dayOutcomeFor
 import com.trenits.fivestar.domain.weekKeyOf
-import com.trenits.fivestar.domain.weekOutcomeFor
-import com.trenits.fivestar.domain.withAutoConfirmation
+import com.trenits.fivestar.reminder.ReminderScheduler
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -44,7 +45,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -58,25 +58,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         R.string.seed_penalty_1 to TaskType.PENALTY,
         R.string.seed_penalty_2 to TaskType.PENALTY,
         R.string.seed_penalty_3 to TaskType.PENALTY,
+        R.string.seed_penalty_4 to TaskType.PENALTY,
     )
-
-    /** Tägliche Strafen (automatisch bei Tages-Score < 80 %). */
-    private val dailyPenaltyPool = listOf(
-        "Service-Dienst: Kaffee/Mate ans Bett bringen oder Abwasch allein machen",
-        "Outfit-Diktat: Partner bestimmt, was du abends auf dem Sofa trägst",
-        "Entspannungs-Schuld: 15 Minuten Rücken kraulen ohne Gegenleistung",
-        "Botengang: Gang zum Briefkasten oder kleiner Einkauf allein erledigen",
-    )
-
-    /** Wöchentliche Belohnungen (freigeschaltet bei Wochenziel). */
-    private val weeklyRewardPool = listOf(
-        "Master-Gutschein: Wunsch-Massage, neues Kleidungsstück oder exklusives Intim-Abenteuer",
-        "Leibgericht: Partner kocht dein Lieblingsessen, du legst die Füße hoch",
-        "DJ- & Abend-Regie: Gewinner bestimmt Film, Musik und Programm am Sofa",
-    )
-
-    /** Mindestzahl erfolgreicher Tage für das Wochenziel (z. B. 5 von 7). */
-    val minSuccessfulDaysPerWeek = 5
 
     val uid: String = Firebase.auth.currentUser?.uid.orEmpty()
     private val zone = ZoneId.systemDefault()
@@ -113,6 +96,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         .flatMapLatest { id -> if (id == null) flowOf(null) else userRepository.nameOf(id) }
         .share(null)
 
+    /** Katalogeinträge, die ich selbst verwirklichen/verwalten kann (meine eigenen). */
     val myCatalog: StateFlow<List<CatalogItem>> = catalog
         .map { list -> list.items.filter { it.ownerUid == uid } }
         .share(emptyList())
@@ -128,36 +112,51 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     /** Schlüssel der aktuellen Woche, z. B. "2026-W44". */
     val weekKey: StateFlow<String> = clock.map { weekKeyOf(it, zone) }.share(weekKeyOf(clock.value, zone))
 
-    /** Die 7 Tage der aktuellen Woche (Montag bis Sonntag) als Tages-Schlüssel. */
+    /** Die letzten 7 Tage (inkl. heute) in chronologischer Reihenfolge. */
     val weekDays: StateFlow<List<String>> = clock.map { now ->
-        val monday = now.atZone(zone).toLocalDate().with(DayOfWeek.MONDAY)
-        (0L until 7L).map { monday.plusDays(it).toString() }
+        val today = now.atZone(zone).toLocalDate()
+        (6L downTo 0L).map { today.minusDays(it).toString() }
     }.share(emptyList())
 
-    /** Tages-Ergebnisse der aktuellen Woche (Tag → DayOutcome). */
+    /** Tages-Ergebnisse der letzten 7 Tage (Tag → DayOutcome). */
     val weekOutcomes: StateFlow<Map<String, DayOutcome>> = combine(days, weekDays, targeted) { list, keys, cats ->
         keys.mapNotNull { dayKey ->
-            val record = list.items.firstOrNull { it.ownerUid == uid && it.dayKey == dayKey }
+            val record = list.items.firstOrNull { it.ownerUid == uid && it.dayKey == dayKey } ?: return@mapNotNull null
             dayOutcomeFor(record, cats)?.let { dayKey to it }
         }.toMap()
     }.share(emptyMap())
 
-    /** Anzahl erfolgreicher Tage der aktuellen Woche. */
-    val weekSuccessfulDays: StateFlow<Int> = weekOutcomes
-        .map { it.values.count { outcome -> outcome == DayOutcome.REWARD } }
-        .share(0)
+    /** Aktuelle Serie aufeinanderfolgender erfolgreicher Tage (≥ 80 %). */
+    val weekSuccessfulDays: StateFlow<Int> = combine(days, targeted, clock) { list, cats, now ->
+        val today = now.atZone(zone).toLocalDate()
+        val byDay = list.items.filter { it.ownerUid == uid }.associateBy { it.dayKey }
+        val todayRecord = byDay[today.toString()]
+        if (todayRecord != null && dayOutcomeFor(todayRecord, cats) == DayOutcome.REWARD) {
+            consecutiveSuccessDays(today, byDay, cats)
+        } else {
+            consecutiveSuccessDays(today.minusDays(1), byDay, cats)
+        }
+    }.share(0)
 
-    /** Ob die Wochenbelohnung für die aktuelle Woche bereits freigeschaltet ist. */
-    val weekRewardUnlocked: StateFlow<Boolean> = combine(weekOutcomes, tasks, weekKey) { outcomes, taskList, wk ->
-        if (outcomes.isEmpty()) false
-        else if (weekOutcomeFor(outcomes, minSuccessfulDaysPerWeek) != WeekOutcome.SUCCESS) false
-        else taskList.items.any { it.ownerUid == uid && it.dayKey == wk && it.type == TaskType.REWARD }
+    /** Ob eine 7-Tage-Streak-Belohnung erreicht/freigeschaltet ist. */
+    val weekRewardUnlocked: StateFlow<Boolean> = combine(weekSuccessfulDays, tasks) { streak, taskList ->
+        streak >= STREAK_DAYS_FOR_REWARD ||
+            taskList.items.any { it.appliesTo(uid) && it.type == TaskType.REWARD && it.status == TaskStatus.OPEN }
     }.share(false)
 
-    /** Die freigeschaltete Wochenbelohnung der aktuellen Woche (falls vorhanden). */
-    val currentWeeklyReward: StateFlow<Task?> = combine(tasks, weekKey) { list, wk ->
-        list.items.firstOrNull { it.ownerUid == uid && it.dayKey == wk && it.type == TaskType.REWARD }
+    /** Die aktuell offene oder zuletzt freigeschaltete Belohnung. */
+    val currentWeeklyReward: StateFlow<Task?> = tasks.map { list ->
+        list.items
+            .filter { it.appliesTo(uid) && it.type == TaskType.REWARD }
+            .maxByOrNull { it.dayKey }
     }.share(null)
+
+    /** Bestätigte/eingelöste Strafen und Belohnungen im Archiv (neueste zuerst). */
+    val archivedTasks: StateFlow<List<Task>> = tasks.map { list ->
+        list.items
+            .filter { it.isArchived }
+            .sortedWith(compareByDescending<Task> { it.redeemedDayKey ?: it.dayKey }.thenByDescending { it.createdAt })
+    }.share(emptyList())
 
     val lastSync = MutableStateFlow<Instant?>(null)
 
@@ -182,7 +181,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 seeded = true
                 val repo = CoupleRepository(coupleId)
                 starterCatalog.forEach { (res, type) ->
-                    repo.saveCatalogItem(CatalogItem("", uid, type, text(res)))
+                    repo.saveCatalogItem(CatalogItem("", uid, type, text(res), listOf(uid)))
                 }
                 userRepository.markCatalogSeeded()
             }
@@ -190,16 +189,45 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             combine(categories, days, tasks, todayKey) { _, _, _, _ -> Unit }.collect {
                 evaluateYesterday()
-                evaluateWeek()
+                evaluateStreakReward()
             }
         }
         viewModelScope.launch {
             while (true) {
                 clock.value = Instant.now()
-                autoConfirmDue()
                 delay(60_000)
             }
         }
+    }
+
+    /**
+     * Liefert die für [task] aktuell noch wählbaren Optionen im Dropdown (ohne bereits verbrauchte
+     * Strafen/Belohnungen im aktuellen Durchlauf) sowie die Gesamtgröße des Pools.
+     */
+    fun availableChoicesFor(task: Task): Pair<List<String>, Int> {
+        val poolFromCatalog = catalog.value.items
+            .filter { it.type == task.type && it.appliesTo(task.ownerUid) }
+            .map { it.title.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+
+        val pool = poolFromCatalog.ifEmpty {
+            starterCatalog
+                .filter { (_, t) -> t == task.type }
+                .map { (res, _) -> text(res) }
+        }
+
+        val usedChronological = tasks.value.items
+            .filter {
+                it.ownerUid == task.ownerUid &&
+                    it.type == task.type &&
+                    it.id != task.id &&
+                    it.title.isNotBlank()
+            }
+            .sortedWith(compareBy<Task> { it.dayKey }.thenBy { it.createdAt })
+            .map { it.title }
+
+        return availablePoolOptions(pool, usedChronological) to pool.size
     }
 
     fun setStars(categoryId: String, stars: Int) {
@@ -225,9 +253,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         kind: CategoryKind,
         targets: List<String>,
         goal: Double,
+        icon: String = "",
+        notifications: List<String> = emptyList(),
         id: String? = null,
     ) {
-        repo()?.saveCategory(uid, name.trim(), weight.coerceIn(1, 5), kind, targets, goal.coerceAtLeast(0.0), id)
+        repo()?.saveCategory(
+            ownerUid = uid,
+            name = name.trim(),
+            weight = weight.coerceIn(1, 5),
+            kind = kind,
+            targets = targets,
+            goal = goal.coerceAtLeast(0.0),
+            icon = icon,
+            notifications = notifications.map { it.trim() }.filter { it.isNotEmpty() },
+            id = id,
+        )
     }
 
     fun saveDisplayName(name: String) {
@@ -238,8 +278,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         repo()?.archiveCategory(id)
     }
 
-    fun saveCatalogItem(type: TaskType, title: String) {
-        repo()?.saveCatalogItem(CatalogItem("", uid, type, title.trim()))
+    fun saveCatalogItem(type: TaskType, title: String, targets: List<String> = listOf(uid), id: String = "") {
+        repo()?.saveCatalogItem(CatalogItem(id, uid, type, title.trim(), targets))
     }
 
     fun deleteCatalogItem(id: String) {
@@ -250,8 +290,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         repo()?.setTaskTitle(taskId, title)
     }
 
+    /** Partner bestätigt die Einlösung; hält das heutige Datum als Tag der Einlösung fest. */
     fun confirmTask(taskId: String) {
-        repo()?.confirmTask(taskId)
+        repo()?.confirmTask(taskId, todayKey.value)
+    }
+
+    fun sendTestPushNotifications() {
+        ReminderScheduler.sendCategoryNotifications(getApplication(), targeted.value)
     }
 
     fun createInvite() = action {
@@ -275,75 +320,69 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun text(resId: Int): String = getApplication<Application>().getString(resId)
 
-    /** Aufgabe für gestern, wenn die eigene Bewertung vorliegt und noch keine Aufgabe existiert. */
+    /**
+     * Tagesziel-Prüfung für gestern:
+     * Beim Verfehlen des Tagesziels (< 80 %) entsteht eine Strafe (Auswahl per Dropdown durch den Nutzer).
+     */
     private fun evaluateYesterday() {
         val repo = repo() ?: return
         if (categories.value.fromCache || days.value.fromCache || tasks.value.fromCache) return
         val yesterday = dayKeyOf(Instant.now().minus(Duration.ofDays(1)), zone)
-        if (tasks.value.items.any { it.ownerUid == uid && it.dayKey == yesterday }) return
+        if (tasks.value.items.any { it.ownerUid == uid && it.dayKey == yesterday && it.type == TaskType.PENALTY }) return
         val record = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == yesterday }
         val outcome = dayOutcomeFor(record, targeted.value) ?: return
-        val title = when (outcome) {
-            DayOutcome.PENALTY -> dailyPenaltyPool.random()
-            DayOutcome.REWARD -> weeklyRewardPool.random()
-        }
-        repo.createTask(
-            Task(
-                id = "eval_${yesterday}_$uid",
-                ownerUid = uid,
-                type = if (outcome == DayOutcome.REWARD) TaskType.REWARD else TaskType.PENALTY,
-                title = title,
-                dayKey = yesterday,
-                status = TaskStatus.OPEN,
-                createdAt = Instant.now(),
-            ),
-        )
-    }
-
-    /** Wöchentliche Belohnung freischalten, wenn genug Tage der letzten Woche erfolgreich waren. */
-    private fun evaluateWeek() {
-        val repo = repo() ?: return
-        if (categories.value.fromCache || days.value.fromCache || tasks.value.fromCache) return
-
-        // Nur am Montag die abgeschlossene letzte Woche auswerten.
-        val today = Instant.now().atZone(zone).toLocalDate()
-        if (today.dayOfWeek != DayOfWeek.MONDAY) return
-
-        val lastMonday = today.minusWeeks(1).with(DayOfWeek.MONDAY)
-        val weekKeys = (0L..6L).map { lastMonday.plusDays(it).toString() }
-
-        val dayOutcomes = weekKeys.mapNotNull { dayKey ->
-            val record = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == dayKey }
-            dayOutcomeFor(record, targeted.value)?.let { dayKey to it }
-        }.toMap()
-        if (dayOutcomes.isEmpty()) return
-
-        val weekKey = weekKeyOf(Instant.now().minus(Duration.ofDays(7)), zone)
-        if (tasks.value.items.any {
-                it.ownerUid == uid && it.dayKey == weekKey && it.type == TaskType.REWARD
-            }) return
-
-        if (weekOutcomeFor(dayOutcomes, minSuccessfulDaysPerWeek) == WeekOutcome.SUCCESS) {
+        if (outcome == DayOutcome.PENALTY) {
             repo.createTask(
                 Task(
-                    id = "weekly_reward_${weekKey}_$uid",
+                    id = "eval_${yesterday}_$uid",
                     ownerUid = uid,
-                    type = TaskType.REWARD,
-                    title = weeklyRewardPool.random(),
-                    dayKey = weekKey,
+                    type = TaskType.PENALTY,
+                    title = "",
+                    dayKey = yesterday,
                     status = TaskStatus.OPEN,
                     createdAt = Instant.now(),
+                    targets = listOf(uid),
                 ),
             )
         }
     }
 
-    private fun autoConfirmDue() {
+    /**
+     * Wochenziel / Streak-Prüfung:
+     * Beim Erreichen von 7 Tagen am Stück (≥ 80 %) wird eine Belohnung freigeschaltet.
+     */
+    private fun evaluateStreakReward() {
         val repo = repo() ?: return
-        val now = Instant.now()
-        tasks.value.items
-            .filter { it.withAutoConfirmation(now).status != it.status }
-            .forEach { repo.autoConfirmTask(it.id) }
+        if (categories.value.fromCache || days.value.fromCache || tasks.value.fromCache) return
+
+        val today = Instant.now().atZone(zone).toLocalDate()
+        val byDay = days.value.items.filter { it.ownerUid == uid }.associateBy { it.dayKey }
+        val cats = targeted.value
+
+        val candidateEndDays = listOf(today.minusDays(1), today)
+        for (endDay in candidateEndDays) {
+            val streak = consecutiveSuccessDays(endDay, byDay, cats)
+            if (streak >= STREAK_DAYS_FOR_REWARD && streak % STREAK_DAYS_FOR_REWARD == 0) {
+                val endKey = endDay.toString()
+                val alreadyExists = tasks.value.items.any {
+                    it.ownerUid == uid && it.dayKey == endKey && it.type == TaskType.REWARD
+                }
+                if (!alreadyExists) {
+                    repo.createTask(
+                        Task(
+                            id = "streak_${endKey}_$uid",
+                            ownerUid = uid,
+                            type = TaskType.REWARD,
+                            title = "",
+                            dayKey = endKey,
+                            status = TaskStatus.OPEN,
+                            createdAt = Instant.now(),
+                            targets = listOf(uid),
+                        ),
+                    )
+                }
+            }
+        }
     }
 
     private fun action(block: suspend () -> Unit) {

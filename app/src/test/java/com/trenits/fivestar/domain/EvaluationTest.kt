@@ -2,8 +2,8 @@ package com.trenits.fivestar.domain
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Test
 import org.junit.Assert.assertTrue
+import org.junit.Test
 import java.time.LocalDate
 import kotlin.random.Random
 
@@ -11,10 +11,10 @@ class EvaluationTest {
 
     private val today = LocalDate.of(2026, 11, 1)
     private val sport = Category("sport", "alice", "Sport", 3)
-    private val essen = Category("essen", "alice", "Essen", 1)
+    private val essen = Category("essen", "alice", "Regelmäßig essen", 5)
 
-    private fun record(vararg snapshots: CategorySnapshot) =
-        DayRecord("2026-10-31", "alice", snapshots.toList())
+    private fun record(dayKey: String = "2026-10-31", vararg snapshots: CategorySnapshot) =
+        DayRecord(dayKey, "alice", snapshots.toList())
 
     @Test
     fun `Zeitraeume beginnen an den richtigen Tagen`() {
@@ -27,8 +27,10 @@ class EvaluationTest {
     @Test
     fun `Eintrag mit Sternen ueber 80 Prozent ist Belohnung`() {
         val r = record(
-            CategorySnapshot("sport", "Sport", 3, 5),
-            CategorySnapshot("essen", "Essen", 1, 5),
+            snapshots = arrayOf(
+                CategorySnapshot("sport", "Sport", 3, 5),
+                CategorySnapshot("essen", "Essen", 1, 5),
+            ),
         )
         assertEquals(DayOutcome.REWARD, dayOutcomeFor(r, listOf(sport, essen)))
     }
@@ -36,8 +38,10 @@ class EvaluationTest {
     @Test
     fun `Eintrag unter 80 Prozent ist Strafe`() {
         val r = record(
-            CategorySnapshot("sport", "Sport", 3, 2),
-            CategorySnapshot("essen", "Essen", 1, 5),
+            snapshots = arrayOf(
+                CategorySnapshot("sport", "Sport", 3, 2),
+                CategorySnapshot("essen", "Essen", 1, 5),
+            ),
         )
         assertEquals(DayOutcome.PENALTY, dayOutcomeFor(r, listOf(sport, essen)))
     }
@@ -56,6 +60,36 @@ class EvaluationTest {
     @Test
     fun `leerer Eintrag zaehlt nicht als Belohnung`() {
         assertEquals(DayOutcome.PENALTY, dayOutcomeFor(record(), listOf(sport)))
+    }
+
+    @Test
+    fun `7 Tage am Stueck erfolgreich ergibt Serie von 7`() {
+        val endDay = LocalDate.of(2026, 11, 7)
+        val records = (0L..6L).associate { offset ->
+            val key = endDay.minusDays(offset).toString()
+            key to record(key, CategorySnapshot("sport", "Sport", 3, 5))
+        }
+        assertEquals(7, consecutiveSuccessDays(endDay, records, listOf(sport)))
+    }
+
+    @Test
+    fun `Unterbrechung bricht die Serie ab`() {
+        val endDay = LocalDate.of(2026, 11, 7)
+        val records = mapOf(
+            "2026-11-07" to record("2026-11-07", CategorySnapshot("sport", "Sport", 3, 5)),
+            "2026-11-06" to record("2026-11-06", CategorySnapshot("sport", "Sport", 3, 5)),
+            "2026-11-05" to record("2026-11-05", CategorySnapshot("sport", "Sport", 3, 2)), // < 80 %
+            "2026-11-04" to record("2026-11-04", CategorySnapshot("sport", "Sport", 3, 5)),
+        )
+        assertEquals(2, consecutiveSuccessDays(endDay, records, listOf(sport)))
+    }
+
+    @Test
+    fun `Kategorie-Bilder werden passend aufgeloest`() {
+        assertEquals(CategoryIcon.FITNESS, sport.resolvedIcon())
+        assertEquals(CategoryIcon.FOOD, essen.resolvedIcon())
+        assertEquals(CategoryIcon.WATER, Category("w", "alice", "Trinken", 2, kind = CategoryKind.WATER).resolvedIcon())
+        assertEquals(CategoryIcon.DETOX, Category("d", "alice", "Kategorie", 2, icon = "DETOX").resolvedIcon())
     }
 
     @Test

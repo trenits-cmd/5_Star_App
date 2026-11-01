@@ -19,6 +19,8 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.R
+import com.trenits.fivestar.domain.Category
+import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.dayKeyOf
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
@@ -30,7 +32,7 @@ import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
 private const val CHANNEL_ID = "reminder"
-private const val NOTIFICATION_ID = 1001
+private const val BASE_NOTIFICATION_ID = 1001
 
 class ReminderPrefs(context: Context) {
     private val prefs = context.getSharedPreferences("reminder", Context.MODE_PRIVATE)
@@ -68,9 +70,44 @@ object ReminderScheduler {
             request,
         )
     }
+
+    /** Sendet für jede übergebene Kategorie ihre personalisierten Push-Nachrichten. */
+    @SuppressLint("MissingPermission")
+    fun sendCategoryNotifications(context: Context, categories: List<Category>) {
+        createChannel(context)
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!allowed) return
+
+        val manager = NotificationManagerCompat.from(context)
+        var seq = 0
+        categories.forEach { category ->
+            val messages = category.notifications
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .ifEmpty { listOf(context.getString(R.string.reminder_default_category, category.name)) }
+
+            messages.forEach { message ->
+                val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle(category.name)
+                    .setContentText(message)
+                    .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+                    .setAutoCancel(true)
+                    .build()
+                manager.notify(BASE_NOTIFICATION_ID + seq, notification)
+                seq++
+            }
+        }
+    }
 }
 
-/** Erinnert nur, wenn für heute noch keine Bewertung mit Kategorien gespeichert ist. */
+/**
+ * Sendet personalisierte Push-Nachrichten für alle aktiven Kategorien der Person
+ * (auch mehrere Nachrichten pro Kategorie), für die heute noch keine Bewertung vorliegt
+ * oder für die eigene Push-Nachrichten hinterlegt sind.
+ */
 class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -81,29 +118,44 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 val coupleId = db.collection("users").document(uid).get().await().getString("coupleId")
                     ?: return@withTimeout Result.success()
                 val today = dayKeyOf(Instant.now(), ZoneId.systemDefault())
-                val record = db.collection("couples").document(coupleId)
-                    .collection("days").document("${today}_$uid").get().await()
-                val rated = (record.get("snapshots") as? List<*>)?.isNotEmpty() == true
-                if (!rated) showNotification()
+                val coupleRef = db.collection("couples").document(coupleId)
+
+                val catDocs = coupleRef.collection("categories").get().await()
+                val myCategories = catDocs.documents.mapNotNull { doc ->
+                    val owner = doc.getString("ownerUid") ?: return@mapNotNull null
+                    val targets = (doc.get("targets") as? List<*>)?.filterIsInstance<String>()
+                    val notifications = (doc.get("notifications") as? List<*>)?.filterIsInstance<String>().orEmpty()
+                    val cat = Category(
+                        id = doc.id,
+                        ownerUid = owner,
+                        name = doc.getString("name") ?: "",
+                        weight = doc.getLong("weight")?.toInt() ?: 1,
+                        archived = doc.getBoolean("archived") ?: false,
+                        kind = doc.getString("kind")?.let { CategoryKind.valueOf(it) } ?: CategoryKind.STARS,
+                        targets = if (targets.isNullOrEmpty()) listOf(owner) else targets,
+                        goal = doc.getDouble("goal") ?: 0.0,
+                        icon = doc.getString("icon") ?: "",
+                        notifications = notifications,
+                    )
+                    cat.takeIf { it.appliesTo(uid) }
+                }
+
+                val record = coupleRef.collection("days").document("${today}_$uid").get().await()
+                @Suppress("UNCHECKED_CAST")
+                val snapshots = (record.get("snapshots") as? List<Map<String, Any>>).orEmpty()
+                val ratedIds = snapshots
+                    .filter { ((it["stars"] as? Number)?.toInt() ?: 0) > 0 }
+                    .mapNotNull { it["categoryId"] as? String }
+                    .toSet()
+
+                val toNotify = myCategories.filter { it.id !in ratedIds || it.notifications.isNotEmpty() }
+                if (toNotify.isNotEmpty()) {
+                    ReminderScheduler.sendCategoryNotifications(applicationContext, toNotify)
+                }
                 Result.success()
             }
         } catch (e: Exception) {
             Result.success()
         }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun showNotification() {
-        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        if (!allowed) return
-        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("5 Star")
-            .setContentText(applicationContext.getString(R.string.reminder_text))
-            .setAutoCancel(true)
-            .build()
-        NotificationManagerCompat.from(applicationContext).notify(NOTIFICATION_ID, notification)
     }
 }

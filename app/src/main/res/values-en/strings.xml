@@ -26,13 +26,13 @@
     <string name="pairing_join">Join</string>
 
     <string name="tab_today">Today</string>
-    <string name="tab_week">Week / Balance</string>
+    <string name="tab_week">Streak / Archive</string>
     <string name="tab_history">History</string>
     <string name="tab_settings">Settings</string>
     <string name="tab_partner">Partner</string>
 
     <string name="score_yours">Your score</string>
-    <string name="score_hint" formatted="false">80 % or more earns a reward, below that a penalty.</string>
+    <string name="score_hint" formatted="false">Below 80% triggers a daily penalty. 7 days in a row at 80%+ unlocks a reward.</string>
     <string name="percent_value">%1$.0f%%</string>
     <string name="section_categories">Categories</string>
     <string name="categories_empty">Create categories in Settings first.</string>
@@ -41,28 +41,31 @@
     <string name="partner_no_rating">no rating yet</string>
     <string name="partner_today">today</string>
     <string name="offline_stale">Offline. Showing the last known state.</string>
-    <string name="section_open_tasks">Open tasks</string>
+    <string name="section_open_tasks">Open penalties &amp; rewards</string>
     <string name="no_open_tasks">No open tasks. Well done!</string>
     <string name="waiting_partner">Waiting for your partner</string>
     <string name="invite_share">Share this code with your partner.</string>
     <string name="invite_create">Create code</string>
     <string name="invite_new">Create new code</string>
-    <string name="task_title_format">%1$s for %2$s</string>
-    <string name="task_choose_action">Choose an action from your catalog:</string>
-    <string name="task_catalog_empty">Your catalog has no entries of this type. Add some in Settings.</string>
-    <string name="task_waiting_confirm">%1$s. Waiting for your partner to confirm.</string>
-    <string name="task_partner_chooses">Your partner hasn\'t chosen an action yet.</string>
-    <string name="task_partner_label">Partner: %1$s</string>
-    <string name="task_confirm">Confirm as done</string>
+    <string name="task_title_format">%1$s from %2$s</string>
+    <string name="task_choose_action">Select your action via dropdown (chosen items disappear until all have been used):</string>
+    <string name="task_select_placeholder">Select option…</string>
+    <string name="task_select_confirm">Save selection</string>
+    <string name="task_remaining_count">%1$d of %2$d remaining in current cycle</string>
+    <string name="task_catalog_empty">No entries of this type available. Add some in Settings.</string>
+    <string name="task_waiting_confirm">%1$s – Waiting for your partner to confirm redemption.</string>
+    <string name="task_partner_chooses">Your partner is still choosing an option from the dropdown.</string>
+    <string name="task_partner_label">Chosen: %1$s</string>
+    <string name="task_confirm">Confirm redemption</string>
 
     <string name="task_reward">Reward</string>
     <string name="task_penalty">Penalty</string>
     <string name="who_you">You</string>
     <string name="who_partner">Partner</string>
     <string name="status_open">open</string>
-    <string name="status_confirmed">confirmed</string>
+    <string name="status_confirmed">redeemed &amp; confirmed</string>
     <string name="status_auto_confirmed">automatically confirmed</string>
-    <string name="no_action_chosen">no action chosen</string>
+    <string name="no_action_chosen">not chosen yet</string>
 
     <string name="period_7">7 days</string>
     <string name="period_30">30 days</string>
@@ -76,7 +79,7 @@
     <string name="history_task_line">%1$s · %2$s: %3$s (%4$s)</string>
 
     <string name="settings_categories">Categories</string>
-    <string name="settings_categories_hint">Weight 1 to 5. Archived categories stay in the history.</string>
+    <string name="settings_categories_hint">Weight 1 to 5. Each category has an icon and custom push notifications.</string>
     <string name="settings_archive">Archive</string>
     <string name="settings_new_category">New category</string>
     <string name="settings_add_category">Add category</string>
@@ -84,10 +87,11 @@
     <string name="settings_delete">Delete</string>
     <string name="settings_new_entry">New entry</string>
     <string name="settings_add_entry">Add entry</string>
-    <string name="catalog_item_label">%1$s: %2$s</string>
-    <string name="settings_reminder">Reminder</string>
-    <string name="settings_reminder_text" formatted="true">Daily at %1$s. It only appears if nothing has been rated today.</string>
+    <string name="catalog_item_label">%1$s: %2$s (%3$s)</string>
+    <string name="settings_reminder">Reminder &amp; push notifications</string>
+    <string name="settings_reminder_text" formatted="true">Daily at %1$s your custom category push notifications are sent.</string>
     <string name="settings_change_time">Change time</string>
+    <string name="settings_test_push">Test push notifications now</string>
     <string name="settings_sync">Sync</string>
     <string name="sync_offline">Offline. Showing the last known state.</string>
     <string name="sync_online">Connected.</string>
@@ -95,26 +99,34 @@
     <string name="sync_never">not yet</string>
     <string name="sync_now">Sync now</string>
 
-    <!-- Week / Balance -->
-    <string name="week_title">Week / Balance</string>
-    <string name="week_streak">Weekly streak: %1$d of %2$d days successful</string>
-    <string name="week_reward_unlocked">Weekly reward unlocked</string>
-    <string name="week_no_reward">Weekly goal not yet reached</string>
-    <string name="week_no_data">No data for this week yet.</string>
-    <string name="week_successful_days">Successful days</string>
-    <string name="week_reward_pool">Available weekly rewards</string>
+    <!-- Week / Streak & Archive -->
+    <string name="week_title">7-Day Streak &amp; Archive</string>
+    <string name="week_streak">Current streak: %1$d of %2$d days in a row (≥ 80%%)</string>
+    <string name="week_reward_unlocked">7 days in a row achieved – Reward unlocked!</string>
+    <string name="week_no_reward">%1$d more consecutive day(s) until the next reward.</string>
+    <string name="week_no_data">No ratings for the last 7 days yet.</string>
+    <string name="week_successful_days">Last 7 days</string>
+    <string name="week_reward_pool">Available rewards</string>
     <string name="week_penalty_pool">Possible daily penalties</string>
+    <string name="archive_title">Archive (Redeemed Penalties &amp; Rewards)</string>
+    <string name="archive_empty">No confirmed penalties or rewards in the archive yet.</string>
+    <string name="archive_penalty_date">Penalty date: %1$s</string>
+    <string name="archive_reward_date">Reward date: %1$s</string>
+    <string name="archive_redeemed_date">Redemption date: %1$s</string>
+
     <string name="settings_sign_out">Sign out</string>
 
-    <string name="seed_reward_1">Favourite meal</string>
-    <string name="seed_reward_2">Movie night</string>
-    <string name="seed_reward_3">Massage (20 min)</string>
-    <string name="seed_penalty_1">Do the dishes for a week</string>
-    <string name="seed_penalty_2">Buy flowers</string>
-    <string name="seed_penalty_3">Cook for your partner</string>
+    <string name="seed_reward_1">Cook favourite meal</string>
+    <string name="seed_reward_2">DJ &amp; evening director on the couch</string>
+    <string name="seed_reward_3">Wish massage (20 min)</string>
+    <string name="seed_penalty_1">Service duty: coffee/mate in bed or dishes</string>
+    <string name="seed_penalty_2">Outfit dictate for the evening</string>
+    <string name="seed_penalty_3">15 min back scratch without return</string>
+    <string name="seed_penalty_4">Errand run: mailbox or small grocery trip</string>
 
-    <string name="reminder_channel">Daily reminder</string>
+    <string name="reminder_channel">Category notifications</string>
     <string name="reminder_text">Your rating for today is still missing.</string>
+    <string name="reminder_default_category">Don\'t forget today: %1$s ⭐</string>
 
     <string name="connected_with">Connected with %1$s</string>
     <string name="kind_stars">Stars</string>
@@ -125,8 +137,8 @@
     <string name="target_both">For both</string>
     <string name="settings_kind">Type</string>
     <string name="settings_targets">Applies to</string>
-    <string name="settings_edit_target">Change target audience</string>
-    <string name="edit_target_for">Change target audience for %1$s</string>
+    <string name="settings_edit_target">Edit</string>
+    <string name="edit_target_for">Edit %1$s</string>
     <string name="counter_pint">Pint</string>
     <string name="counter_demi">Demi</string>
     <string name="counter_glasses">Glasses</string>
@@ -140,4 +152,19 @@
     <string name="settings_goal_water">Daily goal (liters)</string>
     <string name="counter_rating">Rating: %1$s</string>
     <string name="counter_total_liters">Amount: %1$.2f liters</string>
+
+    <!-- Category images & push notifications -->
+    <string name="settings_category_image">Category image</string>
+    <string name="icon_food">Food</string>
+    <string name="icon_water">Water</string>
+    <string name="icon_alcohol">Alcohol</string>
+    <string name="icon_fitness">Fitness</string>
+    <string name="icon_home">Home</string>
+    <string name="icon_mind">Me-Time</string>
+    <string name="icon_detox">Digital Detox</string>
+    <string name="icon_star">Stars</string>
+    <string name="settings_category_notifications">Push notifications for this category</string>
+    <string name="settings_new_notification">New push message…</string>
+    <string name="settings_add_notification">Add message</string>
+    <string name="settings_notifications_count">%1$d push message(s)</string>
 </resources>

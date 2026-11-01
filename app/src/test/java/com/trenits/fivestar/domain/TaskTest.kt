@@ -1,6 +1,8 @@
 package com.trenits.fivestar.domain
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 
@@ -37,15 +39,39 @@ class TaskTest {
     }
 
     @Test
-    fun `Partner-Bestaetigung setzt offene Aufgabe auf bestaetigt`() {
-        assertEquals(TaskStatus.CONFIRMED, task().confirmedByPartner().status)
+    fun `Partner-Bestaetigung setzt offene Aufgabe auf bestaetigt und speichert Einloesedatum`() {
+        val open = task()
+        assertFalse(open.isArchived)
+        val confirmed = open.confirmedByPartner("2026-11-03")
+        assertEquals(TaskStatus.CONFIRMED, confirmed.status)
+        assertEquals("2026-11-01", confirmed.dayKey)
+        assertEquals("2026-11-03", confirmed.redeemedDayKey)
+        assertTrue(confirmed.isArchived)
     }
 
     @Test
     fun `Partner-Bestaetigung ueberschreibt keine automatische Bestaetigung`() {
         assertEquals(
             TaskStatus.AUTO_CONFIRMED,
-            task(TaskStatus.AUTO_CONFIRMED).confirmedByPartner().status,
+            task(TaskStatus.AUTO_CONFIRMED).confirmedByPartner("2026-11-03").status,
+        )
+    }
+
+    @Test
+    fun `gewaehlte Strafe verschwindet bis alle Strafen aufgebraucht sind`() {
+        val pool = listOf("Abwasch", "Outfit-Diktat", "Rücken kraulen")
+        assertEquals(listOf("Abwasch", "Outfit-Diktat", "Rücken kraulen"), availablePoolOptions(pool, emptyList()))
+        assertEquals(listOf("Outfit-Diktat", "Rücken kraulen"), availablePoolOptions(pool, listOf("Abwasch")))
+        assertEquals(listOf("Rücken kraulen"), availablePoolOptions(pool, listOf("Abwasch", "Outfit-Diktat")))
+        // Alle 3 aufgebraucht -> Reset, wieder alle verfügbar!
+        assertEquals(
+            listOf("Abwasch", "Outfit-Diktat", "Rücken kraulen"),
+            availablePoolOptions(pool, listOf("Abwasch", "Outfit-Diktat", "Rücken kraulen")),
+        )
+        // Im neuen Durchlauf verschwindet die neu gewählte Strafe wieder:
+        assertEquals(
+            listOf("Abwasch", "Rücken kraulen"),
+            availablePoolOptions(pool, listOf("Abwasch", "Outfit-Diktat", "Rücken kraulen", "Outfit-Diktat")),
         )
     }
 }

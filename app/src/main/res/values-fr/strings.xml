@@ -26,13 +26,13 @@
     <string name="pairing_join">Rejoindre</string>
 
     <string name="tab_today">Aujourd\'hui</string>
-    <string name="tab_week">Semaine / Bilan</string>
+    <string name="tab_week">Série / Archives</string>
     <string name="tab_history">Historique</string>
     <string name="tab_settings">Réglages</string>
     <string name="tab_partner">Partenaire</string>
 
     <string name="score_yours">Ton score</string>
-    <string name="score_hint" formatted="false">À partir de 80 %, une récompense ; en dessous, une pénalité.</string>
+    <string name="score_hint" formatted="false">En dessous de 80 %, une pénalité quotidienne. 7 jours de suite à 80 %+ débloquent une récompense.</string>
     <string name="percent_value">%1$.0f %%</string>
     <string name="section_categories">Catégories</string>
     <string name="categories_empty">Crée d\'abord des catégories dans les réglages.</string>
@@ -41,28 +41,31 @@
     <string name="partner_no_rating">pas encore d\'évaluation</string>
     <string name="partner_today">aujourd\'hui</string>
     <string name="offline_stale">Hors ligne. Affichage du dernier état connu.</string>
-    <string name="section_open_tasks">Tâches en cours</string>
+    <string name="section_open_tasks">Pénalités et récompenses en cours</string>
     <string name="no_open_tasks">Aucune tâche en cours. Bravo !</string>
     <string name="waiting_partner">En attente de ton partenaire</string>
     <string name="invite_share">Partage ce code avec ton partenaire.</string>
     <string name="invite_create">Créer un code</string>
     <string name="invite_new">Créer un nouveau code</string>
-    <string name="task_title_format">%1$s pour %2$s</string>
-    <string name="task_choose_action">Choisis une action dans ton catalogue :</string>
-    <string name="task_catalog_empty">Ton catalogue n\'a aucune entrée de ce type. Ajoutes-en dans les réglages.</string>
-    <string name="task_waiting_confirm">%1$s. En attente de confirmation de ton partenaire.</string>
-    <string name="task_partner_chooses">Ton partenaire n\'a pas encore choisi d\'action.</string>
-    <string name="task_partner_label">Partenaire : %1$s</string>
-    <string name="task_confirm">Confirmer comme fait</string>
+    <string name="task_title_format">%1$s du %2$s</string>
+    <string name="task_choose_action">Choisis ton action dans le menu déroulant (les choix disparaissent jusqu\'à épuisement de la liste) :</string>
+    <string name="task_select_placeholder">Choisir une option…</string>
+    <string name="task_select_confirm">Enregistrer le choix</string>
+    <string name="task_remaining_count">%1$d sur %2$d restantes dans ce cycle</string>
+    <string name="task_catalog_empty">Aucune entrée de ce type. Ajoutes-en dans les réglages.</string>
+    <string name="task_waiting_confirm">%1$s – En attente de confirmation par ton partenaire.</string>
+    <string name="task_partner_chooses">Ton partenaire choisit encore une option dans le menu déroulant.</string>
+    <string name="task_partner_label">Choisi : %1$s</string>
+    <string name="task_confirm">Confirmer l\'exécution</string>
 
     <string name="task_reward">Récompense</string>
     <string name="task_penalty">Pénalité</string>
     <string name="who_you">Toi</string>
     <string name="who_partner">Partenaire</string>
-    <string name="status_open">en cours</string>
-    <string name="status_confirmed">confirmée</string>
+    <string name="status_open">ouverte</string>
+    <string name="status_confirmed">exécutée et confirmée</string>
     <string name="status_auto_confirmed">confirmée automatiquement</string>
-    <string name="no_action_chosen">aucune action choisie</string>
+    <string name="no_action_chosen">pas encore choisie</string>
 
     <string name="period_7">7 jours</string>
     <string name="period_30">30 jours</string>
@@ -76,7 +79,7 @@
     <string name="history_task_line">%1$s · %2$s : %3$s (%4$s)</string>
 
     <string name="settings_categories">Catégories</string>
-    <string name="settings_categories_hint">Poids de 1 à 5. Les catégories archivées restent dans l\'historique.</string>
+    <string name="settings_categories_hint">Poids de 1 à 5. Chaque catégorie possède une image et ses notifications push.</string>
     <string name="settings_archive">Archiver</string>
     <string name="settings_new_category">Nouvelle catégorie</string>
     <string name="settings_add_category">Ajouter une catégorie</string>
@@ -84,10 +87,11 @@
     <string name="settings_delete">Supprimer</string>
     <string name="settings_new_entry">Nouvelle entrée</string>
     <string name="settings_add_entry">Ajouter une entrée</string>
-    <string name="catalog_item_label">%1$s : %2$s</string>
-    <string name="settings_reminder">Rappel</string>
-    <string name="settings_reminder_text" formatted="true">Chaque jour à %1$s. Il n\'apparaît que si rien n\'a été évalué aujourd\'hui.</string>
+    <string name="catalog_item_label">%1$s : %2$s (%3$s)</string>
+    <string name="settings_reminder">Rappel et notifications push</string>
+    <string name="settings_reminder_text" formatted="true">Chaque jour à %1$s, tes notifications push personnalisées par catégorie sont envoyées.</string>
     <string name="settings_change_time">Modifier l\'heure</string>
+    <string name="settings_test_push">Tester les notifications push</string>
     <string name="settings_sync">Synchronisation</string>
     <string name="sync_offline">Hors ligne. Affichage du dernier état connu.</string>
     <string name="sync_online">Connecté.</string>
@@ -95,26 +99,34 @@
     <string name="sync_never">pas encore</string>
     <string name="sync_now">Synchroniser maintenant</string>
 
-    <!-- Semaine / Bilan -->
-    <string name="week_title">Semaine / Bilan</string>
-    <string name="week_streak">Série hebdomadaire : %1$d sur %2$d Tage erfolgreich</string>
-    <string name="week_reward_unlocked">Récompense hebdomadaire débloquée</string>
-    <string name="week_no_reward">Objectif hebdomadaire pas encore atteint</string>
-    <string name="week_no_data">Aucune donnée pour cette semaine encore.</string>
-    <string name="week_successful_days">Jours réussis</string>
-    <string name="week_reward_pool">Récompenses hebdomadaires disponibles</string>
-    <string name="week_penalty_pool">Sanctions quotidiennes possibles</string>
+    <!-- Semaine / Série & Archives -->
+    <string name="week_title">Série de 7 jours &amp; Archives</string>
+    <string name="week_streak">Série actuelle : %1$d sur %2$d jours consécutifs (≥ 80 %%)</string>
+    <string name="week_reward_unlocked">7 jours consécutifs réussis – Récompense débloquée !</string>
+    <string name="week_no_reward">Encore %1$d jour(s) consécutif(s) avant la prochaine récompense.</string>
+    <string name="week_no_data">Aucune évaluation sur les 7 derniers jours.</string>
+    <string name="week_successful_days">7 derniers jours</string>
+    <string name="week_reward_pool">Récompenses disponibles</string>
+    <string name="week_penalty_pool">Pénalités quotidiennes possibles</string>
+    <string name="archive_title">Archives (Pénalités et récompenses confirmées)</string>
+    <string name="archive_empty">Aucune pénalité ou récompense confirmée dans les archives.</string>
+    <string name="archive_penalty_date">Jour de la pénalité : %1$s</string>
+    <string name="archive_reward_date">Jour de la récompense : %1$s</string>
+    <string name="archive_redeemed_date">Jour d\'exécution : %1$s</string>
+
     <string name="settings_sign_out">Se déconnecter</string>
 
-    <string name="seed_reward_1">Repas préféré</string>
-    <string name="seed_reward_2">Soirée cinéma</string>
-    <string name="seed_reward_3">Massage (20 min)</string>
-    <string name="seed_penalty_1">Faire la vaisselle pendant une semaine</string>
-    <string name="seed_penalty_2">Acheter des fleurs</string>
-    <string name="seed_penalty_3">Cuisiner pour ton partenaire</string>
+    <string name="seed_reward_1">Faire cuisiner son plat préféré</string>
+    <string name="seed_reward_2">DJ et programme de la soirée sur le canapé</string>
+    <string name="seed_reward_3">Massage au choix (20 min)</string>
+    <string name="seed_penalty_1">Service : café/maté au lit ou vaisselle</string>
+    <string name="seed_penalty_2">Tenue imposée pour la soirée</string>
+    <string name="seed_penalty_3">15 min de gratouilles du dos sans contrepartie</string>
+    <string name="seed_penalty_4">Course : boîte aux lettres ou petites courses</string>
 
-    <string name="reminder_channel">Rappel quotidien</string>
+    <string name="reminder_channel">Notifications des catégories</string>
     <string name="reminder_text">Ton évaluation d\'aujourd\'hui manque encore.</string>
+    <string name="reminder_default_category">N\'oublie pas aujourd\'hui : %1$s ⭐</string>
 
     <string name="connected_with">Connecté avec %1$s</string>
     <string name="kind_stars">Étoiles</string>
@@ -125,8 +137,8 @@
     <string name="target_both">Pour les deux</string>
     <string name="settings_kind">Type</string>
     <string name="settings_targets">S\'applique à</string>
-    <string name="settings_edit_target">Changer le public cible</string>
-    <string name="edit_target_for">Changer le public cible pour %1$s</string>
+    <string name="settings_edit_target">Modifier</string>
+    <string name="edit_target_for">Modifier %1$s</string>
     <string name="counter_pint">Pinte</string>
     <string name="counter_demi">Demi</string>
     <string name="counter_glasses">Verres</string>
@@ -140,4 +152,19 @@
     <string name="settings_goal_water">Objectif quotidien (litres)</string>
     <string name="counter_rating">Évaluation : %1$s</string>
     <string name="counter_total_liters">Quantité : %1$.2f litres</string>
+
+    <!-- Images & notifications push des catégories -->
+    <string name="settings_category_image">Image de la catégorie</string>
+    <string name="icon_food">Repas</string>
+    <string name="icon_water">Eau</string>
+    <string name="icon_alcohol">Alcool</string>
+    <string name="icon_fitness">Sport</string>
+    <string name="icon_home">Ordre</string>
+    <string name="icon_mind">Temps pour soi</string>
+    <string name="icon_detox">Détox digitale</string>
+    <string name="icon_star">Étoiles</string>
+    <string name="settings_category_notifications">Notifications push de cette catégorie</string>
+    <string name="settings_new_notification">Nouveau message push…</string>
+    <string name="settings_add_notification">Ajouter message</string>
+    <string name="settings_notifications_count">%1$d message(s) push</string>
 </resources>

@@ -26,13 +26,13 @@
     <string name="pairing_join">Beitreten</string>
 
     <string name="tab_today">Heute</string>
-    <string name="tab_week">Woche / Bilanz</string>
+    <string name="tab_week">Woche / Archiv</string>
     <string name="tab_history">Verlauf</string>
     <string name="tab_settings">Einstellungen</string>
     <string name="tab_partner">Partner</string>
 
     <string name="score_yours">Dein Score</string>
-    <string name="score_hint" formatted="false">Ab 80 % gibt es eine Belohnung, darunter eine Strafe.</string>
+    <string name="score_hint" formatted="false">Unter 80 % gibt es eine Tagesstrafe. 7 Tage am Stück ab 80 % schalten eine Belohnung frei.</string>
     <string name="percent_value">%1$.0f %%</string>
     <string name="section_categories">Kategorien</string>
     <string name="categories_empty">Lege unter Einstellungen zuerst Kategorien an.</string>
@@ -41,28 +41,31 @@
     <string name="partner_no_rating">noch keine Bewertung</string>
     <string name="partner_today">heute</string>
     <string name="offline_stale">Offline. Angezeigt wird der letzte bekannte Stand.</string>
-    <string name="section_open_tasks">Offene Aufgaben</string>
+    <string name="section_open_tasks">Offene Strafen &amp; Belohnungen</string>
     <string name="no_open_tasks">Keine offenen Aufgaben. Gut gemacht!</string>
     <string name="waiting_partner">Warte auf deinen Partner</string>
     <string name="invite_share">Gib diesen Code an deinen Partner weiter.</string>
     <string name="invite_create">Code erstellen</string>
     <string name="invite_new">Neuen Code erstellen</string>
-    <string name="task_title_format">%1$s für %2$s</string>
-    <string name="task_choose_action">Wähle eine Aktion aus deinem Katalog:</string>
-    <string name="task_catalog_empty">Dein Katalog hat keine Einträge dieser Art. Lege sie unter Einstellungen an.</string>
-    <string name="task_waiting_confirm">%1$s. Wartet auf Bestätigung durch deinen Partner.</string>
-    <string name="task_partner_chooses">Dein Partner wählt noch eine Aktion.</string>
-    <string name="task_partner_label">Partner: %1$s</string>
-    <string name="task_confirm">Erledigt bestätigen</string>
+    <string name="task_title_format">%1$s vom %2$s</string>
+    <string name="task_choose_action">Wähle deine Aktion per Dropdown (bereits gewählte verschwinden, bis alle verbraucht sind):</string>
+    <string name="task_select_placeholder">Bitte auswählen…</string>
+    <string name="task_select_confirm">Auswahl speichern</string>
+    <string name="task_remaining_count">%1$d von %2$d im aktuellen Durchlauf übrig</string>
+    <string name="task_catalog_empty">Keine Einträge dieser Art vorhanden. Lege sie unter Einstellungen an.</string>
+    <string name="task_waiting_confirm">%1$s – Wartet auf Bestätigung der Einlösung durch deinen Partner.</string>
+    <string name="task_partner_chooses">Dein Partner wählt noch eine Strafe/Belohnung im Dropdown aus.</string>
+    <string name="task_partner_label">Gewählt: %1$s</string>
+    <string name="task_confirm">Einlösung bestätigen</string>
 
     <string name="task_reward">Belohnung</string>
     <string name="task_penalty">Strafe</string>
     <string name="who_you">Du</string>
     <string name="who_partner">Partner</string>
     <string name="status_open">offen</string>
-    <string name="status_confirmed">bestätigt</string>
+    <string name="status_confirmed">eingelöst &amp; bestätigt</string>
     <string name="status_auto_confirmed">automatisch bestätigt</string>
-    <string name="no_action_chosen">keine Aktion gewählt</string>
+    <string name="no_action_chosen">noch nicht ausgewählt</string>
 
     <string name="period_7">7 Tage</string>
     <string name="period_30">30 Tage</string>
@@ -76,7 +79,7 @@
     <string name="history_task_line">%1$s · %2$s: %3$s (%4$s)</string>
 
     <string name="settings_categories">Kategorien</string>
-    <string name="settings_categories_hint">Gewicht 1 bis 5. Archivierte Kategorien bleiben in der Historie erhalten.</string>
+    <string name="settings_categories_hint">Gewicht 1 bis 5. Jede Kategorie hat ein Bild und eigene Push-Benachrichtigungen.</string>
     <string name="settings_archive">Archivieren</string>
     <string name="settings_new_category">Neue Kategorie</string>
     <string name="settings_add_category">Kategorie hinzufügen</string>
@@ -84,10 +87,11 @@
     <string name="settings_delete">Löschen</string>
     <string name="settings_new_entry">Neuer Eintrag</string>
     <string name="settings_add_entry">Eintrag hinzufügen</string>
-    <string name="catalog_item_label">%1$s: %2$s</string>
-    <string name="settings_reminder">Erinnerung</string>
-    <string name="settings_reminder_text" formatted="true">Täglich um %1$s. Sie kommt nur, wenn heute noch nichts bewertet wurde.</string>
+    <string name="catalog_item_label">%1$s: %2$s (%3$s)</string>
+    <string name="settings_reminder">Erinnerung &amp; Push-Nachrichten</string>
+    <string name="settings_reminder_text" formatted="true">Täglich um %1$s werden deine personalisierten Kategorie-Push-Nachrichten gesendet.</string>
     <string name="settings_change_time">Uhrzeit ändern</string>
+    <string name="settings_test_push">Push-Nachrichten jetzt testen</string>
     <string name="settings_sync">Sync</string>
     <string name="sync_offline">Offline. Es wird der letzte bekannte Stand angezeigt.</string>
     <string name="sync_online">Verbunden.</string>
@@ -95,26 +99,34 @@
     <string name="sync_never">noch nicht</string>
     <string name="sync_now">Jetzt synchronisieren</string>
 
-    <!-- Woche / Bilanz -->
-    <string name="week_title">Woche / Bilanz</string>
-    <string name="week_streak">Wochen-Streak: %1$d von %2$d Tagen erfolgreich</string>
-    <string name="week_reward_unlocked">Wochenbelohnung freigeschaltet</string>
-    <string name="week_no_reward">Wochenziel noch nicht erreicht</string>
-    <string name="week_no_data">Noch keine Daten für diese Woche.</string>
-    <string name="week_successful_days">Erfolgreiche Tage</string>
-    <string name="week_reward_pool">Verfügbare Wochenbelohnungen</string>
+    <!-- Woche / Streak & Archiv -->
+    <string name="week_title">7-Tage-Streak &amp; Archiv</string>
+    <string name="week_streak">Aktuelle Serie: %1$d von %2$d Tagen am Stück (≥ 80 %%)</string>
+    <string name="week_reward_unlocked">7 Tage am Stück geschafft – Belohnung freigeschaltet!</string>
+    <string name="week_no_reward">Noch %1$d Tag(e) am Stück bis zur nächsten Belohnung.</string>
+    <string name="week_no_data">Noch keine Bewertungen für die letzten 7 Tage.</string>
+    <string name="week_successful_days">Letzte 7 Tage</string>
+    <string name="week_reward_pool">Verfügbare Belohnungen</string>
     <string name="week_penalty_pool">Mögliche Tagesstrafen</string>
+    <string name="archive_title">Archiv (Eingelöste Strafen &amp; Belohnungen)</string>
+    <string name="archive_empty">Noch keine bestätigten Strafen oder Belohnungen im Archiv.</string>
+    <string name="archive_penalty_date">Tag der Strafe: %1$s</string>
+    <string name="archive_reward_date">Tag der Belohnung: %1$s</string>
+    <string name="archive_redeemed_date">Tag der Einlösung: %1$s</string>
+
     <string name="settings_sign_out">Abmelden</string>
 
-    <string name="seed_reward_1">Lieblingsessen</string>
-    <string name="seed_reward_2">Filmabend</string>
-    <string name="seed_reward_3">Massage (20 Min)</string>
-    <string name="seed_penalty_1">Abwasch eine Woche übernehmen</string>
-    <string name="seed_penalty_2">Blumen kaufen</string>
-    <string name="seed_penalty_3">Kochen für den Partner</string>
+    <string name="seed_reward_1">Lieblingsessen kochen lassen</string>
+    <string name="seed_reward_2">DJ- &amp; Abend-Regie auf dem Sofa</string>
+    <string name="seed_reward_3">Wunsch-Massage (20 Min)</string>
+    <string name="seed_penalty_1">Service-Dienst: Kaffee/Mate ans Bett oder Abwasch</string>
+    <string name="seed_penalty_2">Outfit-Diktat für den Abend</string>
+    <string name="seed_penalty_3">15 Minuten Rücken kraulen ohne Gegenleistung</string>
+    <string name="seed_penalty_4">Botengang: Briefkasten oder kleiner Einkauf</string>
 
-    <string name="reminder_channel">Tägliche Erinnerung</string>
+    <string name="reminder_channel">Kategorie-Benachrichtigungen</string>
     <string name="reminder_text">Deine Bewertung für heute fehlt noch.</string>
+    <string name="reminder_default_category">Vergiss heute nicht: %1$s ⭐</string>
 
     <string name="connected_with">Verbunden mit %1$s</string>
     <string name="kind_stars">Sterne</string>
@@ -125,8 +137,8 @@
     <string name="target_both">Für beide</string>
     <string name="settings_kind">Art</string>
     <string name="settings_targets">Gilt für</string>
-    <string name="settings_edit_target">Zielgruppe ändern</string>
-    <string name="edit_target_for">Zielgruppe für %1$s ändern</string>
+    <string name="settings_edit_target">Bearbeiten</string>
+    <string name="edit_target_for">%1$s bearbeiten</string>
     <string name="counter_pint">Pinte</string>
     <string name="counter_demi">Demi</string>
     <string name="counter_glasses">Gläser</string>
@@ -140,4 +152,19 @@
     <string name="settings_goal_water">Tagesziel (Liter)</string>
     <string name="counter_rating">Bewertung: %1$s</string>
     <string name="counter_total_liters">Menge: %1$.2f Liter</string>
+
+    <!-- Kategorie-Bilder & Push-Nachrichten -->
+    <string name="settings_category_image">Bild für Kategorie</string>
+    <string name="icon_food">Essen</string>
+    <string name="icon_water">Wasser</string>
+    <string name="icon_alcohol">Alkohol</string>
+    <string name="icon_fitness">Sport</string>
+    <string name="icon_home">Ordnung</string>
+    <string name="icon_mind">Me-Time</string>
+    <string name="icon_detox">Digital Detox</string>
+    <string name="icon_star">Sterne</string>
+    <string name="settings_category_notifications">Push-Nachrichten für diese Kategorie</string>
+    <string name="settings_new_notification">Neue Push-Nachricht…</string>
+    <string name="settings_add_notification">Nachricht +</string>
+    <string name="settings_notifications_count">%1$d Push-Nachricht(en)</string>
 </resources>

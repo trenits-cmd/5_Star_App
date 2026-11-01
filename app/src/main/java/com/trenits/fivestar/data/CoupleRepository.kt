@@ -45,6 +45,7 @@ class CoupleRepository(private val coupleId: String) {
     fun categories(): Flow<Listed<Category>> = listen(couple.collection("categories")) { doc ->
         val owner = doc.getString("ownerUid") ?: return@listen null
         val targets = (doc.get("targets") as? List<*>)?.filterIsInstance<String>()
+        val notifications = (doc.get("notifications") as? List<*>)?.filterIsInstance<String>().orEmpty()
         Category(
             id = doc.id,
             ownerUid = owner,
@@ -54,6 +55,8 @@ class CoupleRepository(private val coupleId: String) {
             kind = doc.getString("kind")?.let { CategoryKind.valueOf(it) } ?: CategoryKind.STARS,
             targets = if (targets.isNullOrEmpty()) listOf(owner) else targets,
             goal = doc.getDouble("goal") ?: 0.0,
+            icon = doc.getString("icon") ?: "",
+            notifications = notifications,
         )
     }
 
@@ -64,6 +67,8 @@ class CoupleRepository(private val coupleId: String) {
         kind: CategoryKind,
         targets: List<String>,
         goal: Double,
+        icon: String = "",
+        notifications: List<String> = emptyList(),
         id: String? = null,
     ) {
         val collection = couple.collection("categories")
@@ -76,6 +81,8 @@ class CoupleRepository(private val coupleId: String) {
                 "kind" to kind.name,
                 "targets" to targets,
                 "goal" to goal,
+                "icon" to icon,
+                "notifications" to notifications,
             ),
         )
     }
@@ -85,18 +92,26 @@ class CoupleRepository(private val coupleId: String) {
     }
 
     fun catalog(): Flow<Listed<CatalogItem>> = listen(couple.collection("catalog")) { doc ->
+        val owner = doc.getString("ownerUid") ?: return@listen null
+        val targets = (doc.get("targets") as? List<*>)?.filterIsInstance<String>()
         CatalogItem(
             id = doc.id,
-            ownerUid = doc.getString("ownerUid") ?: return@listen null,
+            ownerUid = owner,
             type = doc.getString("type")?.let { TaskType.valueOf(it) } ?: return@listen null,
             title = doc.getString("title") ?: "",
+            targets = if (targets.isNullOrEmpty()) listOf(owner) else targets,
         )
     }
 
     fun saveCatalogItem(item: CatalogItem) {
         val collection = couple.collection("catalog")
         collection.document(item.id.ifEmpty { collection.document().id }).set(
-            mapOf("ownerUid" to item.ownerUid, "type" to item.type.name, "title" to item.title),
+            mapOf(
+                "ownerUid" to item.ownerUid,
+                "type" to item.type.name,
+                "title" to item.title,
+                "targets" to item.targets,
+            ),
         )
     }
 
@@ -155,8 +170,10 @@ class CoupleRepository(private val coupleId: String) {
             title = doc.getString("title") ?: "",
             dayKey = doc.getString("dayKey") ?: "",
             status = doc.getString("status")?.let { TaskStatus.valueOf(it) } ?: TaskStatus.OPEN,
-            createdAt = doc.getTimestamp("createdAt")?.toInstant() ?: return@listen null,
+            createdAt = doc.getTimestamp("createdAt")?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) }
+                ?: return@listen null,
             targets = if (targets.isNullOrEmpty()) listOf(owner) else targets,
+            redeemedDayKey = doc.getString("redeemedDayKey")?.takeIf { it.isNotEmpty() },
         )
     }
 
@@ -171,18 +188,24 @@ class CoupleRepository(private val coupleId: String) {
                 "status" to task.status.name,
                 "createdAt" to Timestamp(task.createdAt.epochSecond, task.createdAt.nano),
                 "targets" to task.targets,
+                "redeemedDayKey" to (task.redeemedDayKey ?: ""),
             ),
         )
     }
 
-    /** Der Besitzer wählt die Aktion aus dem eigenen Katalog. */
+    /** Der Besitzer wählt die Aktion aus dem eigenen Katalog / Dropdown. */
     fun setTaskTitle(id: String, title: String) {
         couple.collection("tasks").document(id).update("title", title)
     }
 
-    /** Partner bestätigt. Die Regeln lassen nur OPEN → CONFIRMED durch den Partner zu. */
-    fun confirmTask(id: String) {
-        couple.collection("tasks").document(id).update("status", TaskStatus.CONFIRMED.name)
+    /** Partner bestätigt die Einlösung. Speichert Status CONFIRMED und den Tag der Einlösung. */
+    fun confirmTask(id: String, redeemedDayKey: String) {
+        couple.collection("tasks").document(id).update(
+            mapOf(
+                "status" to TaskStatus.CONFIRMED.name,
+                "redeemedDayKey" to redeemedDayKey,
+            ),
+        )
     }
 
     /** Nach 48 Stunden. Die Regeln prüfen die Frist serverseitig. */
@@ -202,5 +225,3 @@ class CoupleRepository(private val coupleId: String) {
         awaitClose { registration.remove() }
     }
 }
-
-private fun Timestamp.toInstant(): Instant = Instant.ofEpochSecond(seconds, nanoseconds.toLong())

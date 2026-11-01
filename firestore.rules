@@ -81,7 +81,7 @@ service cloud.firestore {
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title']))
             ||
             (resource.data.ownerUid != request.auth.uid
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'redeemedDayKey'])
               && resource.data.status == 'OPEN'
               && request.resource.data.status == 'CONFIRMED')
             ||

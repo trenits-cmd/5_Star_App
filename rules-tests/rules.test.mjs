@@ -1,7 +1,7 @@
 import { describe, it, before, after, beforeEach } from "node:test";
 import { readFileSync } from "node:fs";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
-import { doc, setDoc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, Timestamp, arrayUnion } from "firebase/firestore";
 
 const PROJECT = "demo-starapp";
 const HOURS = 3600 * 1000;
@@ -128,6 +128,29 @@ describe("Aufgaben", () => {
   it("Fremder bestätigt keine Aufgabe", async () => {
     await seedTask(Date.now());
     await assertFails(updateDoc(doc(db(EVE), "couples", COUPLE, "tasks", "t1"), { status: "CONFIRMED" }));
+  });
+});
+
+describe("Beitritt per arrayUnion und Aufgabentitel", () => {
+  it("Einzelnes Mitglied tritt per arrayUnion bei", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "couples", "solo2"), { members: [ALICE] });
+    });
+    await assertSucceeds(updateDoc(doc(db(BOB), "couples", "solo2"), { members: arrayUnion(BOB) }));
+  });
+
+  it("Volles Paar lässt keinen dritten Teilnehmer zu", async () => {
+    await assertFails(updateDoc(doc(db(EVE), "couples", COUPLE), { members: arrayUnion(EVE) }));
+  });
+
+  it("Besitzer wählt den Aufgabentitel", async () => {
+    await seedTask(Date.now());
+    await assertSucceeds(updateDoc(doc(db(ALICE), "couples", COUPLE, "tasks", "t1"), { title: "Filmabend" }));
+  });
+
+  it("Partner setzt keinen Aufgabentitel", async () => {
+    await seedTask(Date.now());
+    await assertFails(updateDoc(doc(db(BOB), "couples", COUPLE, "tasks", "t1"), { title: "Filmabend" }));
   });
 });
 

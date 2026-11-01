@@ -5,6 +5,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.PersistentCacheSettings
 import com.google.firebase.firestore.firestore
+import com.trenits.fivestar.reminder.ReminderScheduler
 
 class FiveStarApp : Application() {
     override fun onCreate() {
@@ -12,5 +13,6 @@ class FiveStarApp : Application() {
         Firebase.firestore.firestoreSettings = FirebaseFirestoreSettings.Builder()
             .setLocalCacheSettings(PersistentCacheSettings.newBuilder().build())
             .build()
+        ReminderScheduler.createChannel(this)
     }
 }

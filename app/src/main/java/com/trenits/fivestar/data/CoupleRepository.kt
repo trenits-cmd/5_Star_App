@@ -1,10 +1,10 @@
 package com.trenits.fivestar.data
 
+import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
-import com.google.firebase.Firebase
 import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategorySnapshot
@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import java.time.Instant
 
+/** Liste aus einem Listener. fromCache ist true, solange der Stand nur lokal bekannt ist. */
+data class Listed<T>(val items: List<T>, val fromCache: Boolean)
+
 /**
  * Zugriff auf die Daten eines Paares. Schreibvorgänge laufen lokal sofort
  * und werden synchronisiert, sobald eine Verbindung besteht.
@@ -25,7 +28,19 @@ class CoupleRepository(private val coupleId: String) {
 
     private val couple get() = Firebase.firestore.collection("couples").document(coupleId)
 
-    fun categories(): Flow<List<Category>> = listen(couple.collection("categories")) { doc ->
+    fun members(): Flow<Listed<String>> = callbackFlow {
+        val registration = couple.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+            val members = (snapshot?.get("members") as? List<*>)?.filterIsInstance<String>().orEmpty()
+            trySend(Listed(members, snapshot?.metadata?.isFromCache ?: true))
+        }
+        awaitClose { registration.remove() }
+    }
+
+    fun categories(): Flow<Listed<Category>> = listen(couple.collection("categories")) { doc ->
         Category(
             id = doc.id,
             ownerUid = doc.getString("ownerUid") ?: return@listen null,
@@ -36,15 +51,17 @@ class CoupleRepository(private val coupleId: String) {
     }
 
     fun saveCategory(ownerUid: String, name: String, weight: Int, id: String? = null) {
-        val ref = couple.collection("categories").document(id ?: couple.collection("categories").document().id)
-        ref.set(mapOf("ownerUid" to ownerUid, "name" to name, "weight" to weight, "archived" to false))
+        val collection = couple.collection("categories")
+        collection.document(id ?: collection.document().id).set(
+            mapOf("ownerUid" to ownerUid, "name" to name, "weight" to weight, "archived" to false),
+        )
     }
 
     fun archiveCategory(id: String) {
         couple.collection("categories").document(id).update("archived", true)
     }
 
-    fun catalog(): Flow<List<CatalogItem>> = listen(couple.collection("catalog")) { doc ->
+    fun catalog(): Flow<Listed<CatalogItem>> = listen(couple.collection("catalog")) { doc ->
         CatalogItem(
             id = doc.id,
             ownerUid = doc.getString("ownerUid") ?: return@listen null,
@@ -54,15 +71,17 @@ class CoupleRepository(private val coupleId: String) {
     }
 
     fun saveCatalogItem(item: CatalogItem) {
-        couple.collection("catalog").document(item.id.ifEmpty { couple.collection("catalog").document().id })
-            .set(mapOf("ownerUid" to item.ownerUid, "type" to item.type.name, "title" to item.title))
+        val collection = couple.collection("catalog")
+        collection.document(item.id.ifEmpty { collection.document().id }).set(
+            mapOf("ownerUid" to item.ownerUid, "type" to item.type.name, "title" to item.title),
+        )
     }
 
     fun deleteCatalogItem(id: String) {
         couple.collection("catalog").document(id).delete()
     }
 
-    fun days(): Flow<List<DayRecord>> = listen(couple.collection("days")) { doc ->
+    fun days(): Flow<Listed<DayRecord>> = listen(couple.collection("days")) { doc ->
         @Suppress("UNCHECKED_CAST")
         val snapshots = (doc.get("snapshots") as? List<Map<String, Any>>)?.map { m ->
             CategorySnapshot(
@@ -96,7 +115,7 @@ class CoupleRepository(private val coupleId: String) {
         )
     }
 
-    fun tasks(): Flow<List<Task>> = listen(couple.collection("tasks")) { doc ->
+    fun tasks(): Flow<Listed<Task>> = listen(couple.collection("tasks")) { doc ->
         Task(
             id = doc.id,
             ownerUid = doc.getString("ownerUid") ?: return@listen null,
@@ -109,8 +128,8 @@ class CoupleRepository(private val coupleId: String) {
     }
 
     fun createTask(task: Task) {
-        val ref = couple.collection("tasks").document(task.id.ifEmpty { couple.collection("tasks").document().id })
-        ref.set(
+        val collection = couple.collection("tasks")
+        collection.document(task.id.ifEmpty { collection.document().id }).set(
             mapOf(
                 "ownerUid" to task.ownerUid,
                 "type" to task.type.name,
@@ -120,6 +139,11 @@ class CoupleRepository(private val coupleId: String) {
                 "createdAt" to Timestamp(task.createdAt.epochSecond, task.createdAt.nano),
             ),
         )
+    }
+
+    /** Der Besitzer wählt die Aktion aus dem eigenen Katalog. */
+    fun setTaskTitle(id: String, title: String) {
+        couple.collection("tasks").document(id).update("title", title)
     }
 
     /** Partner bestätigt. Die Regeln lassen nur OPEN → CONFIRMED durch den Partner zu. */
@@ -132,13 +156,14 @@ class CoupleRepository(private val coupleId: String) {
         couple.collection("tasks").document(id).update("status", TaskStatus.AUTO_CONFIRMED.name)
     }
 
-    private fun <T> listen(query: Query, map: (DocumentSnapshot) -> T?): Flow<List<T>> = callbackFlow {
+    private fun <T> listen(query: Query, map: (DocumentSnapshot) -> T?): Flow<Listed<T>> = callbackFlow {
         val registration = query.addSnapshotListener { snapshot, error ->
             if (error != null) {
                 close(error)
                 return@addSnapshotListener
             }
-            trySend(snapshot?.documents?.mapNotNull(map).orEmpty())
+            val items = snapshot?.documents?.mapNotNull(map).orEmpty()
+            trySend(Listed(items, snapshot?.metadata?.isFromCache ?: true))
         }
         awaitClose { registration.remove() }
     }

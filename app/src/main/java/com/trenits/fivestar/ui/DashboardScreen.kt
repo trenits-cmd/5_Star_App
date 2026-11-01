@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.trenits.fivestar.BuildConfig
 import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
@@ -81,6 +82,11 @@ fun DashboardScreen(vm: AppViewModel) {
                 Text(
                     dateHeader(LocalDate.now()),
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    "Version ${BuildConfig.VERSION_NAME}",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (partnerUid != null) {

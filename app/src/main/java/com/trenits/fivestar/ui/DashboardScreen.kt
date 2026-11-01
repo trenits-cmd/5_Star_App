@@ -44,7 +44,10 @@ import com.trenits.fivestar.domain.CategorySnapshot
 import com.trenits.fivestar.domain.DEMI
 import com.trenits.fivestar.domain.GLASSES
 import com.trenits.fivestar.domain.LITERS
+import com.trenits.fivestar.domain.MAX_STARS
 import com.trenits.fivestar.domain.PINT
+import com.trenits.fivestar.domain.alcoholLiters
+import com.trenits.fivestar.domain.counterStars
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
@@ -243,12 +246,21 @@ private fun CounterCard(category: Category, values: Map<String, Double>, onChang
                 CounterRow(stringResource(R.string.counter_demi), values[DEMI] ?: 0.0, step = 1.0) {
                     onChange(DEMI, it)
                 }
+                Text(
+                    stringResource(R.string.counter_total_liters, alcoholLiters(values)),
+                    style = MaterialTheme.typography.bodySmall,
+                )
             } else {
                 CounterRow(stringResource(R.string.counter_glasses), values[GLASSES] ?: 0.0, step = 1.0) {
                     onChange(GLASSES, it)
                 }
                 LitersField(values[LITERS] ?: 0.0) { onChange(LITERS, it) }
             }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.counter_rating, "★".repeat(counterStars(category, values)) + "☆".repeat(MAX_STARS - counterStars(category, values))),
+                color = Amber,
+            )
         }
     }
 }

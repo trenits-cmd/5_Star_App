@@ -53,6 +53,7 @@ class CoupleRepository(private val coupleId: String) {
             archived = doc.getBoolean("archived") ?: false,
             kind = doc.getString("kind")?.let { CategoryKind.valueOf(it) } ?: CategoryKind.STARS,
             targets = if (targets.isNullOrEmpty()) listOf(owner) else targets,
+            goal = doc.getDouble("goal") ?: 0.0,
         )
     }
 
@@ -62,6 +63,7 @@ class CoupleRepository(private val coupleId: String) {
         weight: Int,
         kind: CategoryKind,
         targets: List<String>,
+        goal: Double,
         id: String? = null,
     ) {
         val collection = couple.collection("categories")
@@ -73,6 +75,7 @@ class CoupleRepository(private val coupleId: String) {
                 "archived" to false,
                 "kind" to kind.name,
                 "targets" to targets,
+                "goal" to goal,
             ),
         )
     }

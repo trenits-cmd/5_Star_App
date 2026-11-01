@@ -82,11 +82,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         .map { list -> list.items.filter { it.appliesTo(uid) } }
         .share(emptyList())
 
-    /** Sternkategorien, die für mich gelten. Grundlage für Score und Tagesergebnis. */
-    private val targetedStars: StateFlow<List<Category>> = targeted
-        .map { list -> list.filter { it.kind == CategoryKind.STARS } }
-        .share(emptyList())
-
     /** Kategorien, die ich angelegt habe, unabhängig davon, für wen sie gelten. */
     val created: StateFlow<List<Category>> = categories
         .map { list -> list.items.filter { it.ownerUid == uid && !it.archived } }
@@ -165,8 +160,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
     }
 
-    fun saveCategory(name: String, weight: Int, kind: CategoryKind, targets: List<String>, id: String? = null) {
-        repo()?.saveCategory(uid, name.trim(), weight.coerceIn(1, 5), kind, targets, id)
+    fun saveCategory(
+        name: String,
+        weight: Int,
+        kind: CategoryKind,
+        targets: List<String>,
+        goal: Double,
+        id: String? = null,
+    ) {
+        repo()?.saveCategory(uid, name.trim(), weight.coerceIn(1, 5), kind, targets, goal.coerceAtLeast(0.0), id)
     }
 
     fun saveDisplayName(name: String) {
@@ -221,7 +223,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val yesterday = dayKeyOf(Instant.now().minus(Duration.ofDays(1)), zone)
         if (tasks.value.items.any { it.ownerUid == uid && it.dayKey == yesterday }) return
         val record = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == yesterday }
-        val outcome = dayOutcomeFor(record, targetedStars.value) ?: return
+        val outcome = dayOutcomeFor(record, targeted.value) ?: return
         repo.createTask(
             Task(
                 id = "eval_${yesterday}_$uid",

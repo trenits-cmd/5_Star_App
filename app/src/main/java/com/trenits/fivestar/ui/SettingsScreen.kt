@@ -2,6 +2,8 @@ package com.trenits.fivestar.ui
 
 import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -54,6 +56,7 @@ fun SettingsScreen(vm: AppViewModel) {
     var categoryName by rememberSaveable { mutableStateOf("") }
     var categoryWeight by rememberSaveable { mutableStateOf(1) }
     var categoryKind by remember { mutableStateOf(CategoryKind.STARS) }
+    var goalText by rememberSaveable { mutableStateOf("") }
     var audience by remember { mutableStateOf(Audience.ME) }
     var displayName by rememberSaveable { mutableStateOf("") }
     var catalogTitle by rememberSaveable { mutableStateOf("") }
@@ -123,10 +126,32 @@ fun SettingsScreen(vm: AppViewModel) {
                 CategoryKind.entries.forEach { kind ->
                     FilterChip(
                         selected = categoryKind == kind,
-                        onClick = { categoryKind = kind },
+                        onClick = {
+                            categoryKind = kind
+                            goalText = defaultGoal(kind)
+                        },
                         label = { Text(kindLabel(kind)) },
                     )
                 }
+            }
+        }
+        if (categoryKind != CategoryKind.STARS) {
+            item {
+                OutlinedTextField(
+                    value = goalText,
+                    onValueChange = { goalText = it },
+                    label = {
+                        Text(
+                            stringResource(
+                                if (categoryKind == CategoryKind.ALCOHOL) R.string.settings_goal_alcohol
+                                else R.string.settings_goal_water,
+                            ),
+                        )
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
         item {
@@ -160,7 +185,8 @@ fun SettingsScreen(vm: AppViewModel) {
                         Audience.PARTNER -> listOfNotNull(partner)
                         Audience.BOTH -> listOfNotNull(vm.uid, partner)
                     }
-                    vm.saveCategory(categoryName, categoryWeight, categoryKind, targets)
+                    val goal = goalText.replace(',', '.').toDoubleOrNull() ?: 0.0
+                    vm.saveCategory(categoryName, categoryWeight, categoryKind, targets, goal)
                     categoryName = ""
                 },
                 enabled = categoryName.isNotBlank() && (audience == Audience.ME || partnerUid != null),
@@ -262,6 +288,12 @@ fun SettingsScreen(vm: AppViewModel) {
             Spacer(Modifier.height(16.dp))
         }
     }
+}
+
+private fun defaultGoal(kind: CategoryKind): String = when (kind) {
+    CategoryKind.STARS -> ""
+    CategoryKind.ALCOHOL -> "0"
+    CategoryKind.WATER -> "2"
 }
 
 @Composable

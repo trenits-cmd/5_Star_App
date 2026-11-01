@@ -120,4 +120,8 @@
     <string name="settings_display_name_hint">Ton partenaire voit ce nom.</string>
     <string name="settings_save">Enregistrer</string>
     <string name="settings_target_label">%1$s · %2$s</string>
+    <string name="settings_goal_alcohol">Limite par jour (litres)</string>
+    <string name="settings_goal_water">Objectif quotidien (litres)</string>
+    <string name="counter_rating">Évaluation : %1$s</string>
+    <string name="counter_total_liters">Quantité : %1$.2f litres</string>
 </resources>

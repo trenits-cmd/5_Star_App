@@ -26,9 +26,8 @@
     <string name="pairing_join">Beitreten</string>
 
     <string name="tab_today">Heute</string>
-    <string name="tab_history">Verlauf</string>
+    <string name="tab_week">Woche / Bilanz</string>
     <string name="tab_settings">Einstellungen</string>
-    <string name="tab_partner">Partner</string>
 
     <string name="score_yours">Dein Score</string>
     <string name="score_hint" formatted="false">Ab 80 % gibt es eine Belohnung, darunter eine Strafe.</string>
@@ -93,6 +92,16 @@
     <string name="sync_last">Letzte Synchronisation: %1$s</string>
     <string name="sync_never">noch nicht</string>
     <string name="sync_now">Jetzt synchronisieren</string>
+
+    <!-- Woche / Bilanz -->
+    <string name="week_title">Woche / Bilanz</string>
+    <string name="week_streak">Wochen-Streak: %1$d von %2$d Tagen erfolgreich</string>
+    <string name="week_reward_unlocked">Wochenbelohnung freigeschaltet</string>
+    <string name="week_no_reward">Wochenziel noch nicht erreicht</string>
+    <string name="week_no_data">Noch keine Daten für diese Woche.</string>
+    <string name="week_successful_days">Erfolgreiche Tage</string>
+    <string name="week_reward_pool">Verfügbare Wochenbelohnungen</string>
+    <string name="week_penalty_pool">Mögliche Tagesstrafen</string>
     <string name="settings_sign_out">Abmelden</string>
 
     <string name="seed_reward_1">Lieblingsessen</string>
@@ -114,6 +123,8 @@
     <string name="target_both">Für beide</string>
     <string name="settings_kind">Art</string>
     <string name="settings_targets">Gilt für</string>
+    <string name="settings_edit_target">Zielgruppe ändern</string>
+    <string name="edit_target_for">Zielgruppe für %1$s ändern</string>
     <string name="counter_pint">Pinte</string>
     <string name="counter_demi">Demi</string>
     <string name="counter_glasses">Gläser</string>
@@ -121,6 +132,7 @@
     <string name="settings_display_name">Dein Name</string>
     <string name="settings_display_name_hint">So sieht dich dein Partner.</string>
     <string name="settings_save">Speichern</string>
+    <string name="settings_cancel">Abbrechen</string>
     <string name="settings_target_label">%1$s · %2$s</string>
     <string name="settings_goal_alcohol">Obergrenze pro Tag (Liter)</string>
     <string name="settings_goal_water">Tagesziel (Liter)</string>

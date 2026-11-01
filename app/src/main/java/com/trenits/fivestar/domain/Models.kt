@@ -1,5 +1,6 @@
 package com.trenits.fivestar.domain
 
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.math.floor
@@ -58,6 +59,27 @@ fun alcoholStars(liters: Double, limit: Double): Int {
 fun waterStars(liters: Double, goal: Double): Int {
     if (goal <= 0.0) return MAX_STARS
     return floor(MAX_STARS * liters / goal + EPSILON).toInt().coerceIn(0, MAX_STARS)
+}
+
+/** Schlüssel der ISO-Woche in der Zeitzone des Nutzers, z. B. "2026-W44". */
+fun weekKeyOf(instant: Instant, zone: ZoneId): String {
+    val date = instant.atZone(zone).toLocalDate()
+    // ISO-Woche beginnt am Montag.
+    val monday = date.with(DayOfWeek.MONDAY)
+    return "${monday.year}-W${String("%02d").format(monday.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASE_YEAR))}"
+}
+
+/** Ergebnis einer Woche: erfolgreich, wenn genug Tage das Tagesziel erreichten. */
+enum class WeekOutcome { SUCCESS, FAILED }
+
+/**
+ * Prüft, ob die Woche erfolgreich war.
+ * [dayOutcomes] enthält die Tages-Ergebnisse der Woche (Tag → DayOutcome).
+ * [minSuccessfulDays] ist die Mindestzahl erfolgreicher Tage (z. B. 5 von 7).
+ */
+fun weekOutcomeFor(dayOutcomes: Map<String, DayOutcome>, minSuccessfulDays: Int): WeekOutcome {
+    val successful = dayOutcomes.values.count { it == DayOutcome.REWARD }
+    return if (successful >= minSuccessfulDays) WeekOutcome.SUCCESS else WeekOutcome.FAILED
 }
 
 private const val EPSILON = 1e-9

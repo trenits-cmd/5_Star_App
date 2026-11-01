@@ -26,9 +26,8 @@
     <string name="pairing_join">Rejoindre</string>
 
     <string name="tab_today">Aujourd\'hui</string>
-    <string name="tab_history">Historique</string>
+    <string name="tab_week">Semaine / Bilan</string>
     <string name="tab_settings">Réglages</string>
-    <string name="tab_partner">Partenaire</string>
 
     <string name="score_yours">Ton score</string>
     <string name="score_hint" formatted="false">À partir de 80 %, une récompense ; en dessous, une pénalité.</string>
@@ -93,6 +92,16 @@
     <string name="sync_last">Dernière synchronisation : %1$s</string>
     <string name="sync_never">pas encore</string>
     <string name="sync_now">Synchroniser maintenant</string>
+
+    <!-- Semaine / Bilan -->
+    <string name="week_title">Semaine / Bilan</string>
+    <string name="week_streak">Série hebdomadaire : %1$d sur %2$d Tage erfolgreich</string>
+    <string name="week_reward_unlocked">Récompense hebdomadaire débloquée</string>
+    <string name="week_no_reward">Objectif hebdomadaire pas encore atteint</string>
+    <string name="week_no_data">Aucune donnée pour cette semaine encore.</string>
+    <string name="week_successful_days">Jours réussis</string>
+    <string name="week_reward_pool">Récompenses hebdomadaires disponibles</string>
+    <string name="week_penalty_pool">Sanctions quotidiennes possibles</string>
     <string name="settings_sign_out">Se déconnecter</string>
 
     <string name="seed_reward_1">Repas préféré</string>
@@ -114,6 +123,8 @@
     <string name="target_both">Pour les deux</string>
     <string name="settings_kind">Type</string>
     <string name="settings_targets">S\'applique à</string>
+    <string name="settings_edit_target">Changer le public cible</string>
+    <string name="edit_target_for">Changer le public cible pour %1$s</string>
     <string name="counter_pint">Pinte</string>
     <string name="counter_demi">Demi</string>
     <string name="counter_glasses">Verres</string>
@@ -121,6 +132,7 @@
     <string name="settings_display_name">Ton nom</string>
     <string name="settings_display_name_hint">Ton partenaire voit ce nom.</string>
     <string name="settings_save">Enregistrer</string>
+    <string name="settings_cancel">Annuler</string>
     <string name="settings_target_label">%1$s · %2$s</string>
     <string name="settings_goal_alcohol">Limite par jour (litres)</string>
     <string name="settings_goal_water">Objectif quotidien (litres)</string>

@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -55,6 +56,24 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         R.string.seed_penalty_2 to TaskType.PENALTY,
         R.string.seed_penalty_3 to TaskType.PENALTY,
     )
+
+    /** Tägliche Strafen (automatisch bei Tages-Score < 80 %). */
+    private val dailyPenaltyPool = listOf(
+        "Service-Dienst: Kaffee/Mate ans Bett bringen oder Abwasch allein machen",
+        "Outfit-Diktat: Partner bestimmt, was du abends auf dem Sofa trägst",
+        "Entspannungs-Schuld: 15 Minuten Rücken kraulen ohne Gegenleistung",
+        "Botengang: Gang zum Briefkasten oder kleiner Einkauf allein erledigen",
+    )
+
+    /** Wöchentliche Belohnungen (freigeschaltet bei Wochenziel). */
+    private val weeklyRewardPool = listOf(
+        "Master-Gutschein: Wunsch-Massage, neues Kleidungsstück oder exklusives Intim-Abenteuer",
+        "Leibgericht: Partner kocht dein Lieblingsessen, du legst die Füße hoch",
+        "DJ- & Abend-Regie: Gewinner bestimmt Film, Musik und Programm am Sofa",
+    )
+
+    /** Mindestzahl erfolgreicher Tage für das Wochenziel (z. B. 5 von 7). */
+    const val MIN_SUCCESSFUL_DAYS_PER_WEEK = 5
 
     val uid: String = Firebase.auth.currentUser?.uid.orEmpty()
     private val zone = ZoneId.systemDefault()
@@ -103,6 +122,40 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         list.items.firstOrNull { it.ownerUid == partner && it.dayKey == key }
     }.share(null)
 
+    /** Schlüssel der aktuellen Woche, z. B. "2026-W44". */
+    val weekKey: StateFlow<String> = clock.map { weekKeyOf(it, zone) }.share(weekKeyOf(clock.value, zone))
+
+    /** Die 7 Tage der aktuellen Woche (Montag bis Sonntag) als Tages-Schlüssel. */
+    val weekDays: StateFlow<List<String>> = clock.map { now ->
+        val monday = now.atZone(zone).toLocalDate().with(DayOfWeek.MONDAY)
+        (0 until 7).map { monday.plusDays(it).toString() }
+    }.share(emptyList())
+
+    /** Tages-Ergebnisse der aktuellen Woche (Tag → DayOutcome). */
+    val weekOutcomes: StateFlow<Map<String, DayOutcome>> = combine(days, weekDays) { list, keys ->
+        keys.associateNotNull { dayKey ->
+            val record = list.items.firstOrNull { it.ownerUid == uid && it.dayKey == dayKey }
+            dayOutcomeFor(record, targeted.value)?.let { dayKey to it }
+        }
+    }.share(emptyMap())
+
+    /** Anzahl erfolgreicher Tage der aktuellen Woche. */
+    val weekSuccessfulDays: StateFlow<Int> = weekOutcomes
+        .map { it.values.count { it == DayOutcome.REWARD } }
+        .share(0)
+
+    /** Ob die Wochenbelohnung für die aktuelle Woche bereits freigeschaltet ist. */
+    val weekRewardUnlocked: StateFlow<Boolean> = combine(weekOutcomes, tasks, weekKey) { outcomes, taskList, wk ->
+        if (outcomes.isEmpty()) false
+        else if (weekOutcomeFor(outcomes, MIN_SUCCESSFUL_DAYS_PER_WEEK) != WeekOutcome.SUCCESS) false
+        else taskList.any { it.ownerUid == uid && it.dayKey == wk && it.type == TaskType.REWARD }
+    }.share(false)
+
+    /** Die freigeschaltete Wochenbelohnung der aktuellen Woche (falls vorhanden). */
+    val currentWeeklyReward: StateFlow<Task?> = combine(tasks, weekKey) { list, wk ->
+        list.items.firstOrNull { it.ownerUid == uid && it.dayKey == wk && it.type == TaskType.REWARD }
+    }.share(null)
+
     val lastSync = MutableStateFlow<Instant?>(null)
 
     var busy by mutableStateOf(false)
@@ -132,7 +185,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
-            combine(categories, days, tasks, todayKey) { _, _, _, _ -> Unit }.collect { evaluateYesterday() }
+            combine(categories, days, tasks, todayKey) { _, _, _, _ -> Unit }.collect {
+                evaluateYesterday()
+                evaluateWeek()
+            }
         }
         viewModelScope.launch {
             while (true) {
@@ -224,17 +280,60 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         if (tasks.value.items.any { it.ownerUid == uid && it.dayKey == yesterday }) return
         val record = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == yesterday }
         val outcome = dayOutcomeFor(record, targeted.value) ?: return
+        val title = when (outcome) {
+            DayOutcome.PENALTY -> dailyPenaltyPool.random()
+            DayOutcome.REWARD -> weeklyRewardPool.random()
+        }
         repo.createTask(
             Task(
                 id = "eval_${yesterday}_$uid",
                 ownerUid = uid,
                 type = if (outcome == DayOutcome.REWARD) TaskType.REWARD else TaskType.PENALTY,
-                title = "",
+                title = title,
                 dayKey = yesterday,
                 status = TaskStatus.OPEN,
                 createdAt = Instant.now(),
             ),
         )
+    }
+
+    /** Wöchentliche Belohnung freischalten, wenn genug Tage der letzten Woche erfolgreich waren. */
+    private fun evaluateWeek() {
+        val repo = repo() ?: return
+        if (categories.value.fromCache || days.value.fromCache || tasks.value.fromCache) return
+
+        // Nur am Montag die abgeschlossene letzte Woche auswerten.
+        val today = Instant.now().atZone(zone).toLocalDate()
+        if (today.dayOfWeek != DayOfWeek.MONDAY) return
+
+        val lastMonday = today.minusWeeks(1).with(DayOfWeek.MONDAY)
+        val lastSunday = lastMonday.plusDays(6)
+        val weekKeys = (lastMonday..lastSunday).map { it.toString() }
+
+        val dayOutcomes = weekKeys.associateNotNull { dayKey ->
+            val record = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == dayKey }
+            dayOutcomeFor(record, targeted.value)?.let { dayKey to it }
+        }
+        if (dayOutcomes.isEmpty()) return
+
+        val weekKey = weekKeyOf(Instant.now().minus(Duration.ofDays(7)), zone)
+        if (tasks.value.items.any {
+                it.ownerUid == uid && it.dayKey == weekKey && it.type == TaskType.REWARD
+            }) return
+
+        if (weekOutcomeFor(dayOutcomes, MIN_SUCCESSFUL_DAYS_PER_WEEK) == WeekOutcome.SUCCESS) {
+            repo.createTask(
+                Task(
+                    id = "weekly_reward_${weekKey}_$uid",
+                    ownerUid = uid,
+                    type = TaskType.REWARD,
+                    title = weeklyRewardPool.random(),
+                    dayKey = weekKey,
+                    status = TaskStatus.OPEN,
+                    createdAt = Instant.now(),
+                ),
+            )
+        }
     }
 
     private fun autoConfirmDue() {

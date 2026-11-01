@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -58,6 +60,7 @@ fun SettingsScreen(vm: AppViewModel) {
     var categoryKind by remember { mutableStateOf(CategoryKind.STARS) }
     var goalText by rememberSaveable { mutableStateOf("") }
     var audience by remember { mutableStateOf(Audience.ME) }
+    var editTargetCategory by remember { mutableStateOf<Category?>(null) }
     var displayName by rememberSaveable { mutableStateOf("") }
     var catalogTitle by rememberSaveable { mutableStateOf("") }
     var catalogType by remember { mutableStateOf(TaskType.REWARD) }
@@ -101,6 +104,11 @@ fun SettingsScreen(vm: AppViewModel) {
                 }
                 TextButton(onClick = { vm.archiveCategory(category.id) }) {
                     Text(stringResource(R.string.settings_archive))
+                }
+                if (partnerUid != null) {
+                    TextButton(onClick = { editTargetCategory = category }) {
+                        Text(stringResource(R.string.settings_edit_target))
+                    }
                 }
             }
         }
@@ -287,6 +295,71 @@ fun SettingsScreen(vm: AppViewModel) {
             Button(onClick = { vm.signOut() }) { Text(stringResource(R.string.settings_sign_out)) }
             Spacer(Modifier.height(16.dp))
         }
+    }
+
+    /** Zielgruppe einer bestehenden Kategorie ändern (Für mich / Partner / Beide). */
+    editTargetCategory?.let { category ->
+        val audience by remember(category.id) {
+            mutableStateOf(
+                when {
+                    category.targets.size > 1 -> Audience.BOTH
+                    category.targets.firstOrNull() == vm.uid -> Audience.ME
+                    else -> Audience.PARTNER
+                },
+            )
+        }
+        AlertDialog(
+            onDismissRequest = { editTargetCategory = null },
+            title = { Text(stringResource(R.string.edit_target_for, category.name)) },
+            text = {
+                Column(Modifier.width(232.dp)) {
+                    Text(stringResource(R.string.settings_targets), style = MaterialTheme.typography.labelLarge)
+                    Spacer(Modifier.height(8.dp))
+                    Row {
+                        FilterChip(
+                            selected = audience == Audience.ME,
+                            onClick = { audience = Audience.ME },
+                            label = { Text(stringResource(R.string.target_me)) },
+                        )
+                        FilterChip(
+                            selected = audience == Audience.PARTNER,
+                            onClick = { audience = Audience.PARTNER },
+                            label = { Text(stringResource(R.string.target_partner)) },
+                        )
+                        FilterChip(
+                            selected = audience == Audience.BOTH,
+                            onClick = { audience = Audience.BOTH },
+                            label = { Text(stringResource(R.string.target_both)) },
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val targets = when (audience) {
+                            Audience.ME -> listOf(vm.uid)
+                            Audience.PARTNER -> listOfNotNull(partnerUid)
+                            Audience.BOTH -> listOfNotNull(vm.uid, partnerUid)
+                        }
+                        vm.saveCategory(
+                            category.name,
+                            category.weight,
+                            category.kind,
+                            targets,
+                            category.goal,
+                            category.id,
+                        )
+                        editTargetCategory = null
+                    },
+                ) { Text(stringResource(R.string.settings_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { editTargetCategory = null }) {
+                    Text(stringResource(R.string.settings_cancel))
+                }
+            },
+        )
     }
 }
 

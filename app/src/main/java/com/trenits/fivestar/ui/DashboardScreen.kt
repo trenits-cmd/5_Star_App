@@ -2,24 +2,30 @@ package com.trenits.fivestar.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trenits.fivestar.domain.Category
@@ -27,6 +33,13 @@ import com.trenits.fivestar.domain.CategorySnapshot
 import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
+import com.trenits.fivestar.domain.TaskType
+import com.trenits.fivestar.ui.theme.Amber
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private const val TARGET_PERCENT = 80.0
 
 @Composable
 fun DashboardScreen(vm: AppViewModel) {
@@ -44,52 +57,48 @@ fun DashboardScreen(vm: AppViewModel) {
 
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        item {
+            Column {
+                Text(
+                    "Heute",
+                    style = MaterialTheme.typography.headlineMedium,
+                )
+                Text(
+                    LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, d. MMMM", Locale.GERMANY)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
         if (!members.fromCache && partnerUid == null) {
             item { WaitingForPartnerCard(vm) }
         }
 
-        item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Text("Dein Score heute", style = MaterialTheme.typography.titleMedium)
-                    Text(formatPercent(myToday?.scorePercent), fontSize = 32.sp)
-                    Text(
-                        "Ab 80 % gibt es eine Belohnung, darunter eine Strafe.",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            }
-        }
+        item { ScoreHero(myToday?.scorePercent) }
 
-        item { Text("Kategorien", style = MaterialTheme.typography.titleMedium) }
+        item { SectionTitle("Kategorien") }
         if (categories.isEmpty()) {
-            item { Text("Lege unter Einstellungen zuerst Kategorien an.") }
+            item { HintCard("Lege unter Einstellungen zuerst Kategorien an.") }
         }
         items(categories, key = { it.id }) { category ->
-            CategoryRow(category, stored[category.id] ?: 0) { vm.setStars(category.id, it) }
+            CategoryCard(category, stored[category.id] ?: 0) { vm.setStars(category.id, it) }
         }
 
-        item { Text("Partner", style = MaterialTheme.typography.titleMedium) }
+        item { SectionTitle("Partner") }
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Text("Score heute: ${formatPercent(partnerToday?.scorePercent)}")
-                    if (days.fromCache) {
-                        Text("Offline. Angezeigt wird der letzte bekannte Stand.", style = MaterialTheme.typography.bodySmall)
-                    }
-                    partnerToday?.snapshots?.let { snapshots ->
-                        Spacer(Modifier.height(8.dp))
-                        Text(snapshotLine(snapshots), style = MaterialTheme.typography.bodySmall)
-                    } ?: Text("Noch keine Bewertung.", style = MaterialTheme.typography.bodySmall)
-                }
-            }
+            PartnerCard(
+                score = partnerToday?.scorePercent,
+                snapshots = partnerToday?.snapshots,
+                offline = days.fromCache,
+            )
         }
 
-        item { Text("Offene Aufgaben", style = MaterialTheme.typography.titleMedium) }
+        item { SectionTitle("Offene Aufgaben") }
         if (openTasks.isEmpty()) {
-            item { Text("Keine offenen Aufgaben.") }
+            item { HintCard("Keine offenen Aufgaben. Gut gemacht!") }
         }
         items(openTasks, key = { it.id }) { task ->
             TaskCard(vm, task, catalog)
@@ -98,13 +107,69 @@ fun DashboardScreen(vm: AppViewModel) {
 }
 
 @Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.padding(top = 8.dp),
+    )
+}
+
+@Composable
+private fun ScoreHero(score: Double?) {
+    val progress = ((score ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Text(
+                "Dein Score",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+            )
+            Text(
+                formatPercent(score),
+                fontSize = 44.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+            Spacer(Modifier.height(12.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small),
+                color = Amber,
+                trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f),
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Ab $TARGET_PERCENT % gibt es eine Belohnung, darunter eine Strafe.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+            )
+        }
+    }
+}
+
+@Composable
 private fun WaitingForPartnerCard(vm: AppViewModel) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+    ) {
         Column(Modifier.padding(16.dp)) {
             Text("Warte auf deinen Partner", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            vm.inviteCode?.let { Text("Einladungscode: $it", style = MaterialTheme.typography.titleLarge) }
-            Spacer(Modifier.height(8.dp))
+            vm.inviteCode?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    it,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text("Gib diesen Code an deinen Partner weiter.", style = MaterialTheme.typography.bodySmall)
+            }
+            Spacer(Modifier.height(10.dp))
             OutlinedButton(onClick = { vm.createInvite() }, enabled = !vm.busy) {
                 Text(if (vm.inviteCode == null) "Code erstellen" else "Neuen Code erstellen")
             }
@@ -113,20 +178,90 @@ private fun WaitingForPartnerCard(vm: AppViewModel) {
 }
 
 @Composable
-private fun CategoryRow(category: Category, value: Int, onChange: (Int) -> Unit) {
-    Column {
-        Text(category.name, style = MaterialTheme.typography.bodyLarge)
-        Row {
-            for (n in 1..5) {
+private fun CategoryCard(category: Category, value: Int, onChange: (Int) -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.padding(horizontal = 16.dp, vertical = 14.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(category.name, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    if (n <= value) "★" else "☆",
-                    fontSize = 28.sp,
-                    modifier = Modifier
-                        .clickable { onChange(if (value == n) 0 else n) }
-                        .padding(end = 8.dp),
+                    "Gewicht ${category.weight}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            StarRating(value, onChange)
         }
+    }
+}
+
+@Composable
+private fun StarRating(value: Int, onChange: (Int) -> Unit) {
+    Row {
+        for (n in 1..5) {
+            val filled = n <= value
+            Text(
+                "★",
+                fontSize = 26.sp,
+                color = if (filled) Amber else MaterialTheme.colorScheme.outline,
+                modifier = Modifier
+                    .clickable { onChange(if (value == n) 0 else n) }
+                    .padding(horizontal = 2.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PartnerCard(score: Double?, snapshots: List<CategorySnapshot>?, offline: Boolean) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    formatPercent(score),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.size(10.dp))
+                Text(
+                    if (snapshots == null) "noch keine Bewertung" else "heute",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (offline) {
+                Text(
+                    "Offline. Angezeigt wird der letzte bekannte Stand.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            snapshots?.takeIf { it.isNotEmpty() }?.let { list ->
+                Spacer(Modifier.height(8.dp))
+                list.forEach { s ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                        Text(s.name, modifier = Modifier.weight(1f))
+                        Text(
+                            "★".repeat(s.stars) + "☆".repeat(5 - s.stars),
+                            color = Amber,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HintCard(text: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Text(text, modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -137,7 +272,13 @@ private fun TaskCard(vm: AppViewModel, task: Task, catalog: List<CatalogItem>) {
             Text(
                 "${typeLabel(task.type)} für ${formatDay(task.dayKey)}",
                 style = MaterialTheme.typography.titleSmall,
+                color = if (task.type == TaskType.REWARD) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                },
             )
+            Spacer(Modifier.height(6.dp))
             val isMine = task.ownerUid == vm.uid
             when {
                 isMine && task.title.isEmpty() -> {
@@ -149,7 +290,7 @@ private fun TaskCard(vm: AppViewModel, task: Task, catalog: List<CatalogItem>) {
                     options.forEach { item ->
                         OutlinedButton(
                             onClick = { vm.chooseTaskTitle(task.id, item.title) },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                         ) { Text(item.title) }
                     }
                 }
@@ -164,6 +305,3 @@ private fun TaskCard(vm: AppViewModel, task: Task, catalog: List<CatalogItem>) {
         }
     }
 }
-
-private fun snapshotLine(snapshots: List<CategorySnapshot>): String =
-    snapshots.joinToString(" · ") { "${it.name} ${it.stars}★" }

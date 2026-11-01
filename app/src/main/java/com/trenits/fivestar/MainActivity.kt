@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -14,12 +13,13 @@ import com.trenits.fivestar.ui.AppRoot
 import com.trenits.fivestar.ui.AppViewModel
 import com.trenits.fivestar.ui.AuthViewModel
 import com.trenits.fivestar.ui.LoginScreen
+import com.trenits.fivestar.ui.theme.FiveStarTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
+            FiveStarTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val authViewModel: AuthViewModel = viewModel()
                     val user by authViewModel.user.collectAsState()

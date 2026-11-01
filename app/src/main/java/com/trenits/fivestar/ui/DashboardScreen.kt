@@ -129,6 +129,8 @@ fun DashboardScreen(vm: AppViewModel) {
             PartnerCard(
                 score = partnerToday?.scorePercent,
                 snapshots = partnerToday?.snapshots,
+                counters = partnerToday?.counters,
+                categories = targeted,
                 offline = days.fromCache,
             )
         }
@@ -323,7 +325,13 @@ private fun StarRating(value: Int, onChange: (Int) -> Unit) {
 }
 
 @Composable
-private fun PartnerCard(score: Double?, snapshots: List<CategorySnapshot>?, offline: Boolean) {
+private fun PartnerCard(
+    score: Double?,
+    snapshots: List<CategorySnapshot>?,
+    counters: Map<String, Map<String, Double>>?,
+    categories: List<Category>,
+    offline: Boolean,
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -356,6 +364,12 @@ private fun PartnerCard(score: Double?, snapshots: List<CategorySnapshot>?, offl
                             color = Amber,
                         )
                     }
+                }
+            }
+            counters?.forEach { (categoryId, values) ->
+                val category = categories.find { it.id == categoryId }
+                if (category != null) {
+                    CounterSummary(category.name, values)
                 }
             }
         }

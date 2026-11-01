@@ -1,7 +1,7 @@
 import { describe, it, before, after, beforeEach } from "node:test";
 import { readFileSync } from "node:fs";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
-import { doc, setDoc, getDoc, updateDoc, Timestamp, arrayUnion } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, Timestamp, arrayUnion } from "firebase/firestore";
 
 const PROJECT = "demo-starapp";
 const HOURS = 3600 * 1000;
@@ -187,5 +187,21 @@ describe("Einladungen", () => {
     await assertFails(
       setDoc(doc(db(EVE), "invites", "XYZ789"), { coupleId: COUPLE, createdBy: EVE }),
     );
+  });
+
+  it("Mitglied löscht Einladungscode des eigenen Paares", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, "invites", "ABC123"), { coupleId: COUPLE, createdBy: ALICE });
+    });
+    await assertSucceeds(deleteDoc(doc(db(ALICE), "invites", "ABC123")));
+  });
+
+  it("Fremder löscht keine Einladung eines fremden Paares", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, "invites", "ABC123"), { coupleId: COUPLE, createdBy: ALICE });
+    });
+    await assertFails(deleteDoc(doc(db(EVE), "invites", "ABC123")));
   });
 });

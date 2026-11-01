@@ -27,7 +27,7 @@ service cloud.firestore {
       allow create: if signedIn()
         && isMember(request.resource.data.coupleId)
         && request.resource.data.createdBy == request.auth.uid;
-      allow delete: if signedIn();
+      allow delete: if isMember(resource.data.coupleId);
       allow update: if false;
     }
 

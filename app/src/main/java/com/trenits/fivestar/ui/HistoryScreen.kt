@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.trenits.fivestar.R
+import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.DayRecord
 import com.trenits.fivestar.domain.Period
 import com.trenits.fivestar.domain.Task
@@ -34,6 +35,7 @@ import java.time.LocalDate
 fun HistoryScreen(vm: AppViewModel) {
     val days by vm.days.collectAsState()
     val tasks by vm.tasks.collectAsState()
+    val targeted by vm.targeted.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
     var period by rememberSaveable { mutableStateOf(Period.SEVEN_DAYS) }
     val today = remember { LocalDate.now() }
@@ -69,6 +71,8 @@ fun HistoryScreen(vm: AppViewModel) {
                 partnerScore = partnerUid?.let { p -> days.items.firstOrNull { it.dayKey == key && it.ownerUid == p } },
                 dayTasks = tasks.items.filter { it.dayKey == key },
                 myUid = vm.uid,
+                partnerUid = partnerUid,
+                categories = targeted,
                 showPartner = partnerUid != null,
             )
         }
@@ -82,6 +86,8 @@ private fun DayCard(
     partnerScore: DayRecord?,
     dayTasks: List<Task>,
     myUid: String,
+    partnerUid: String?,
+    categories: List<Category>,
     showPartner: Boolean,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -108,6 +114,19 @@ private fun DayCard(
                     ),
                     style = MaterialTheme.typography.bodySmall,
                 )
+            }
+            myScore?.counters?.forEach { (categoryId, values) ->
+                val category = categories.firstOrNull { it.id == categoryId && it.appliesTo(myUid) }
+                if (category != null) {
+                    CounterSummary(category.name, values)
+                }
+            }
+            partnerScore?.counters?.forEach { (categoryId, values) ->
+                val partner = partnerUid ?: return@forEach
+                val category = categories.firstOrNull { it.id == categoryId && it.appliesTo(partner) }
+                if (category != null) {
+                    CounterSummary(category.name, values)
+                }
             }
             dayTasks.forEach { task ->
                 Spacer(Modifier.height(8.dp))

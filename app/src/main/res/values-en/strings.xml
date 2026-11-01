@@ -32,11 +32,18 @@
     <string name="tab_partner">Partner</string>
 
     <string name="score_yours">Your score</string>
-    <string name="score_hint" formatted="false">Below 80% triggers a daily penalty. 7 days in a row at 80%+ unlocks a reward.</string>
+    <string name="score_hint" formatted="false">Food has the highest weight (5). Below 80% triggers a daily penalty; 7 consecutive days at 80%+ unlocks a reward.</string>
     <string name="percent_value">%1$.0f%%</string>
     <string name="section_categories">Categories</string>
-    <string name="categories_empty">Create categories in Settings first.</string>
+    <string name="categories_empty">Create categories in Settings first or load the presets for Rosie / Andi.</string>
     <string name="weight_label">Weight %1$d</string>
+    <string name="weight_with_share">Weight %1$d (%2$s) · %3$d%% of score</string>
+    <string name="priority_5">Top Priority / Food</string>
+    <string name="priority_4">Very Important</string>
+    <string name="priority_3">Important</string>
+    <string name="priority_2">Daily / Alternating</string>
+    <string name="priority_1">Minor / Bonus</string>
+
     <string name="section_partner">Partner</string>
     <string name="partner_no_rating">no rating yet</string>
     <string name="partner_today">today</string>
@@ -78,8 +85,13 @@
     <string name="history_partner_categories">Partner\'s categories: %1$s</string>
     <string name="history_task_line">%1$s · %2$s: %3$s (%4$s)</string>
 
+    <string name="settings_presets_title">Quick Start: Presets for Rosie &amp; Andi</string>
+    <string name="settings_presets_hint">Creates the tailored categories with balanced weights (Food = 5, Alcohol = 4, Water 2.5 L = 3, Alternating tasks = 3).</string>
+    <string name="settings_preset_rosie">Load Rosie\'s categories</string>
+    <string name="settings_preset_andi">Load Andi\'s categories</string>
+
     <string name="settings_categories">Categories</string>
-    <string name="settings_categories_hint">Weight 1 to 5. Each category has an icon and custom push notifications.</string>
+    <string name="settings_categories_hint">Weight 1 (Minor) to 5 (Top Priority Food). Each category has an icon and custom push notifications.</string>
     <string name="settings_archive">Archive</string>
     <string name="settings_new_category">New category</string>
     <string name="settings_add_category">Add category</string>
@@ -130,8 +142,11 @@
 
     <string name="connected_with">Connected with %1$s</string>
     <string name="kind_stars">Stars</string>
-    <string name="kind_alcohol">Alcohol (pint/demi)</string>
-    <string name="kind_water">Water (glasses/liters)</string>
+    <string name="kind_alcohol">Alcohol limit (pint/demi/L)</string>
+    <string name="kind_water">Drink water (glasses/liters)</string>
+    <string name="kind_rotation">Alternating tasks (weekly rotation)</string>
+    <string name="kind_dinner">Dinner before 8 PM (time)</string>
+
     <string name="target_me">For me</string>
     <string name="target_partner">For partner</string>
     <string name="target_both">For both</string>
@@ -139,19 +154,50 @@
     <string name="settings_targets">Applies to</string>
     <string name="settings_edit_target">Edit</string>
     <string name="edit_target_for">Edit %1$s</string>
-    <string name="counter_pint">Pint</string>
-    <string name="counter_demi">Demi</string>
-    <string name="counter_glasses">Glasses</string>
-    <string name="counter_liters">Liters</string>
+
+    <string name="counter_pint">Pint (0.5 L)</string>
+    <string name="counter_demi">Demi (0.25 L)</string>
+    <string name="counter_glasses">Glasses (0.25 L each)</string>
+    <string name="counter_liters">Additional amount in liters (decimal)</string>
+    <string name="counter_water_goal_hint">Goal: at least %1$.2f L (= 5 ★, proportionally rounded down below)</string>
+    <string name="counter_alcohol_goal_hint">0.00 L = 5 ★ · proportionally less above up to %1$.2f L</string>
+
     <string name="settings_display_name">Your name</string>
-    <string name="settings_display_name_hint">Your partner sees this name.</string>
+    <string name="settings_display_name_hint">Your partner sees this name (e.g. Rosie or Andi).</string>
     <string name="settings_save">Save</string>
     <string name="settings_cancel">Cancel</string>
     <string name="settings_target_label">%1$s · %2$s</string>
-    <string name="settings_goal_alcohol">Daily limit (liters)</string>
-    <string name="settings_goal_water">Daily goal (liters)</string>
-    <string name="counter_rating">Rating: %1$s</string>
-    <string name="counter_total_liters">Amount: %1$.2f liters</string>
+    <string name="settings_goal_alcohol">Max limit for 0 ★ (liters, 0 L = 5 ★)</string>
+    <string name="settings_goal_water">Daily goal in liters (e.g. 2.5)</string>
+    <string name="counter_rating">Rating: %1$s (%2$d/5 ★)</string>
+    <string name="counter_total_liters">Total today: %1$.2f liters</string>
+
+    <!-- Alternating tasks (Rotation) -->
+    <string name="rotation_today_label">Select today\'s alternating task:</string>
+    <string name="rotation_remaining_week">%1$d× left this week</string>
+    <string name="rotation_done_week">Weekly target done ✓</string>
+    <string name="rotation_task_lesson">Plan lessons (3×/week)</string>
+    <string name="rotation_task_clean">Tidy up apartment (1×/week)</string>
+    <string name="rotation_task_trash">Take out trash (1×/week)</string>
+    <string name="rotation_task_cook">Cook meal (1×/week)</string>
+    <string name="rotation_task_dishes">Wash dishes (1×/week)</string>
+
+    <!-- Dinner before 20h -->
+    <string name="dinner_rules_hint">Before 20:00 = 5 ★ · Before 21:00 = 1 ★ · 21:00 or later = 0 ★</string>
+    <string name="dinner_time_current">Recorded time: %1$s</string>
+    <string name="dinner_time_not_set">No dinner time recorded for today yet</string>
+    <string name="dinner_pick_time">Enter time (Andi)</string>
+    <string name="dinner_tracked_by_andi">Time is entered by Andi and synced in both apps.</string>
+    <string name="dinner_quick_before_20">Before 20h (19:30)</string>
+    <string name="dinner_quick_before_21">Before 21h (20:30)</string>
+    <string name="dinner_quick_after_21">21h+ (21:15)</string>
+
+    <!-- Translatable preset category names -->
+    <string name="cat_preset_water">Drink water</string>
+    <string name="cat_preset_alcohol">Alcohol limit</string>
+    <string name="cat_preset_rotation">Alternating tasks (home &amp; lessons)</string>
+    <string name="cat_preset_dinner">Dinner before 20h</string>
+    <string name="cat_preset_food">Eat regularly</string>
 
     <!-- Category images & push notifications -->
     <string name="settings_category_image">Category image</string>

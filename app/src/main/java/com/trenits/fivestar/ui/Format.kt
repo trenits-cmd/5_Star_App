@@ -11,7 +11,9 @@ import androidx.compose.ui.unit.dp
 import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryIcon
+import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.Period
+import com.trenits.fivestar.domain.RotationTask
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
 import java.time.Instant
@@ -46,6 +48,52 @@ fun statusLabel(status: TaskStatus): String = stringResource(
         TaskStatus.AUTO_CONFIRMED -> R.string.status_auto_confirmed
     },
 )
+
+@Composable
+fun priorityLabel(weight: Int): String = stringResource(
+    when (weight.coerceIn(1, 5)) {
+        5 -> R.string.priority_5
+        4 -> R.string.priority_4
+        3 -> R.string.priority_3
+        2 -> R.string.priority_2
+        else -> R.string.priority_1
+    },
+)
+
+@Composable
+fun rotationTaskLabel(task: RotationTask): String = stringResource(
+    when (task) {
+        RotationTask.LESSON_PLANNING -> R.string.rotation_task_lesson
+        RotationTask.CLEAN_APARTMENT -> R.string.rotation_task_clean
+        RotationTask.TAKE_OUT_TRASH -> R.string.rotation_task_trash
+        RotationTask.COOKING -> R.string.rotation_task_cook
+        RotationTask.WASH_DISHES -> R.string.rotation_task_dishes
+    },
+)
+
+/**
+ * Übersetzt Standard-Kategorienamen automatisch in die aktuell gewählte App-Sprache (DE/EN/FR).
+ */
+@Composable
+fun localizedCategoryName(category: Category): String {
+    val trimmed = category.name.trim()
+    return when {
+        trimmed in setOf("Wasser trinken", "Drink water", "Boire de l'eau") ->
+            stringResource(R.string.cat_preset_water)
+        trimmed in setOf("Alkohol-Grenze", "Alkohol Grenze", "Alcohol limit", "Limite d'alcool") ->
+            stringResource(R.string.cat_preset_alcohol)
+        trimmed.startsWith("Wechsel-Aufgaben") ||
+            trimmed.startsWith("Alternating tasks") ||
+            trimmed.startsWith("Tâches alternées") ->
+            stringResource(R.string.cat_preset_rotation)
+        trimmed in setOf("Abendessen vor 20h", "Dinner before 20h", "Dîner avant 20h") ||
+            category.kind == CategoryKind.DINNER_TIME ->
+            stringResource(R.string.cat_preset_dinner)
+        trimmed in setOf("Regelmäßig essen", "Eat regularly", "Manger régulièrement") ->
+            stringResource(R.string.cat_preset_food)
+        else -> category.name
+    }
+}
 
 fun periodLabelRes(period: Period): Int = when (period) {
     Period.SEVEN_DAYS -> R.string.period_7

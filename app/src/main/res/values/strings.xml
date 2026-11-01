@@ -32,11 +32,18 @@
     <string name="tab_partner">Partner</string>
 
     <string name="score_yours">Dein Score</string>
-    <string name="score_hint" formatted="false">Unter 80 % gibt es eine Tagesstrafe. 7 Tage am Stück ab 80 % schalten eine Belohnung frei.</string>
+    <string name="score_hint" formatted="false">Essen zählt am stärksten (Gewicht 5). Unter 80 % gibt es eine Tagesstrafe, 7 Tage am Stück ab 80 % eine Belohnung.</string>
     <string name="percent_value">%1$.0f %%</string>
     <string name="section_categories">Kategorien</string>
-    <string name="categories_empty">Lege unter Einstellungen zuerst Kategorien an.</string>
+    <string name="categories_empty">Lege unter Einstellungen zuerst Kategorien an oder lade die Vorlagen für Rosie / Andi.</string>
     <string name="weight_label">Gewicht %1$d</string>
+    <string name="weight_with_share">Gewicht %1$d (%2$s) · %3$d %% vom Score</string>
+    <string name="priority_5">Hauptpriorität / Essen</string>
+    <string name="priority_4">Sehr wichtig</string>
+    <string name="priority_3">Wichtig</string>
+    <string name="priority_2">Alltag / Wechsel</string>
+    <string name="priority_1">Kleinigkeit</string>
+
     <string name="section_partner">Partner</string>
     <string name="partner_no_rating">noch keine Bewertung</string>
     <string name="partner_today">heute</string>
@@ -78,8 +85,13 @@
     <string name="history_partner_categories">Kategorien des Partners: %1$s</string>
     <string name="history_task_line">%1$s · %2$s: %3$s (%4$s)</string>
 
+    <string name="settings_presets_title">Schnellstart: Vorlagen für Rosie &amp; Andi</string>
+    <string name="settings_presets_hint">Legt die abgestimmten Kategorien mit passender Gewichtung (Essen = 5, Alkohol = 4, Wasser 2,5 L = 3, Wechsel-Aufgaben = 3) an.</string>
+    <string name="settings_preset_rosie">Rosie-Kategorien laden</string>
+    <string name="settings_preset_andi">Andi-Kategorien laden</string>
+
     <string name="settings_categories">Kategorien</string>
-    <string name="settings_categories_hint">Gewicht 1 bis 5. Jede Kategorie hat ein Bild und eigene Push-Benachrichtigungen.</string>
+    <string name="settings_categories_hint">Gewicht 1 (Kleinigkeit) bis 5 (Hauptpriorität Essen). Jede Kategorie hat ein Bild und eigene Push-Nachrichten.</string>
     <string name="settings_archive">Archivieren</string>
     <string name="settings_new_category">Neue Kategorie</string>
     <string name="settings_add_category">Kategorie hinzufügen</string>
@@ -130,8 +142,11 @@
 
     <string name="connected_with">Verbunden mit %1$s</string>
     <string name="kind_stars">Sterne</string>
-    <string name="kind_alcohol">Alkohol (Pinte/Demi)</string>
-    <string name="kind_water">Wasser (Gläser/Liter)</string>
+    <string name="kind_alcohol">Alkohol-Grenze (Pinte/Demi/L)</string>
+    <string name="kind_water">Wasser trinken (Gläser/Liter)</string>
+    <string name="kind_rotation">Wechsel-Aufgaben (Wochen-Rotation)</string>
+    <string name="kind_dinner">Abendessen vor 20h (Uhrzeit)</string>
+
     <string name="target_me">Für mich</string>
     <string name="target_partner">Für Partner</string>
     <string name="target_both">Für beide</string>
@@ -139,19 +154,50 @@
     <string name="settings_targets">Gilt für</string>
     <string name="settings_edit_target">Bearbeiten</string>
     <string name="edit_target_for">%1$s bearbeiten</string>
-    <string name="counter_pint">Pinte</string>
-    <string name="counter_demi">Demi</string>
-    <string name="counter_glasses">Gläser</string>
-    <string name="counter_liters">Liter</string>
+
+    <string name="counter_pint">Pinte (0,5 L)</string>
+    <string name="counter_demi">Demi (0,25 L)</string>
+    <string name="counter_glasses">Gläser (à 0,25 L)</string>
+    <string name="counter_liters">Zusätzliche Menge in Litern (Dezimalzahl)</string>
+    <string name="counter_water_goal_hint">Ziel: mind. %1$.2f L (= 5 ★, darunter anteilig abgerundet)</string>
+    <string name="counter_alcohol_goal_hint">0,00 L = 5 ★ · darüber anteilig weniger bis %1$.2f L</string>
+
     <string name="settings_display_name">Dein Name</string>
-    <string name="settings_display_name_hint">So sieht dich dein Partner.</string>
+    <string name="settings_display_name_hint">So sieht dich dein Partner (z. B. Rosie oder Andi).</string>
     <string name="settings_save">Speichern</string>
     <string name="settings_cancel">Abbrechen</string>
     <string name="settings_target_label">%1$s · %2$s</string>
-    <string name="settings_goal_alcohol">Obergrenze pro Tag (Liter)</string>
-    <string name="settings_goal_water">Tagesziel (Liter)</string>
-    <string name="counter_rating">Bewertung: %1$s</string>
-    <string name="counter_total_liters">Menge: %1$.2f Liter</string>
+    <string name="settings_goal_alcohol">Obergrenze für 0 ★ (Liter, 0 L = 5 ★)</string>
+    <string name="settings_goal_water">Tagesziel in Litern (z. B. 2,5)</string>
+    <string name="counter_rating">Bewertung: %1$s (%2$d/5 ★)</string>
+    <string name="counter_total_liters">Gesamtmenge heute: %1$.2f Liter</string>
+
+    <!-- Wechsel-Aufgaben (Rotation) -->
+    <string name="rotation_today_label">Heutige Wechsel-Aufgabe auswählen:</string>
+    <string name="rotation_remaining_week">Diese Woche noch %1$d× offen</string>
+    <string name="rotation_done_week">Wochenziel erfüllt ✓</string>
+    <string name="rotation_task_lesson">Unterricht planen (3×/Woche)</string>
+    <string name="rotation_task_clean">Wohnung aufräumen (1×/Woche)</string>
+    <string name="rotation_task_trash">Müll runterbringen (1×/Woche)</string>
+    <string name="rotation_task_cook">Kochen (1×/Woche)</string>
+    <string name="rotation_task_dishes">Geschirr spülen (1×/Woche)</string>
+
+    <!-- Abendessen vor 20h -->
+    <string name="dinner_rules_hint">Vor 20:00 Uhr = 5 ★ · Vor 21:00 Uhr = 1 ★ · Ab 21:00 Uhr = 0 ★</string>
+    <string name="dinner_time_current">Eingetragene Uhrzeit: %1$s Uhr</string>
+    <string name="dinner_time_not_set">Heute noch keine Abendessen-Uhrzeit eingetragen</string>
+    <string name="dinner_pick_time">Uhrzeit eingeben (Andi)</string>
+    <string name="dinner_tracked_by_andi">Die Uhrzeit wird von Andi eingegeben und in beiden Apps synchronisiert.</string>
+    <string name="dinner_quick_before_20">Vor 20h (19:30)</string>
+    <string name="dinner_quick_before_21">Vor 21h (20:30)</string>
+    <string name="dinner_quick_after_21">Ab 21h (21:15)</string>
+
+    <!-- Übersetzbare Standard-Kategorienamen -->
+    <string name="cat_preset_water">Wasser trinken</string>
+    <string name="cat_preset_alcohol">Alkohol-Grenze</string>
+    <string name="cat_preset_rotation">Wechsel-Aufgaben (Haushalt &amp; Unterricht)</string>
+    <string name="cat_preset_dinner">Abendessen vor 20h</string>
+    <string name="cat_preset_food">Regelmäßig essen</string>
 
     <!-- Kategorie-Bilder & Push-Nachrichten -->
     <string name="settings_category_image">Bild für Kategorie</string>

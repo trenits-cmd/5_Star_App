@@ -54,13 +54,13 @@ class DayRecordTest {
 
     @Test
     fun `Zaehlerkategorien fliessen mit berechneten Sternen in den Score ein`() {
-        val alcohol = Category("alc", alice, "Alkohol", 1, kind = CategoryKind.ALCOHOL, goal = 1.0)
-        // 2 Pinte + 1 Demi = 1,25 Liter bei Obergrenze 1,0 → floor(5 * 1 / 1,25) = 4 Sterne
-        val counters = mapOf("alc" to mapOf(PINT to 2.0, DEMI to 1.0))
+        val alcohol = Category("alc", alice, "Alkohol", 1, kind = CategoryKind.ALCOHOL, goal = 1.25)
+        // 1 Demi = 0,25 Liter bei Grenze 1,25 -> floor(5 * (1 - 0,25 / 1,25)) = 4 Sterne
+        val counters = mapOf("alc" to mapOf(DEMI to 1.0))
         val record = buildDayRecord("2026-11-01", alice, listOf(sport, alcohol), mapOf("sport" to 5), counters)
         assertEquals(listOf("sport", "alc"), record.snapshots.map { it.categoryId })
         assertEquals(4, record.snapshots.first { it.categoryId == "alc" }.stars)
-        assertEquals(2.0, record.counters["alc"]?.get(PINT) ?: 0.0, 0.0)
+        assertEquals(1.0, record.counters["alc"]?.get(DEMI) ?: 0.0, 0.0)
         // (3*5 + 1*4) / (3*5 + 1*5) = 19 / 20 = 95 %
         assertEquals(95.0, record.scorePercent, 0.0001)
     }

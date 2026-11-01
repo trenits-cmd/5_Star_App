@@ -1,52 +1,90 @@
 package com.trenits.fivestar.domain
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.DayOfWeek
 
 class CounterTest {
 
     @Test
-    fun `Alkohol in Litern mit Pinte 0,5 und Demi 0,25`() {
+    fun `Alkohol in Litern mit Pinte 0,5, Demi 0,25 und zusaetzlichen Dezimal-Litern`() {
         assertEquals(0.0, alcoholLiters(emptyMap()), 0.0)
         assertEquals(1.0, alcoholLiters(mapOf(PINT to 2.0)), 0.0001)
         assertEquals(0.75, alcoholLiters(mapOf(PINT to 1.0, DEMI to 1.0)), 0.0001)
+        assertEquals(1.10, alcoholLiters(mapOf(PINT to 1.0, DEMI to 1.0, LITERS to 0.35)), 0.0001)
     }
 
     @Test
-    fun `Alkohol innerhalb der Obergrenze gibt volle Sterne`() {
-        assertEquals(5, alcoholStars(liters = 0.0, limit = 0.0))
-        assertEquals(5, alcoholStars(liters = 1.0, limit = 1.0))
-    }
-
-    @Test
-    fun `Alkohol ueber der Obergrenze gibt anteilig weniger Sterne`() {
-        // Grenze 1,0, Menge 2,0 → 5 * 1 / 2 = 2,5 → 2 Sterne
-        assertEquals(2, alcoholStars(liters = 2.0, limit = 1.0))
-        // Grenze 0, jede Menge ist zu viel
+    fun `Alkohol bei 0 Litern gibt 5 Sterne, darueber prozentual weniger`() {
+        assertEquals(5, alcoholStars(liters = 0.0, limit = 1.25))
+        // 1 Demi (0,25 L) bei Grenze 1,25 L -> 5 * (1 - 0,2) = 4 Sterne
+        assertEquals(4, alcoholStars(liters = 0.25, limit = 1.25))
+        // 1 Pinte (0,50 L) bei Grenze 1,25 L -> 5 * (1 - 0,4) = 3 Sterne
+        assertEquals(3, alcoholStars(liters = 0.50, limit = 1.25))
+        // Ab der Grenze -> 0 Sterne
+        assertEquals(0, alcoholStars(liters = 1.25, limit = 1.25))
         assertEquals(0, alcoholStars(liters = 0.25, limit = 0.0))
     }
 
     @Test
-    fun `Wasser erreicht das Ziel mit vollen Sternen`() {
-        assertEquals(5, waterStars(liters = 2.0, goal = 2.0))
-        assertEquals(5, waterStars(liters = 3.0, goal = 2.0))
+    fun `Wasser aus Glaesern und Dezimal-Litern mit 2,5 L Ziel`() {
+        // 4 Gläser (1,0 L) + 1,5 L Dezimal = 2,5 L -> 5 Sterne
+        val values = mapOf(GLASSES to 4.0, LITERS to 1.5)
+        assertEquals(2.5, waterLiters(values), 0.0001)
+        assertEquals(5, waterStars(liters = waterLiters(values), goal = 2.5))
+        assertEquals(5, waterStars(liters = 3.2, goal = 2.5))
     }
 
     @Test
-    fun `Wasser unter dem Ziel gibt anteilig weniger Sterne`() {
-        // 1 von 2 Litern → 5 * 1 / 2 = 2,5 → 2 Sterne
-        assertEquals(2, waterStars(liters = 1.0, goal = 2.0))
-        assertEquals(0, waterStars(liters = 0.0, goal = 2.0))
+    fun `Wasser unter 2,5 L gibt prozentual weniger Sterne mit Abrunden`() {
+        // 2,0 von 2,5 L -> 5 * 2,0 / 2,5 = 4 Sterne
+        assertEquals(4, waterStars(liters = 2.0, goal = 2.5))
+        // 1,2 von 2,5 L -> 5 * 1,2 / 2,5 = 2,4 -> abgerundet 2 Sterne
+        assertEquals(2, waterStars(liters = 1.2, goal = 2.5))
+        // 0,4 von 2,5 L -> 5 * 0,4 / 2,5 = 0,8 -> abgerundet 0 Sterne
+        assertEquals(0, waterStars(liters = 0.4, goal = 2.5))
     }
 
     @Test
-    fun `Ohne Ziel gibt Wasser volle Sterne`() {
-        assertEquals(5, waterStars(liters = 0.0, goal = 0.0))
+    fun `Abendessen vor 20h gibt 5 Sterne, vor 21h 1 Stern, sonst 0 Sterne`() {
+        assertEquals(5, dinnerStars(19, 30))
+        assertEquals(5, dinnerStars(19, 59))
+        assertEquals(1, dinnerStars(20, 0))
+        assertEquals(1, dinnerStars(20, 45))
+        assertEquals(0, dinnerStars(21, 0))
+        assertEquals(0, dinnerStars(22, 15))
+    }
+
+    @Test
+    fun `Wechsel-Aufgaben rotieren nach Wochen-Soll`() {
+        val catId = "rot"
+        // Müll (1x/Woche) bereits erledigt:
+        val mon = DayRecord(
+            dayKey = "2026-11-02",
+            ownerUid = "rosie",
+            snapshots = emptyList(),
+            counters = mapOf(
+                catId to mapOf(
+                    ROTATION_TASK_INDEX to RotationTask.TAKE_OUT_TRASH.index.toDouble(),
+                    ROTATION_STARS to 5.0,
+                ),
+            ),
+        )
+        val available = availableRotationTasks(catId, listOf(mon))
+        assertFalse(RotationTask.TAKE_OUT_TRASH in available)
+        assertTrue(RotationTask.LESSON_PLANNING in available)
+        assertEquals(RotationTask.LESSON_PLANNING, suggestedRotationTask(DayOfWeek.WEDNESDAY, available))
     }
 
     @Test
     fun `counterStars nutzt die Art der Kategorie`() {
-        val water = Category("w", "alice", "Wasser", 1, kind = CategoryKind.WATER, goal = 2.0)
-        assertEquals(2, counterStars(water, mapOf(LITERS to 1.0)))
+        val water = Category("w", "rosie", "Wasser trinken", 3, kind = CategoryKind.WATER, goal = 2.5)
+        assertEquals(4, counterStars(water, mapOf(GLASSES to 4.0, LITERS to 1.0)))
+
+        val dinner = Category("d", "andi", "Abendessen vor 20h", 5, kind = CategoryKind.DINNER_TIME)
+        assertEquals(5, counterStars(dinner, mapOf(DINNER_HOUR to 19.0, DINNER_MINUTE to 15.0)))
+        assertEquals(1, counterStars(dinner, mapOf(DINNER_HOUR to 20.0, DINNER_MINUTE to 30.0)))
     }
 }

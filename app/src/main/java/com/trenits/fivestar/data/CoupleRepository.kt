@@ -52,7 +52,7 @@ class CoupleRepository(private val coupleId: String) {
             name = doc.getString("name") ?: "",
             weight = doc.getLong("weight")?.toInt() ?: 1,
             archived = doc.getBoolean("archived") ?: false,
-            kind = doc.getString("kind")?.let { CategoryKind.valueOf(it) } ?: CategoryKind.STARS,
+            kind = doc.getString("kind")?.let { runCatching { CategoryKind.valueOf(it) }.getOrNull() } ?: CategoryKind.STARS,
             targets = if (targets.isNullOrEmpty()) listOf(owner) else targets,
             goal = doc.getDouble("goal") ?: 0.0,
             icon = doc.getString("icon") ?: "",

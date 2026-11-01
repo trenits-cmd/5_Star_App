@@ -17,13 +17,25 @@ import com.trenits.fivestar.data.UserProfile
 import com.trenits.fivestar.data.UserRepository
 import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
+import com.trenits.fivestar.domain.CategoryIcon
 import com.trenits.fivestar.domain.CategoryKind
+import com.trenits.fivestar.domain.DEFAULT_ALCOHOL_LIMIT
+import com.trenits.fivestar.domain.DEFAULT_WATER_GOAL
+import com.trenits.fivestar.domain.DINNER_HOUR
+import com.trenits.fivestar.domain.DINNER_MINUTE
 import com.trenits.fivestar.domain.DayOutcome
 import com.trenits.fivestar.domain.DayRecord
+import com.trenits.fivestar.domain.MAX_STARS
+import com.trenits.fivestar.domain.ROTATION_STARS
+import com.trenits.fivestar.domain.ROTATION_TASK_INDEX
+import com.trenits.fivestar.domain.RotationTask
 import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
+import com.trenits.fivestar.domain.WEIGHT_CRITICAL
+import com.trenits.fivestar.domain.WEIGHT_IMPORTANT
+import com.trenits.fivestar.domain.WEIGHT_VERY_HIGH
 import com.trenits.fivestar.domain.availablePoolOptions
 import com.trenits.fivestar.domain.buildDayRecord
 import com.trenits.fivestar.domain.consecutiveSuccessDays
@@ -45,6 +57,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -92,11 +105,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         .map { list -> list.items.filter { it.ownerUid == uid && !it.archived } }
         .share(emptyList())
 
+    val myName: StateFlow<String?> = if (uid.isEmpty()) {
+        flowOf(null).share(null)
+    } else {
+        userRepository.nameOf(uid).share(null)
+    }
+
     val partnerName: StateFlow<String?> = partnerUid
         .flatMapLatest { id -> if (id == null) flowOf(null) else userRepository.nameOf(id) }
         .share(null)
 
-    /** Katalogeinträge, die ich selbst verwirklichen/verwalten kann (meine eigenen). */
+    /** Katalogeinträge, die ich selbst angelegt habe. */
     val myCatalog: StateFlow<List<CatalogItem>> = catalog
         .map { list -> list.items.filter { it.ownerUid == uid } }
         .share(emptyList())
@@ -116,6 +135,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val weekDays: StateFlow<List<String>> = clock.map { now ->
         val today = now.atZone(zone).toLocalDate()
         (6L downTo 0L).map { today.minusDays(it).toString() }
+    }.share(emptyList())
+
+    /** Tageseinträge der aktuellen ISO-Woche (ohne heute) zur Berechnung der noch offenen Wechsel-Aufgaben. */
+    val isoWeekRecordsBeforeToday: StateFlow<List<DayRecord>> = combine(days, clock) { list, now ->
+        val today = now.atZone(zone).toLocalDate()
+        val monday = today.with(DayOfWeek.MONDAY)
+        val keysBeforeToday = (0L until 7L)
+            .map { monday.plusDays(it) }
+            .filter { it.isBefore(today) }
+            .map { it.toString() }
+            .toSet()
+        list.items.filter { it.ownerUid == uid && it.dayKey in keysBeforeToday }
     }.share(emptyList())
 
     /** Tages-Ergebnisse der letzten 7 Tage (Tag → DayOutcome). */
@@ -188,6 +219,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             combine(categories, days, tasks, todayKey) { _, _, _, _ -> Unit }.collect {
+                syncSharedDinnerTimeForToday()
                 evaluateYesterday()
                 evaluateStreakReward()
             }
@@ -245,6 +277,147 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val counters = myToday.value?.counters.orEmpty().toMutableMap()
         counters[categoryId] = counters[categoryId].orEmpty() + (key to value.coerceAtLeast(0.0))
         repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+    }
+
+    /** Speichert die heute ausgewählte Wechsel-Aufgabe und deren Sterne-Bewertung (0..5). */
+    fun setRotation(categoryId: String, rotationTask: RotationTask, stars: Int) {
+        val repo = repo() ?: return
+        val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = myToday.value?.counters.orEmpty().toMutableMap()
+        counters[categoryId] = counters[categoryId].orEmpty() + mapOf(
+            ROTATION_TASK_INDEX to rotationTask.index.toDouble(),
+            ROTATION_STARS to stars.coerceIn(0, MAX_STARS).toDouble(),
+        )
+        repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+    }
+
+    /**
+     * Speichert die Abendessen-Uhrzeit (wird von Andi eingegeben und in beiden Apps synchronisiert).
+     */
+    fun setDinnerTime(categoryId: String, hour: Int, minute: Int) {
+        val repo = repo() ?: return
+        val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = myToday.value?.counters.orEmpty().toMutableMap()
+        counters[categoryId] = counters[categoryId].orEmpty() + mapOf(
+            DINNER_HOUR to hour.coerceIn(0, 23).toDouble(),
+            DINNER_MINUTE to minute.coerceIn(0, 59).toDouble(),
+        )
+        repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+    }
+
+    /**
+     * Synchronisiert die vom Partner (Andi) eingetragene Abendessen-Uhrzeit automatisch
+     * in den eigenen Tageseintrag, damit sie in beiden Apps identisch getrackt wird.
+     */
+    private fun syncSharedDinnerTimeForToday() {
+        val repo = repo() ?: return
+        val partner = partnerToday.value ?: return
+        val dinnerCategories = targeted.value.filter { it.kind == CategoryKind.DINNER_TIME }
+        if (dinnerCategories.isEmpty()) return
+
+        val myCurrent = myToday.value
+        val myCounters = myCurrent?.counters.orEmpty().toMutableMap()
+        var changed = false
+
+        for (cat in dinnerCategories) {
+            val partnerDinner = partner.counters[cat.id]
+                ?: partner.counters.values.firstOrNull { it.containsKey(DINNER_HOUR) }
+                ?: continue
+            val pHour = partnerDinner[DINNER_HOUR] ?: continue
+            val pMinute = partnerDinner[DINNER_MINUTE] ?: 0.0
+            val mine = myCounters[cat.id].orEmpty()
+            if (mine[DINNER_HOUR] != pHour || mine[DINNER_MINUTE] != pMinute) {
+                myCounters[cat.id] = mine + mapOf(DINNER_HOUR to pHour, DINNER_MINUTE to pMinute)
+                changed = true
+            }
+        }
+
+        if (changed) {
+            val stored = myCurrent?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+            repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, myCounters))
+        }
+    }
+
+    /** Legt die abgestimmten Kategorien für Rosie (inkl. gemeinsames Abendessen vor 20h) an. */
+    fun applyRosiePreset() {
+        userRepository.setDisplayName("Rosie")
+        createPresetCategories(isAndi = false)
+    }
+
+    /** Legt die abgestimmten Kategorien für Andi (inkl. gemeinsames Abendessen vor 20h) an. */
+    fun applyAndiPreset() {
+        userRepository.setDisplayName("Andi")
+        createPresetCategories(isAndi = true)
+    }
+
+    private fun createPresetCategories(isAndi: Boolean) {
+        val repo = repo() ?: return
+        val existing = categories.value.items.filter { !it.archived }
+        val bothTargets = listOfNotNull(uid, partnerUid.value).distinct()
+        val myTargets = listOf(uid)
+
+        // 1. Abendessen vor 20h (Gewicht 5 – Hauptpriorität, gilt für beide)
+        if (existing.none { it.kind == CategoryKind.DINNER_TIME }) {
+            repo.saveCategory(
+                ownerUid = uid,
+                name = text(R.string.cat_preset_dinner),
+                weight = WEIGHT_CRITICAL,
+                kind = CategoryKind.DINNER_TIME,
+                targets = bothTargets,
+                goal = 20.0,
+                icon = CategoryIcon.FOOD.name,
+                notifications = listOf("Abendessen vor 20:00 Uhr = 5 Sterne 🍽️"),
+                id = "preset_dinner_$uid",
+            )
+        }
+
+        // 2. Alkohol-Grenze (Gewicht 4 – Sehr wichtig, 0 L = 5 Sterne)
+        if (existing.none { it.kind == CategoryKind.ALCOHOL && it.appliesTo(uid) }) {
+            repo.saveCategory(
+                ownerUid = uid,
+                name = text(R.string.cat_preset_alcohol),
+                weight = WEIGHT_VERY_HIGH,
+                kind = CategoryKind.ALCOHOL,
+                targets = myTargets,
+                goal = DEFAULT_ALCOHOL_LIMIT,
+                icon = CategoryIcon.ALCOHOL.name,
+                notifications = listOf("0 Liter Alkohol = 5 Sterne ⭐"),
+                id = "preset_alcohol_$uid",
+            )
+        }
+
+        // 3. Wasser trinken (Gewicht 3 – Wichtig, Ziel mind. 2,5 Liter)
+        if (existing.none { it.kind == CategoryKind.WATER && it.appliesTo(uid) }) {
+            repo.saveCategory(
+                ownerUid = uid,
+                name = text(R.string.cat_preset_water),
+                weight = WEIGHT_IMPORTANT,
+                kind = CategoryKind.WATER,
+                targets = myTargets,
+                goal = DEFAULT_WATER_GOAL,
+                icon = CategoryIcon.WATER.name,
+                notifications = listOf(
+                    "Denk an dein Wasserziel: mindestens 2,5 Liter heute 💧",
+                    "Zwischenstand prüfen: schon ein Glas Wasser getrunken?",
+                ),
+                id = "preset_water_$uid",
+            )
+        }
+
+        // 4. Wechsel-Aufgaben: Unterricht planen (3x), Wohnung, Müll, Kochen, Geschirr (je 1x)
+        if (existing.none { it.kind == CategoryKind.ROTATION && it.appliesTo(uid) }) {
+            repo.saveCategory(
+                ownerUid = uid,
+                name = text(R.string.cat_preset_rotation),
+                weight = WEIGHT_IMPORTANT,
+                kind = CategoryKind.ROTATION,
+                targets = if (isAndi) bothTargets else myTargets,
+                goal = 0.0,
+                icon = CategoryIcon.HOME.name,
+                notifications = listOf("Welche Wechsel-Aufgabe steht heute an? (Unterricht / Haushalt) 🏠"),
+                id = "preset_rotation_$uid",
+            )
+        }
     }
 
     fun saveCategory(

@@ -1,9 +1,12 @@
 package com.trenits.fivestar.ui
 
+import android.app.TimePickerDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +26,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -47,24 +52,41 @@ import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.CategorySnapshot
+import com.trenits.fivestar.domain.DEFAULT_ALCOHOL_LIMIT
+import com.trenits.fivestar.domain.DEFAULT_WATER_GOAL
 import com.trenits.fivestar.domain.DEMI
+import com.trenits.fivestar.domain.DINNER_HOUR
+import com.trenits.fivestar.domain.DINNER_MINUTE
+import com.trenits.fivestar.domain.DayRecord
 import com.trenits.fivestar.domain.GLASSES
 import com.trenits.fivestar.domain.LITERS
 import com.trenits.fivestar.domain.MAX_STARS
 import com.trenits.fivestar.domain.PINT
+import com.trenits.fivestar.domain.ROTATION_STARS
+import com.trenits.fivestar.domain.ROTATION_TASK_INDEX
+import com.trenits.fivestar.domain.RotationTask
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
+import com.trenits.fivestar.domain.WeightedCategory
 import com.trenits.fivestar.domain.alcoholLiters
+import com.trenits.fivestar.domain.availableRotationTasks
 import com.trenits.fivestar.domain.counterStars
+import com.trenits.fivestar.domain.rotationCountsInWeek
+import com.trenits.fivestar.domain.suggestedRotationTask
+import com.trenits.fivestar.domain.waterLiters
+import com.trenits.fivestar.domain.weightSharePercent
 import com.trenits.fivestar.ui.theme.Amber
 import java.time.LocalDate
 
 @Composable
 fun DashboardScreen(vm: AppViewModel) {
     val targeted by vm.targeted.collectAsState()
-    val categories = targeted.filter { it.kind == CategoryKind.STARS }
-    val counterCategories = targeted.filter { it.kind != CategoryKind.STARS }
+    val sortedCategories = remember(targeted) { targeted.sortedByDescending { it.weight } }
+    val weightedList = remember(sortedCategories) {
+        sortedCategories.map { WeightedCategory(it.id, it.weight) }
+    }
+    val myName by vm.myName.collectAsState()
     val partnerName by vm.partnerName.collectAsState()
     val myToday by vm.myToday.collectAsState()
     val partnerToday by vm.partnerToday.collectAsState()
@@ -73,9 +95,10 @@ fun DashboardScreen(vm: AppViewModel) {
     val days by vm.days.collectAsState()
     val tasks by vm.tasks.collectAsState()
     val catalog by vm.catalog.collectAsState()
+    val weekRecordsBeforeToday by vm.isoWeekRecordsBeforeToday.collectAsState()
 
     val stored = myToday?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
-    // Offene Strafen & Belohnungen bleiben hier sichtbar, bis der Partner die Einlösung bestätigt hat.
+    // Offene Strafen & Belohnungen bleiben sichtbar, bis der Partner die Einlösung bestätigt hat.
     val openTasks = tasks.items
         .filter { it.status == TaskStatus.OPEN }
         .sortedWith(compareByDescending<Task> { it.dayKey }.thenByDescending { it.createdAt })
@@ -112,19 +135,62 @@ fun DashboardScreen(vm: AppViewModel) {
         item { ScoreHero(myToday?.scorePercent, stringResource(R.string.score_yours)) }
 
         item { SectionTitle(stringResource(R.string.section_categories)) }
-        if (categories.isEmpty() && counterCategories.isEmpty()) {
+        if (sortedCategories.isEmpty()) {
             item { HintCard(stringResource(R.string.categories_empty)) }
         }
-        items(categories, key = { it.id }) { category ->
-            CategoryCard(category, stored[category.id] ?: 0) { vm.setStars(category.id, it) }
-        }
 
-        items(counterCategories, key = { it.id }) { category ->
-            CounterCard(
-                category = category,
-                values = myToday?.counters?.get(category.id).orEmpty(),
-                onChange = { key, value -> vm.setCounter(category.id, key, value) },
-            )
+        items(sortedCategories, key = { it.id }) { category ->
+            val sharePercent = weightSharePercent(category.weight, weightedList)
+            val values = myToday?.counters?.get(category.id).orEmpty()
+            when (category.kind) {
+                CategoryKind.STARS -> {
+                    CategoryCard(
+                        category = category,
+                        sharePercent = sharePercent,
+                        value = stored[category.id] ?: 0,
+                        onChange = { vm.setStars(category.id, it) },
+                    )
+                }
+                CategoryKind.WATER, CategoryKind.ALCOHOL -> {
+                    CounterCard(
+                        category = category,
+                        sharePercent = sharePercent,
+                        values = values,
+                        onChange = { key, value -> vm.setCounter(category.id, key, value) },
+                    )
+                }
+                CategoryKind.ROTATION -> {
+                    RotationCategoryCard(
+                        category = category,
+                        sharePercent = sharePercent,
+                        values = values,
+                        weekRecordsBeforeToday = weekRecordsBeforeToday,
+                        onSelectAndRate = { rotTask, stars ->
+                            vm.setRotation(category.id, rotTask, stars)
+                        },
+                    )
+                }
+                CategoryKind.DINNER_TIME -> {
+                    val partnerDinnerValues = partnerToday?.counters?.get(category.id)
+                        ?: partnerToday?.counters?.values?.firstOrNull { it.containsKey(DINNER_HOUR) }
+                    val effectiveValues = if (values.containsKey(DINNER_HOUR)) {
+                        values
+                    } else {
+                        partnerDinnerValues.orEmpty()
+                    }
+                    // Andi gibt die Uhrzeit ein (oder solange kein Partner namens "Andi" exklusiv gesetzt ist)
+                    val partnerIsAndi = partnerName?.trim()?.equals("Andi", ignoreCase = true) == true
+                    val iAmRosie = myName?.trim()?.equals("Rosie", ignoreCase = true) == true
+                    val canEditTime = !(iAmRosie && partnerIsAndi)
+                    DinnerTimeCard(
+                        category = category,
+                        sharePercent = sharePercent,
+                        values = effectiveValues,
+                        canEditTime = canEditTime,
+                        onTimeSelected = { h, m -> vm.setDinnerTime(category.id, h, m) },
+                    )
+                }
+            }
         }
 
         item { SectionTitle(stringResource(R.string.section_partner)) }
@@ -133,7 +199,7 @@ fun DashboardScreen(vm: AppViewModel) {
                 score = partnerToday?.scorePercent,
                 snapshots = partnerToday?.snapshots,
                 counters = partnerToday?.counters,
-                categories = targeted,
+                categories = sortedCategories,
                 offline = days.fromCache,
             )
         }
@@ -143,7 +209,6 @@ fun DashboardScreen(vm: AppViewModel) {
             item { HintCard(stringResource(R.string.no_open_tasks)) }
         }
         items(openTasks, key = { it.id }) { task ->
-            // catalog wird mitbeobachtet, damit das Dropdown bei Katalogänderungen sofort aktualisiert.
             @Suppress("UNUSED_EXPRESSION")
             catalog
             TaskCard(vm, task, partnerUid)
@@ -157,6 +222,15 @@ private fun SectionTitle(text: String) {
         text,
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.padding(top = 8.dp),
+    )
+}
+
+@Composable
+private fun CategoryWeightSubtitle(weight: Int, sharePercent: Int) {
+    Text(
+        stringResource(R.string.weight_with_share, weight, priorityLabel(weight), sharePercent),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -227,7 +301,12 @@ private fun WaitingForPartnerCard(vm: AppViewModel) {
 }
 
 @Composable
-private fun CategoryCard(category: Category, value: Int, onChange: (Int) -> Unit) {
+private fun CategoryCard(
+    category: Category,
+    sharePercent: Int,
+    value: Int,
+    onChange: (Int) -> Unit,
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
             Modifier.padding(horizontal = 16.dp, vertical = 14.dp).fillMaxWidth(),
@@ -237,12 +316,8 @@ private fun CategoryCard(category: Category, value: Int, onChange: (Int) -> Unit
             CategoryImage(category = category, size = 42.dp)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(category.name, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    stringResource(R.string.weight_label, category.weight),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
+                CategoryWeightSubtitle(category.weight, sharePercent)
             }
             StarRating(value, onChange)
         }
@@ -250,46 +325,247 @@ private fun CategoryCard(category: Category, value: Int, onChange: (Int) -> Unit
 }
 
 @Composable
-private fun CounterCard(category: Category, values: Map<String, Double>, onChange: (String, Double) -> Unit) {
+private fun CounterCard(
+    category: Category,
+    sharePercent: Int,
+    values: Map<String, Double>,
+    onChange: (String, Double) -> Unit,
+) {
+    val stars = counterStars(category, values)
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CategoryImage(category = category, size = 42.dp)
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text(category.name, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        stringResource(R.string.weight_label, category.weight),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
+                    CategoryWeightSubtitle(category.weight, sharePercent)
                 }
             }
             Spacer(Modifier.height(8.dp))
             if (category.kind == CategoryKind.ALCOHOL) {
+                val limit = if (category.goal > 0.0) category.goal else DEFAULT_ALCOHOL_LIMIT
+                Text(
+                    stringResource(R.string.counter_alcohol_goal_hint, limit),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(4.dp))
                 CounterRow(stringResource(R.string.counter_pint), values[PINT] ?: 0.0, step = 1.0) {
                     onChange(PINT, it)
                 }
                 CounterRow(stringResource(R.string.counter_demi), values[DEMI] ?: 0.0, step = 1.0) {
                     onChange(DEMI, it)
                 }
+                LitersField(
+                    categoryId = category.id,
+                    value = values[LITERS] ?: 0.0,
+                    onChange = { onChange(LITERS, it) },
+                )
+                Spacer(Modifier.height(4.dp))
                 Text(
                     stringResource(R.string.counter_total_liters, alcoholLiters(values)),
                     style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
                 )
             } else {
+                val goal = if (category.goal > 0.0) category.goal else DEFAULT_WATER_GOAL
+                Text(
+                    stringResource(R.string.counter_water_goal_hint, goal),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(4.dp))
                 CounterRow(stringResource(R.string.counter_glasses), values[GLASSES] ?: 0.0, step = 1.0) {
                     onChange(GLASSES, it)
                 }
-                LitersField(values[LITERS] ?: 0.0) { onChange(LITERS, it) }
+                LitersField(
+                    categoryId = category.id,
+                    value = values[LITERS] ?: 0.0,
+                    onChange = { onChange(LITERS, it) },
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.counter_total_liters, waterLiters(values)),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                )
             }
             Spacer(Modifier.height(8.dp))
             Text(
                 stringResource(
                     R.string.counter_rating,
-                    "★".repeat(counterStars(category, values)) + "☆".repeat(MAX_STARS - counterStars(category, values)),
+                    "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
+                    stars,
                 ),
                 color = Amber,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RotationCategoryCard(
+    category: Category,
+    sharePercent: Int,
+    values: Map<String, Double>,
+    weekRecordsBeforeToday: List<DayRecord>,
+    onSelectAndRate: (RotationTask, Int) -> Unit,
+) {
+    val available = remember(category.id, weekRecordsBeforeToday) {
+        availableRotationTasks(category.id, weekRecordsBeforeToday)
+    }
+    val countsInWeek = remember(category.id, weekRecordsBeforeToday) {
+        rotationCountsInWeek(category.id, weekRecordsBeforeToday)
+    }
+    val suggested = remember(available) {
+        suggestedRotationTask(LocalDate.now().dayOfWeek, available)
+    }
+    val selectedTask = values[ROTATION_TASK_INDEX]?.toInt()?.let { RotationTask.fromIndex(it) } ?: suggested
+    val stars = (values[ROTATION_STARS]?.toInt() ?: 0).coerceIn(0, MAX_STARS)
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CategoryImage(category = category, size = 42.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
+                    CategoryWeightSubtitle(category.weight, sharePercent)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.rotation_today_label),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(6.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                RotationTask.entries.forEach { task ->
+                    val doneCount = countsInWeek[task] ?: 0
+                    val remaining = (task.weeklyTarget - doneCount).coerceAtLeast(0)
+                    val isAvailable = task in available
+                    FilterChip(
+                        selected = selectedTask == task,
+                        onClick = { onSelectAndRate(task, stars) },
+                        enabled = isAvailable || selectedTask == task,
+                        label = {
+                            val statusText = if (remaining > 0) {
+                                stringResource(R.string.rotation_remaining_week, remaining)
+                            } else {
+                                stringResource(R.string.rotation_done_week)
+                            }
+                            Text("${rotationTaskLabel(task)} · $statusText")
+                        },
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    rotationTaskLabel(selectedTask),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f),
+                )
+                StarRating(stars) { newStars ->
+                    onSelectAndRate(selectedTask, newStars)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DinnerTimeCard(
+    category: Category,
+    sharePercent: Int,
+    values: Map<String, Double>,
+    canEditTime: Boolean,
+    onTimeSelected: (Int, Int) -> Unit,
+) {
+    val context = LocalContext.current
+    val hour = values[DINNER_HOUR]?.toInt() ?: -1
+    val minute = values[DINNER_MINUTE]?.toInt() ?: 0
+    val stars = counterStars(category, values)
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CategoryImage(category = category, size = 42.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
+                    CategoryWeightSubtitle(category.weight, sharePercent)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.dinner_rules_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                if (hour >= 0) {
+                    stringResource(R.string.dinner_time_current, "%02d:%02d".format(hour, minute))
+                } else {
+                    stringResource(R.string.dinner_time_not_set)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                stringResource(R.string.dinner_tracked_by_andi),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            if (canEditTime) {
+                Spacer(Modifier.height(8.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { onTimeSelected(19, 30) }) {
+                        Text(stringResource(R.string.dinner_quick_before_20))
+                    }
+                    OutlinedButton(onClick = { onTimeSelected(20, 30) }) {
+                        Text(stringResource(R.string.dinner_quick_before_21))
+                    }
+                    OutlinedButton(onClick = { onTimeSelected(21, 15) }) {
+                        Text(stringResource(R.string.dinner_quick_after_21))
+                    }
+                    Button(
+                        onClick = {
+                            val initH = if (hour >= 0) hour else 19
+                            val initM = if (hour >= 0) minute else 30
+                            TimePickerDialog(
+                                context,
+                                { _, h, m -> onTimeSelected(h, m) },
+                                initH,
+                                initM,
+                                true,
+                            ).show()
+                        },
+                    ) {
+                        Text(stringResource(R.string.dinner_pick_time))
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(
+                    R.string.counter_rating,
+                    "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
+                    stars,
+                ),
+                color = Amber,
+                fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -314,13 +590,17 @@ private fun CounterRow(label: String, value: Double, step: Double, onChange: (Do
 }
 
 @Composable
-private fun LitersField(value: Double, onChange: (Double) -> Unit) {
-    var text by remember { mutableStateOf(if (value == 0.0) "" else value.toString()) }
+private fun LitersField(categoryId: String, value: Double, onChange: (Double) -> Unit) {
+    var text by remember(categoryId) { mutableStateOf(if (value == 0.0) "" else value.toString()) }
     OutlinedTextField(
         value = text,
         onValueChange = { input ->
             text = input
-            input.replace(',', '.').toDoubleOrNull()?.let(onChange)
+            if (input.isBlank()) {
+                onChange(0.0)
+            } else {
+                input.replace(',', '.').toDoubleOrNull()?.let(onChange)
+            }
         },
         label = { Text(stringResource(R.string.counter_liters)) },
         singleLine = true,
@@ -388,7 +668,7 @@ private fun PartnerCard(
                             ?: Category(s.categoryId, "", s.name, s.weight)
                         CategoryImage(category = cat, size = 28.dp)
                         Spacer(Modifier.width(8.dp))
-                        Text(s.name, modifier = Modifier.weight(1f))
+                        Text(localizedCategoryName(cat), modifier = Modifier.weight(1f))
                         Text(
                             "★".repeat(s.stars) + "☆".repeat(5 - s.stars),
                             color = Amber,
@@ -399,7 +679,7 @@ private fun PartnerCard(
             counters?.forEach { (categoryId, values) ->
                 val category = categories.find { it.id == categoryId && (partnerUid == null || it.appliesTo(partnerUid)) }
                 if (category != null) {
-                    CounterSummary(category.name, values)
+                    CounterSummary(localizedCategoryName(category), values)
                 }
             }
         }
@@ -415,7 +695,9 @@ fun PartnerTodayScreen(vm: AppViewModel) {
     val allCategories by vm.categories.collectAsState()
     val tasks by vm.tasks.collectAsState()
 
-    val partnerCategories = allCategories.items.filter { it.appliesTo(partnerUid ?: vm.uid) }
+    val partnerCategories = allCategories.items
+        .filter { it.appliesTo(partnerUid ?: vm.uid) }
+        .sortedByDescending { it.weight }
     val partnerOpenTasks = tasks.items.filter {
         it.status == TaskStatus.OPEN && (it.ownerUid == partnerUid || (partnerUid != null && it.appliesTo(partnerUid!!)))
     }

@@ -67,7 +67,7 @@ fun SettingsScreen(vm: AppViewModel) {
     var reminder by remember { mutableStateOf(ReminderPrefs(context).time()) }
 
     var categoryName by rememberSaveable { mutableStateOf("") }
-    var categoryWeight by rememberSaveable { mutableStateOf(1) }
+    var categoryWeight by rememberSaveable { mutableStateOf(3) }
     var categoryKind by remember { mutableStateOf(CategoryKind.STARS) }
     var categoryIcon by remember { mutableStateOf(CategoryIcon.STAR) }
     var goalText by rememberSaveable { mutableStateOf("") }
@@ -105,6 +105,23 @@ fun SettingsScreen(vm: AppViewModel) {
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
 
+        // Schnellstart-Vorlagen für Rosie und Andi
+        item {
+            Text(stringResource(R.string.settings_presets_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_presets_hint), style = MaterialTheme.typography.bodySmall)
+            Spacer(Modifier.height(6.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { vm.applyRosiePreset() }) {
+                    Text(stringResource(R.string.settings_preset_rosie))
+                }
+                OutlinedButton(onClick = { vm.applyAndiPreset() }) {
+                    Text(stringResource(R.string.settings_preset_andi))
+                }
+            }
+        }
+
+        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+
         item { Text(stringResource(R.string.settings_categories), style = MaterialTheme.typography.titleMedium) }
         item { Text(stringResource(R.string.settings_categories_hint)) }
         items(created, key = { it.id }) { category ->
@@ -112,7 +129,9 @@ fun SettingsScreen(vm: AppViewModel) {
                 CategoryImage(category = category, size = 36.dp)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("${category.name} (${stringResource(R.string.weight_label, category.weight)})")
+                    Text(
+                        "${localizedCategoryName(category)} (${stringResource(R.string.weight_label, category.weight)} · ${priorityLabel(category.weight)})",
+                    )
                     Text(
                         stringResource(
                             R.string.settings_target_label,
@@ -142,7 +161,7 @@ fun SettingsScreen(vm: AppViewModel) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(onClick = { categoryWeight = (categoryWeight - 1).coerceAtLeast(1) }) { Text("−") }
-                Text("  ${stringResource(R.string.weight_label, categoryWeight)}  ")
+                Text("  ${stringResource(R.string.weight_label, categoryWeight)} (${priorityLabel(categoryWeight)})  ")
                 OutlinedButton(onClick = { categoryWeight = (categoryWeight + 1).coerceAtMost(5) }) { Text("+") }
             }
         }
@@ -155,15 +174,32 @@ fun SettingsScreen(vm: AppViewModel) {
                         onClick = {
                             categoryKind = kind
                             goalText = defaultGoal(kind)
-                            if (kind == CategoryKind.WATER) categoryIcon = CategoryIcon.WATER
-                            if (kind == CategoryKind.ALCOHOL) categoryIcon = CategoryIcon.ALCOHOL
+                            when (kind) {
+                                CategoryKind.WATER -> {
+                                    categoryIcon = CategoryIcon.WATER
+                                    categoryWeight = 3
+                                }
+                                CategoryKind.ALCOHOL -> {
+                                    categoryIcon = CategoryIcon.ALCOHOL
+                                    categoryWeight = 4
+                                }
+                                CategoryKind.ROTATION -> {
+                                    categoryIcon = CategoryIcon.HOME
+                                    categoryWeight = 3
+                                }
+                                CategoryKind.DINNER_TIME -> {
+                                    categoryIcon = CategoryIcon.FOOD
+                                    categoryWeight = 5
+                                }
+                                CategoryKind.STARS -> {}
+                            }
                         },
                         label = { Text(kindLabel(kind)) },
                     )
                 }
             }
         }
-        if (categoryKind != CategoryKind.STARS) {
+        if (categoryKind == CategoryKind.ALCOHOL || categoryKind == CategoryKind.WATER) {
             item {
                 OutlinedTextField(
                     value = goalText,
@@ -389,8 +425,11 @@ fun SettingsScreen(vm: AppViewModel) {
         }
     }
 
-    // Bestehende Kategorie bearbeiten (Zielgruppe, Bild und mehrere Push-Nachrichten)
+    // Bestehende Kategorie bearbeiten (Gewicht, Zielgruppe, Bild und mehrere Push-Nachrichten)
     editCategory?.let { category ->
+        var dialogWeight by remember(category.id) {
+            mutableStateOf(category.weight)
+        }
         var dialogAudience by remember(category.id) {
             mutableStateOf(audienceFromTargets(category.targets, vm.uid))
         }
@@ -406,7 +445,7 @@ fun SettingsScreen(vm: AppViewModel) {
 
         AlertDialog(
             onDismissRequest = { editCategory = null },
-            title = { Text(stringResource(R.string.edit_target_for, category.name)) },
+            title = { Text(stringResource(R.string.edit_target_for, localizedCategoryName(category))) },
             text = {
                 Column(
                     modifier = Modifier
@@ -414,6 +453,12 @@ fun SettingsScreen(vm: AppViewModel) {
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedButton(onClick = { dialogWeight = (dialogWeight - 1).coerceAtLeast(1) }) { Text("−") }
+                        Text("  ${stringResource(R.string.weight_label, dialogWeight)} (${priorityLabel(dialogWeight)})  ")
+                        OutlinedButton(onClick = { dialogWeight = (dialogWeight + 1).coerceAtMost(5) }) { Text("+") }
+                    }
+
                     Text(stringResource(R.string.settings_targets), style = MaterialTheme.typography.labelLarge)
                     AudienceSelector(
                         audience = dialogAudience,
@@ -471,7 +516,7 @@ fun SettingsScreen(vm: AppViewModel) {
                         }
                         vm.saveCategory(
                             name = category.name,
-                            weight = category.weight,
+                            weight = dialogWeight,
                             kind = category.kind,
                             targets = targets,
                             goal = category.goal,
@@ -591,8 +636,10 @@ private fun targetsForAudience(audience: Audience, uid: String, partnerUid: Stri
 
 private fun defaultGoal(kind: CategoryKind): String = when (kind) {
     CategoryKind.STARS -> ""
-    CategoryKind.ALCOHOL -> "0"
-    CategoryKind.WATER -> "2"
+    CategoryKind.ALCOHOL -> "1.25"
+    CategoryKind.WATER -> "2.5"
+    CategoryKind.ROTATION -> ""
+    CategoryKind.DINNER_TIME -> "20"
 }
 
 @Composable
@@ -601,6 +648,8 @@ private fun kindLabel(kind: CategoryKind): String = stringResource(
         CategoryKind.STARS -> R.string.kind_stars
         CategoryKind.ALCOHOL -> R.string.kind_alcohol
         CategoryKind.WATER -> R.string.kind_water
+        CategoryKind.ROTATION -> R.string.kind_rotation
+        CategoryKind.DINNER_TIME -> R.string.kind_dinner
     },
 )
 

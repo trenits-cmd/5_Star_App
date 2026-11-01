@@ -27,6 +27,7 @@
     <string name="tab_today">Heute</string>
     <string name="tab_history">Verlauf</string>
     <string name="tab_settings">Einstellungen</string>
+    <string name="tab_partner">Partner</string>
 
     <string name="score_yours">Dein Score</string>
     <string name="score_hint" formatted="false">Ab 80 % gibt es eine Belohnung, darunter eine Strafe.</string>

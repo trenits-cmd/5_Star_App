@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -155,7 +156,7 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun ScoreHero(score: Double?) {
+private fun ScoreHero(score: Double?, title: String = "Dein Score") {
     val progress = ((score ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -163,7 +164,7 @@ private fun ScoreHero(score: Double?) {
     ) {
         Column(Modifier.padding(20.dp)) {
             Text(
-                stringResource(R.string.score_yours),
+                title,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
             )
@@ -331,6 +332,7 @@ private fun PartnerCard(
     counters: Map<String, Map<String, Double>>?,
     categories: List<Category>,
     offline: Boolean,
+    partnerUid: String? = null,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
@@ -367,12 +369,46 @@ private fun PartnerCard(
                 }
             }
             counters?.forEach { (categoryId, values) ->
-                val category = categories.find { it.id == categoryId }
+                val category = categories.find { it.id == categoryId && (partnerUid == null || it.appliesTo(partnerUid)) }
                 if (category != null) {
                     CounterSummary(category.name, values)
                 }
             }
         }
+    }
+}
+
+@Composable
+fun PartnerTodayScreen(vm: AppViewModel) {
+    val partnerName by vm.partnerName.collectAsState()
+    val partnerToday by vm.partnerToday.collectAsState()
+    val days by vm.days.collectAsState()
+    val partnerUid by vm.partnerUid.collectAsState()
+
+    val partnerCategories = vm.categories.value.items.filter { it.appliesTo(partnerUid ?: vm.uid) }
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Text(stringResource(R.string.tab_partner), style = MaterialTheme.typography.headlineMedium)
+        Text(
+            stringResource(R.string.connected_with, partnerName ?: stringResource(R.string.who_partner)),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        ScoreHero(
+            score = partnerToday?.scorePercent,
+            title = partnerName ?: stringResource(R.string.who_partner),
+        )
+        PartnerCard(
+            score = partnerToday?.scorePercent,
+            snapshots = partnerToday?.snapshots,
+            counters = partnerToday?.counters,
+            categories = partnerCategories,
+            offline = days.fromCache,
+            partnerUid = partnerUid,
+        )
     }
 }
 

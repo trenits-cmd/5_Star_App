@@ -27,6 +27,7 @@
     <string name="tab_today">Aujourd\'hui</string>
     <string name="tab_history">Historique</string>
     <string name="tab_settings">Réglages</string>
+    <string name="tab_partner">Partenaire</string>
 
     <string name="score_yours">Ton score</string>
     <string name="score_hint" formatted="false">À partir de 80 %, une récompense ; en dessous, une pénalité.</string>

@@ -9,6 +9,7 @@ Two people track their daily goals together. Each person rates their own categor
 - **Threshold:** 80% daily. Score ≥ 80% → reward task. Score < 80% → penalty task. Both cases are always created.
 - **Tasks:** Reward/penalty tasks per affected person. Owner chooses an action from their own catalog; partner confirms. Without confirmation after 48 hours the task is auto-confirmed.
 - **Partner visibility:** Partner sees categories, stars, score and open tasks. Connection shown as “Connected with …”. Offline: last known state is shown.
+- **Partner tab:** Jeder Partner hat eigenen Tab mit seinen Bewertungen (Score, Kategorien, Counters, Offline-Stand).
 - **History:** Past days with scores, task statuses (open, confirmed, auto-confirmed), time filters (7 days, 30 days, this year, all). Archived categories remain visible via snapshots.
 - **Categories:** Owner-managed, weights 1–5, kind: `STARS`, `ALCOHOL`, `WATER`. Applies to me / partner / both.
 - **Counters:** Alcohol: pint/demi counters with daily limit in liters; rating proportional to limit. Water: glasses + liters counter, daily goal in liters; rating proportional to goal.

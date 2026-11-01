@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -49,6 +50,7 @@ fun AppRoot(viewModel: AppViewModel) {
 
 private enum class Tab(val labelRes: Int, val icon: ImageVector) {
     TODAY(R.string.tab_today, Icons.Filled.Home),
+    PARTNER(R.string.tab_partner, Icons.Filled.Star),
     HISTORY(R.string.tab_history, Icons.Filled.DateRange),
     SETTINGS(R.string.tab_settings, Icons.Filled.Settings),
 }
@@ -58,6 +60,7 @@ private fun MainTabs(viewModel: AppViewModel) {
     var tab by rememberSaveable { mutableStateOf(Tab.TODAY) }
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val partnerUid by viewModel.partnerUid.collectAsState()
 
     LaunchedEffect(Unit) {
         ReminderScheduler.schedule(context, ReminderPrefs(context).time())
@@ -67,10 +70,16 @@ private fun MainTabs(viewModel: AppViewModel) {
         if (!granted) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
+    val visibleTabs = if (partnerUid == null) {
+        listOf(Tab.TODAY, Tab.HISTORY, Tab.SETTINGS)
+    } else {
+        listOf(Tab.TODAY, Tab.PARTNER, Tab.HISTORY, Tab.SETTINGS)
+    }
+
     Scaffold(
         bottomBar = {
             NavigationBar {
-                Tab.entries.forEach { item ->
+                visibleTabs.forEach { item ->
                     val label = stringResource(item.labelRes)
                     NavigationBarItem(
                         selected = tab == item,
@@ -85,6 +94,7 @@ private fun MainTabs(viewModel: AppViewModel) {
         Box(Modifier.padding(padding)) {
             when (tab) {
                 Tab.TODAY -> DashboardScreen(viewModel)
+                Tab.PARTNER -> PartnerTodayScreen(viewModel)
                 Tab.HISTORY -> HistoryScreen(viewModel)
                 Tab.SETTINGS -> SettingsScreen(viewModel)
             }

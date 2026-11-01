@@ -2,11 +2,11 @@ package com.trenits.fivestar.domain
 
 import java.time.LocalDate
 
-enum class Period(val label: String) {
-    SEVEN_DAYS("7 Tage"),
-    THIRTY_DAYS("30 Tage"),
-    THIS_YEAR("Dieses Jahr"),
-    ALL("Gesamt");
+enum class Period {
+    SEVEN_DAYS,
+    THIRTY_DAYS,
+    THIS_YEAR,
+    ALL;
 
     /** Erster Tag des Zeitraums, bezogen auf heute. Null bedeutet ohne Begrenzung. */
     fun startDay(today: LocalDate): LocalDate? = when (this) {

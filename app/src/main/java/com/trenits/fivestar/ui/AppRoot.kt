@@ -8,29 +8,30 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
-import androidx.compose.runtime.collectAsState
+import com.trenits.fivestar.R
 import com.trenits.fivestar.reminder.ReminderPrefs
 import com.trenits.fivestar.reminder.ReminderScheduler
 
@@ -46,10 +47,10 @@ fun AppRoot(viewModel: AppViewModel) {
     }
 }
 
-private enum class Tab(val label: String, val icon: ImageVector) {
-    TODAY("Heute", Icons.Filled.Home),
-    HISTORY("Verlauf", Icons.Filled.DateRange),
-    SETTINGS("Einstellungen", Icons.Filled.Settings),
+private enum class Tab(val labelRes: Int, val icon: ImageVector) {
+    TODAY(R.string.tab_today, Icons.Filled.Home),
+    HISTORY(R.string.tab_history, Icons.Filled.DateRange),
+    SETTINGS(R.string.tab_settings, Icons.Filled.Settings),
 }
 
 @Composable
@@ -70,11 +71,12 @@ private fun MainTabs(viewModel: AppViewModel) {
         bottomBar = {
             NavigationBar {
                 Tab.entries.forEach { item ->
+                    val label = stringResource(item.labelRes)
                     NavigationBarItem(
                         selected = tab == item,
                         onClick = { tab = item },
-                        icon = { Icon(item.icon, contentDescription = item.label) },
-                        label = { Text(item.label) },
+                        icon = { Icon(item.icon, contentDescription = label) },
+                        label = { Text(label) },
                     )
                 }
             }

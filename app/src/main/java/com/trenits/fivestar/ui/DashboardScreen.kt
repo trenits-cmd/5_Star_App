@@ -25,21 +25,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.trenits.fivestar.R
+import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategorySnapshot
-import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
 import com.trenits.fivestar.ui.theme.Amber
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-
-private const val TARGET_PERCENT = 80.0
 
 @Composable
 fun DashboardScreen(vm: AppViewModel) {
@@ -61,12 +59,9 @@ fun DashboardScreen(vm: AppViewModel) {
     ) {
         item {
             Column {
+                Text(stringResource(R.string.tab_today), style = MaterialTheme.typography.headlineMedium)
                 Text(
-                    "Heute",
-                    style = MaterialTheme.typography.headlineMedium,
-                )
-                Text(
-                    LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, d. MMMM", Locale.GERMANY)),
+                    dateHeader(LocalDate.now()),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -79,15 +74,15 @@ fun DashboardScreen(vm: AppViewModel) {
 
         item { ScoreHero(myToday?.scorePercent) }
 
-        item { SectionTitle("Kategorien") }
+        item { SectionTitle(stringResource(R.string.section_categories)) }
         if (categories.isEmpty()) {
-            item { HintCard("Lege unter Einstellungen zuerst Kategorien an.") }
+            item { HintCard(stringResource(R.string.categories_empty)) }
         }
         items(categories, key = { it.id }) { category ->
             CategoryCard(category, stored[category.id] ?: 0) { vm.setStars(category.id, it) }
         }
 
-        item { SectionTitle("Partner") }
+        item { SectionTitle(stringResource(R.string.section_partner)) }
         item {
             PartnerCard(
                 score = partnerToday?.scorePercent,
@@ -96,9 +91,9 @@ fun DashboardScreen(vm: AppViewModel) {
             )
         }
 
-        item { SectionTitle("Offene Aufgaben") }
+        item { SectionTitle(stringResource(R.string.section_open_tasks)) }
         if (openTasks.isEmpty()) {
-            item { HintCard("Keine offenen Aufgaben. Gut gemacht!") }
+            item { HintCard(stringResource(R.string.no_open_tasks)) }
         }
         items(openTasks, key = { it.id }) { task ->
             TaskCard(vm, task, catalog)
@@ -124,7 +119,7 @@ private fun ScoreHero(score: Double?) {
     ) {
         Column(Modifier.padding(20.dp)) {
             Text(
-                "Dein Score",
+                stringResource(R.string.score_yours),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
             )
@@ -143,7 +138,7 @@ private fun ScoreHero(score: Double?) {
             )
             Spacer(Modifier.height(10.dp))
             Text(
-                "Ab $TARGET_PERCENT % gibt es eine Belohnung, darunter eine Strafe.",
+                stringResource(R.string.score_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
             )
@@ -158,7 +153,7 @@ private fun WaitingForPartnerCard(vm: AppViewModel) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
     ) {
         Column(Modifier.padding(16.dp)) {
-            Text("Warte auf deinen Partner", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.waiting_partner), style = MaterialTheme.typography.titleMedium)
             vm.inviteCode?.let {
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -167,11 +162,15 @@ private fun WaitingForPartnerCard(vm: AppViewModel) {
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
-                Text("Gib diesen Code an deinen Partner weiter.", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.invite_share), style = MaterialTheme.typography.bodySmall)
             }
             Spacer(Modifier.height(10.dp))
             OutlinedButton(onClick = { vm.createInvite() }, enabled = !vm.busy) {
-                Text(if (vm.inviteCode == null) "Code erstellen" else "Neuen Code erstellen")
+                Text(
+                    stringResource(
+                        if (vm.inviteCode == null) R.string.invite_create else R.string.invite_new,
+                    ),
+                )
             }
         }
     }
@@ -188,7 +187,7 @@ private fun CategoryCard(category: Category, value: Int, onChange: (Int) -> Unit
             Column(Modifier.weight(1f)) {
                 Text(category.name, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Gewicht ${category.weight}",
+                    stringResource(R.string.weight_label, category.weight),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -227,14 +226,14 @@ private fun PartnerCard(score: Double?, snapshots: List<CategorySnapshot>?, offl
                 )
                 Spacer(Modifier.size(10.dp))
                 Text(
-                    if (snapshots == null) "noch keine Bewertung" else "heute",
+                    stringResource(if (snapshots == null) R.string.partner_no_rating else R.string.partner_today),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             if (offline) {
                 Text(
-                    "Offline. Angezeigt wird der letzte bekannte Stand.",
+                    stringResource(R.string.offline_stale),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -270,7 +269,7 @@ private fun TaskCard(vm: AppViewModel, task: Task, catalog: List<CatalogItem>) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Text(
-                "${typeLabel(task.type)} für ${formatDay(task.dayKey)}",
+                stringResource(R.string.task_title_format, typeLabel(task.type), formatDay(task.dayKey)),
                 style = MaterialTheme.typography.titleSmall,
                 color = if (task.type == TaskType.REWARD) {
                     MaterialTheme.colorScheme.primary
@@ -282,10 +281,10 @@ private fun TaskCard(vm: AppViewModel, task: Task, catalog: List<CatalogItem>) {
             val isMine = task.ownerUid == vm.uid
             when {
                 isMine && task.title.isEmpty() -> {
-                    Text("Wähle eine Aktion aus deinem Katalog:")
+                    Text(stringResource(R.string.task_choose_action))
                     val options = catalog.filter { it.type == task.type }
                     if (options.isEmpty()) {
-                        Text("Dein Katalog hat keine Einträge dieser Art. Lege sie unter Einstellungen an.")
+                        Text(stringResource(R.string.task_catalog_empty))
                     }
                     options.forEach { item ->
                         OutlinedButton(
@@ -294,12 +293,14 @@ private fun TaskCard(vm: AppViewModel, task: Task, catalog: List<CatalogItem>) {
                         ) { Text(item.title) }
                     }
                 }
-                isMine -> Text("${task.title}. Wartet auf Bestätigung durch deinen Partner.")
-                task.title.isEmpty() -> Text("Dein Partner wählt noch eine Aktion.")
+                isMine -> Text(stringResource(R.string.task_waiting_confirm, task.title))
+                task.title.isEmpty() -> Text(stringResource(R.string.task_partner_chooses))
                 else -> {
-                    Text("Partner: ${task.title}")
+                    Text(stringResource(R.string.task_partner_label, task.title))
                     Spacer(Modifier.height(8.dp))
-                    Button(onClick = { vm.confirmTask(task.id) }) { Text("Erledigt bestätigen") }
+                    Button(onClick = { vm.confirmTask(task.id) }) {
+                        Text(stringResource(R.string.task_confirm))
+                    }
                 }
             }
         }

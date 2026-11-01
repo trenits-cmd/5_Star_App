@@ -13,6 +13,8 @@ import kotlinx.coroutines.tasks.await
 
 data class UserProfile(val coupleId: String?, val catalogSeeded: Boolean)
 
+class InvalidInviteException : Exception()
+
 class UserRepository(private val uid: String) {
 
     private val user get() = Firebase.firestore.collection("users").document(uid)
@@ -45,7 +47,7 @@ class UserRepository(private val uid: String) {
     /** Tritt dem Paar bei. Die Regeln erlauben das nur, solange noch ein Platz frei ist. */
     suspend fun redeemInvite(input: String) {
         val invite = Firebase.firestore.collection("invites").document(normalizeInviteCode(input)).get().await()
-        val coupleId = invite.getString("coupleId") ?: throw IllegalArgumentException("Der Code ist ungültig.")
+        val coupleId = invite.getString("coupleId") ?: throw InvalidInviteException()
         Firebase.firestore.collection("couples").document(coupleId)
             .update("members", FieldValue.arrayUnion(uid)).await()
         user.set(mapOf("coupleId" to coupleId), SetOptions.merge()).await()

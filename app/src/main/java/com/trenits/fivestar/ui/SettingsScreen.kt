@@ -3,8 +3,8 @@ package com.trenits.fivestar.ui
 import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,7 +29,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.TaskType
 import com.trenits.fivestar.reminder.ReminderPrefs
 import com.trenits.fivestar.reminder.ReminderScheduler
@@ -53,19 +55,27 @@ fun SettingsScreen(vm: AppViewModel) {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        item { Text("Kategorien", style = MaterialTheme.typography.titleMedium) }
-        item { Text("Gewicht 1 bis 5. Archivierte Kategorien bleiben in der Historie erhalten.") }
+        item {
+            Spacer(Modifier.height(40.dp))
+            Text(stringResource(R.string.settings_categories), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_categories_hint))
+        }
         items(categories, key = { it.id }) { category ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("${category.name} (Gewicht ${category.weight})", modifier = Modifier.weight(1f))
-                TextButton(onClick = { vm.archiveCategory(category.id) }) { Text("Archivieren") }
+                Text(
+                    "${category.name} (${stringResource(R.string.weight_label, category.weight)})",
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = { vm.archiveCategory(category.id) }) {
+                    Text(stringResource(R.string.settings_archive))
+                }
             }
         }
         item {
             OutlinedTextField(
                 value = categoryName,
                 onValueChange = { categoryName = it },
-                label = { Text("Neue Kategorie") },
+                label = { Text(stringResource(R.string.settings_new_category)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -73,7 +83,7 @@ fun SettingsScreen(vm: AppViewModel) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(onClick = { categoryWeight = (categoryWeight - 1).coerceAtLeast(1) }) { Text("−") }
-                Text("  Gewicht $categoryWeight  ")
+                Text("  ${stringResource(R.string.weight_label, categoryWeight)}  ")
                 OutlinedButton(onClick = { categoryWeight = (categoryWeight + 1).coerceAtMost(5) }) { Text("+") }
             }
         }
@@ -84,16 +94,21 @@ fun SettingsScreen(vm: AppViewModel) {
                     categoryName = ""
                 },
                 enabled = categoryName.isNotBlank(),
-            ) { Text("Kategorie hinzufügen") }
+            ) { Text(stringResource(R.string.settings_add_category)) }
         }
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
 
-        item { Text("Belohnungen und Strafen", style = MaterialTheme.typography.titleMedium) }
+        item { Text(stringResource(R.string.settings_rewards), style = MaterialTheme.typography.titleMedium) }
         items(catalog, key = { it.id }) { item ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("${typeLabel(item.type)}: ${item.title}", modifier = Modifier.weight(1f))
-                TextButton(onClick = { vm.deleteCatalogItem(item.id) }) { Text("Löschen") }
+                Text(
+                    stringResource(R.string.catalog_item_label, typeLabel(item.type), item.title),
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = { vm.deleteCatalogItem(item.id) }) {
+                    Text(stringResource(R.string.settings_delete))
+                }
             }
         }
         item {
@@ -111,7 +126,7 @@ fun SettingsScreen(vm: AppViewModel) {
             OutlinedTextField(
                 value = catalogTitle,
                 onValueChange = { catalogTitle = it },
-                label = { Text("Neuer Eintrag") },
+                label = { Text(stringResource(R.string.settings_new_entry)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -123,14 +138,19 @@ fun SettingsScreen(vm: AppViewModel) {
                     catalogTitle = ""
                 },
                 enabled = catalogTitle.isNotBlank(),
-            ) { Text("Eintrag hinzufügen") }
+            ) { Text(stringResource(R.string.settings_add_entry)) }
         }
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
 
-        item { Text("Erinnerung", style = MaterialTheme.typography.titleMedium) }
+        item { Text(stringResource(R.string.settings_reminder), style = MaterialTheme.typography.titleMedium) }
         item {
-            Text("Täglich um ${String.format("%02d:%02d", reminder.hour, reminder.minute)}. Sie kommt nur, wenn heute noch nichts bewertet wurde.")
+            Text(
+                stringResource(
+                    R.string.settings_reminder_text,
+                    String.format("%02d:%02d", reminder.hour, reminder.minute),
+                ),
+            )
         }
         item {
             OutlinedButton(onClick = {
@@ -140,29 +160,35 @@ fun SettingsScreen(vm: AppViewModel) {
                     ReminderPrefs(context).save(time)
                     ReminderScheduler.schedule(context, time)
                 }, reminder.hour, reminder.minute, true).show()
-            }) { Text("Uhrzeit ändern") }
+            }) { Text(stringResource(R.string.settings_change_time)) }
         }
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
 
-        item { Text("Sync", style = MaterialTheme.typography.titleMedium) }
+        item { Text(stringResource(R.string.settings_sync), style = MaterialTheme.typography.titleMedium) }
         item {
             Text(
-                if (days.fromCache) "Offline. Es wird der letzte bekannte Stand angezeigt."
-                else "Verbunden.",
+                stringResource(if (days.fromCache) R.string.sync_offline else R.string.sync_online),
             )
         }
         item {
-            Text("Letzte Synchronisation: " + (lastSync?.let { formatTime(it) } ?: "noch nicht"))
+            Text(
+                stringResource(
+                    R.string.sync_last,
+                    lastSync?.let { formatTime(it) } ?: stringResource(R.string.sync_never),
+                ),
+            )
         }
         item {
-            OutlinedButton(onClick = { vm.syncNow() }, enabled = !vm.busy) { Text("Jetzt synchronisieren") }
+            OutlinedButton(onClick = { vm.syncNow() }, enabled = !vm.busy) {
+                Text(stringResource(R.string.sync_now))
+            }
         }
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
 
         item {
-            Button(onClick = { vm.signOut() }) { Text("Abmelden") }
+            Button(onClick = { vm.signOut() }) { Text(stringResource(R.string.settings_sign_out)) }
             Spacer(Modifier.height(16.dp))
         }
     }

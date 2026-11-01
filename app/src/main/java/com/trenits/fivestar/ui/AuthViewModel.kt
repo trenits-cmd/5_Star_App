@@ -1,15 +1,17 @@
 package com.trenits.fivestar.ui
 
 import android.app.Activity
+import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.credentials.exceptions.GetCredentialCancellationException
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
+import com.trenits.fivestar.R
 import com.trenits.fivestar.data.AuthRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,7 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class AuthViewModel : ViewModel() {
+class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = AuthRepository()
 
@@ -49,7 +51,7 @@ class AuthViewModel : ViewModel() {
             } catch (e: GetCredentialCancellationException) {
                 // Der Nutzer hat den Google-Dialog geschlossen. Das ist kein Fehler.
             } catch (e: Exception) {
-                error = "Anmeldung fehlgeschlagen. Bitte prüfe deine Eingaben."
+                error = getApplication<Application>().getString(R.string.error_auth_failed)
             } finally {
                 busy = false
             }

@@ -20,8 +20,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.trenits.fivestar.R
 
 @Composable
 fun PairingScreen(viewModel: AppViewModel) {
@@ -32,11 +34,10 @@ fun PairingScreen(viewModel: AppViewModel) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Paar verbinden", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.pairing_title), style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(12.dp))
         Text(
-            "Ihr seht gegenseitig alle Kategorien, Sterne, Scores und Aufgaben. " +
-                "Verbinde dich nur mit einer Person, der du das zutraust.",
+            stringResource(R.string.pairing_info),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )
@@ -46,15 +47,15 @@ fun PairingScreen(viewModel: AppViewModel) {
             onClick = { viewModel.createInvite() },
             enabled = !viewModel.busy,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Einladungscode erstellen") }
+        ) { Text(stringResource(R.string.pairing_create_code)) }
 
         Spacer(Modifier.height(24.dp))
-        Text("oder Code eines Partners eingeben")
+        Text(stringResource(R.string.pairing_or))
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = code,
             onValueChange = { code = it.uppercase() },
-            label = { Text("Einladungscode") },
+            label = { Text(stringResource(R.string.pairing_code_label)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -63,11 +64,11 @@ fun PairingScreen(viewModel: AppViewModel) {
             onClick = { viewModel.redeemInvite(code) },
             enabled = !viewModel.busy && code.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Beitreten") }
+        ) { Text(stringResource(R.string.pairing_join)) }
 
         viewModel.error?.let {
             Spacer(Modifier.height(16.dp))
-            Text(it, color = MaterialTheme.colorScheme.error)
+            Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
         }
         if (viewModel.busy) {
             Spacer(Modifier.height(16.dp))

@@ -1,6 +1,7 @@
 package com.trenits.fivestar.ui
 
 import android.app.Activity
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,11 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.sp
-import com.trenits.fivestar.ui.theme.Amber
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -30,12 +27,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.trenits.fivestar.R
+import com.trenits.fivestar.ui.theme.Amber
 
 @Composable
 fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
@@ -59,9 +63,9 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
             Text("★", fontSize = 44.sp, color = Amber)
         }
         Spacer(Modifier.height(16.dp))
-        Text("5 Star", style = MaterialTheme.typography.headlineMedium)
+        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium)
         Text(
-            "Gemeinsam Ziele erreichen",
+            stringResource(R.string.login_tagline),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -70,7 +74,7 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("E-Mail") },
+            label = { Text(stringResource(R.string.login_email)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.fillMaxWidth(),
@@ -79,7 +83,7 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Passwort") },
+            label = { Text(stringResource(R.string.login_password)) },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -91,23 +95,23 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
             onClick = { viewModel.signIn(email.trim(), password) },
             enabled = canSubmit,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Anmelden") }
+        ) { Text(stringResource(R.string.login_sign_in)) }
         Spacer(Modifier.height(8.dp))
         OutlinedButton(
             onClick = { viewModel.createAccount(email.trim(), password) },
             enabled = canSubmit,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Konto erstellen") }
+        ) { Text(stringResource(R.string.login_create_account)) }
         Spacer(Modifier.height(8.dp))
         OutlinedButton(
             onClick = { viewModel.signInWithGoogle(activity) },
             enabled = !viewModel.busy,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Mit Google anmelden") }
+        ) { Text(stringResource(R.string.login_google)) }
 
         viewModel.error?.let {
             Spacer(Modifier.height(16.dp))
-            Text(it, color = MaterialTheme.colorScheme.error)
+            Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
         }
         if (viewModel.busy) {
             Spacer(Modifier.height(16.dp))

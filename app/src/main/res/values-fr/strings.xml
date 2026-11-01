@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">5 Star</string>
+
+    <string name="language_switch">Changer de langue</string>
+    <string name="language_de">Deutsch</string>
+    <string name="language_en">English</string>
+    <string name="language_fr">Français</string>
+
+    <string name="login_tagline">Atteindre ses objectifs ensemble</string>
+    <string name="login_email">E-mail</string>
+    <string name="login_password">Mot de passe</string>
+    <string name="login_sign_in">Se connecter</string>
+    <string name="login_create_account">Créer un compte</string>
+    <string name="login_google">Se connecter avec Google</string>
+    <string name="error_auth_failed">Échec de la connexion. Vérifie tes saisies.</string>
+    <string name="error_generic">Une erreur est survenue. Vérifie ta connexion et réessaie.</string>
+    <string name="error_invalid_code">Le code n\'est pas valide.</string>
+
+    <string name="pairing_title">Former un couple</string>
+    <string name="pairing_info">Vous voyez mutuellement toutes les catégories, étoiles, scores et tâches. Ne vous connectez qu\'à une personne de confiance.</string>
+    <string name="pairing_create_code">Créer un code d\'invitation</string>
+    <string name="pairing_or">ou saisir le code de ton partenaire</string>
+    <string name="pairing_code_label">Code d\'invitation</string>
+    <string name="pairing_join">Rejoindre</string>
+
+    <string name="tab_today">Aujourd\'hui</string>
+    <string name="tab_history">Historique</string>
+    <string name="tab_settings">Réglages</string>
+
+    <string name="score_yours">Ton score</string>
+    <string name="score_hint" formatted="false">À partir de 80 %, une récompense ; en dessous, une pénalité.</string>
+    <string name="percent_value">%1$.0f %%</string>
+    <string name="section_categories">Catégories</string>
+    <string name="categories_empty">Crée d\'abord des catégories dans les réglages.</string>
+    <string name="weight_label">Poids %1$d</string>
+    <string name="section_partner">Partenaire</string>
+    <string name="partner_no_rating">pas encore d\'évaluation</string>
+    <string name="partner_today">aujourd\'hui</string>
+    <string name="offline_stale">Hors ligne. Affichage du dernier état connu.</string>
+    <string name="section_open_tasks">Tâches en cours</string>
+    <string name="no_open_tasks">Aucune tâche en cours. Bravo !</string>
+    <string name="waiting_partner">En attente de ton partenaire</string>
+    <string name="invite_share">Partage ce code avec ton partenaire.</string>
+    <string name="invite_create">Créer un code</string>
+    <string name="invite_new">Créer un nouveau code</string>
+    <string name="task_title_format">%1$s pour %2$s</string>
+    <string name="task_choose_action">Choisis une action dans ton catalogue :</string>
+    <string name="task_catalog_empty">Ton catalogue n\'a aucune entrée de ce type. Ajoutes-en dans les réglages.</string>
+    <string name="task_waiting_confirm">%1$s. En attente de confirmation de ton partenaire.</string>
+    <string name="task_partner_chooses">Ton partenaire n\'a pas encore choisi d\'action.</string>
+    <string name="task_partner_label">Partenaire : %1$s</string>
+    <string name="task_confirm">Confirmer comme fait</string>
+
+    <string name="task_reward">Récompense</string>
+    <string name="task_penalty">Pénalité</string>
+    <string name="who_you">Toi</string>
+    <string name="who_partner">Partenaire</string>
+    <string name="status_open">en cours</string>
+    <string name="status_confirmed">confirmée</string>
+    <string name="status_auto_confirmed">confirmée automatiquement</string>
+    <string name="no_action_chosen">aucune action choisie</string>
+
+    <string name="period_7">7 jours</string>
+    <string name="period_30">30 jours</string>
+    <string name="period_year">Cette année</string>
+    <string name="period_all">Total</string>
+    <string name="history_empty">Aucune entrée pour cette période pour l\'instant.</string>
+    <string name="history_you">Toi : %1$s</string>
+    <string name="history_partner">Partenaire : %1$s</string>
+    <string name="history_your_categories">Tes catégories : %1$s</string>
+    <string name="history_partner_categories">Catégories du partenaire : %1$s</string>
+    <string name="history_task_line">%1$s · %2$s : %3$s (%4$s)</string>
+
+    <string name="settings_categories">Catégories</string>
+    <string name="settings_categories_hint">Poids de 1 à 5. Les catégories archivées restent dans l\'historique.</string>
+    <string name="settings_archive">Archiver</string>
+    <string name="settings_new_category">Nouvelle catégorie</string>
+    <string name="settings_add_category">Ajouter une catégorie</string>
+    <string name="settings_rewards">Récompenses et pénalités</string>
+    <string name="settings_delete">Supprimer</string>
+    <string name="settings_new_entry">Nouvelle entrée</string>
+    <string name="settings_add_entry">Ajouter une entrée</string>
+    <string name="catalog_item_label">%1$s : %2$s</string>
+    <string name="settings_reminder">Rappel</string>
+    <string name="settings_reminder_text" formatted="true">Chaque jour à %1$s. Il n\'apparaît que si rien n\'a été évalué aujourd\'hui.</string>
+    <string name="settings_change_time">Modifier l\'heure</string>
+    <string name="settings_sync">Synchronisation</string>
+    <string name="sync_offline">Hors ligne. Affichage du dernier état connu.</string>
+    <string name="sync_online">Connecté.</string>
+    <string name="sync_last">Dernière synchronisation : %1$s</string>
+    <string name="sync_never">pas encore</string>
+    <string name="sync_now">Synchroniser maintenant</string>
+    <string name="settings_sign_out">Se déconnecter</string>
+
+    <string name="seed_reward_1">Repas préféré</string>
+    <string name="seed_reward_2">Soirée cinéma</string>
+    <string name="seed_reward_3">Massage (20 min)</string>
+    <string name="seed_penalty_1">Faire la vaisselle pendant une semaine</string>
+    <string name="seed_penalty_2">Acheter des fleurs</string>
+    <string name="seed_penalty_3">Cuisiner pour ton partenaire</string>
+
+    <string name="reminder_channel">Rappel quotidien</string>
+    <string name="reminder_text">Ton évaluation d\'aujourd\'hui manque encore.</string>
+</resources>

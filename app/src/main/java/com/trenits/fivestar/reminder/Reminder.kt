@@ -18,6 +18,7 @@ import androidx.work.WorkerParameters
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
+import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.dayKeyOf
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
@@ -46,7 +47,11 @@ object ReminderScheduler {
 
     fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val channel = NotificationChannel(CHANNEL_ID, "Tägliche Erinnerung", NotificationManager.IMPORTANCE_DEFAULT)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            context.getString(R.string.reminder_channel),
+            NotificationManager.IMPORTANCE_DEFAULT,
+        )
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
@@ -96,7 +101,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("5 Star")
-            .setContentText("Deine Bewertung für heute fehlt noch.")
+            .setContentText(applicationContext.getString(R.string.reminder_text))
             .setAutoCancel(true)
             .build()
         NotificationManagerCompat.from(applicationContext).notify(NOTIFICATION_ID, notification)

@@ -1,14 +1,17 @@
 package com.trenits.fivestar.ui
 
+import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
+import com.trenits.fivestar.R
 import com.trenits.fivestar.data.CoupleRepository
+import com.trenits.fivestar.data.InvalidInviteException
 import com.trenits.fivestar.data.Listed
 import com.trenits.fivestar.data.UserProfile
 import com.trenits.fivestar.data.UserRepository
@@ -16,7 +19,6 @@ import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.DayOutcome
 import com.trenits.fivestar.domain.DayRecord
-import com.trenits.fivestar.domain.START_CATALOG
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
@@ -42,7 +44,16 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 
-class AppViewModel : ViewModel() {
+class AppViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val starterCatalog = listOf(
+        R.string.seed_reward_1 to TaskType.REWARD,
+        R.string.seed_reward_2 to TaskType.REWARD,
+        R.string.seed_reward_3 to TaskType.REWARD,
+        R.string.seed_penalty_1 to TaskType.PENALTY,
+        R.string.seed_penalty_2 to TaskType.PENALTY,
+        R.string.seed_penalty_3 to TaskType.PENALTY,
+    )
 
     val uid: String = Firebase.auth.currentUser?.uid.orEmpty()
     private val zone = ZoneId.systemDefault()
@@ -103,7 +114,9 @@ class AppViewModel : ViewModel() {
                 if (p.catalogSeeded || seeded) return@collect
                 seeded = true
                 val repo = CoupleRepository(coupleId)
-                START_CATALOG.forEach { repo.saveCatalogItem(CatalogItem("", uid, it.type, it.title)) }
+                starterCatalog.forEach { (res, type) ->
+                    repo.saveCatalogItem(CatalogItem("", uid, type, text(res)))
+                }
                 userRepository.markCatalogSeeded()
             }
         }
@@ -168,6 +181,8 @@ class AppViewModel : ViewModel() {
 
     private fun repo(): CoupleRepository? = profile.value?.coupleId?.let { CoupleRepository(it) }
 
+    private fun text(resId: Int): String = getApplication<Application>().getString(resId)
+
     /** Aufgabe für gestern, wenn die eigene Bewertung vorliegt und noch keine Aufgabe existiert. */
     private fun evaluateYesterday() {
         val repo = repo() ?: return
@@ -205,10 +220,10 @@ class AppViewModel : ViewModel() {
                 block()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: IllegalArgumentException) {
-                error = e.message
+            } catch (e: InvalidInviteException) {
+                error = text(R.string.error_invalid_code)
             } catch (e: Exception) {
-                error = "Das hat nicht geklappt. Bitte prüfe deine Verbindung und versuche es erneut."
+                error = text(R.string.error_generic)
             } finally {
                 busy = false
             }

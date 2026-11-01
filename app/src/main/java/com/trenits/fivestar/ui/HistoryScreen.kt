@@ -2,8 +2,8 @@ package com.trenits.fivestar.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,7 +22,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.DayRecord
 import com.trenits.fivestar.domain.Period
 import com.trenits.fivestar.domain.Task
@@ -46,14 +48,19 @@ fun HistoryScreen(vm: AppViewModel) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
+            Spacer(Modifier.height(40.dp))
             Row(Modifier.fillMaxWidth()) {
                 Period.entries.forEach { p ->
-                    FilterChip(selected = period == p, onClick = { period = p }, label = { Text(p.label) })
+                    FilterChip(
+                        selected = period == p,
+                        onClick = { period = p },
+                        label = { Text(stringResource(periodLabelRes(p))) },
+                    )
                 }
             }
         }
         if (dayKeys.isEmpty()) {
-            item { Text("Für diesen Zeitraum gibt es noch keine Einträge.") }
+            item { Text(stringResource(R.string.history_empty)) }
         }
         items(dayKeys.toList(), key = { it }) { key ->
             DayCard(
@@ -80,25 +87,41 @@ private fun DayCard(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Text(formatDay(dayKey), style = MaterialTheme.typography.titleMedium)
-            Text("Du: ${formatPercent(myScore?.scorePercent)}")
-            if (showPartner) Text("Partner: ${formatPercent(partnerScore?.scorePercent)}")
+            Text(stringResource(R.string.history_you, formatPercent(myScore?.scorePercent)))
+            if (showPartner) {
+                Text(stringResource(R.string.history_partner, formatPercent(partnerScore?.scorePercent)))
+            }
             myScore?.snapshots?.takeIf { it.isNotEmpty() }?.let {
                 Text(
-                    "Deine Kategorien: " + it.joinToString(" · ") { s -> "${s.name} ${s.stars}★" },
+                    stringResource(
+                        R.string.history_your_categories,
+                        it.joinToString(" · ") { s -> "${s.name} ${s.stars}★" },
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
             partnerScore?.snapshots?.takeIf { it.isNotEmpty() }?.let {
                 Text(
-                    "Kategorien des Partners: " + it.joinToString(" · ") { s -> "${s.name} ${s.stars}★" },
+                    stringResource(
+                        R.string.history_partner_categories,
+                        it.joinToString(" · ") { s -> "${s.name} ${s.stars}★" },
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
             dayTasks.forEach { task ->
                 Spacer(Modifier.height(8.dp))
-                val who = if (task.ownerUid == myUid) "Du" else "Partner"
-                val action = task.title.ifEmpty { "keine Aktion gewählt" }
-                Text("$who · ${typeLabel(task.type)}: $action (${statusLabel(task.status)})")
+                val who = stringResource(if (task.ownerUid == myUid) R.string.who_you else R.string.who_partner)
+                val action = task.title.ifEmpty { stringResource(R.string.no_action_chosen) }
+                Text(
+                    stringResource(
+                        R.string.history_task_line,
+                        who,
+                        typeLabel(task.type),
+                        action,
+                        statusLabel(task.status),
+                    ),
+                )
             }
         }
     }

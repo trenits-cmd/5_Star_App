@@ -1,0 +1,21 @@
+package com.trenits.fivestar.domain
+
+/** Snapshot einer Kategorie zum Bewertungszeitpunkt, damit spätere Änderungen alte Scores nicht verändern. */
+data class CategorySnapshot(
+    val categoryId: String,
+    val name: String,
+    val weight: Int,
+    val stars: Int,
+)
+
+data class DayRecord(
+    val dayKey: String,
+    val ownerUid: String,
+    val snapshots: List<CategorySnapshot>,
+) {
+    val scorePercent: Double
+        get() = dayScorePercent(
+            snapshots.map { WeightedCategory(it.categoryId, it.weight) },
+            snapshots.associate { it.categoryId to it.stars },
+        )
+}

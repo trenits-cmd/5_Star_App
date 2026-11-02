@@ -3,11 +3,6 @@
     <string name="app_name">5 Star</string>
     <string name="app_version">Version %1$s</string>
 
-    <string name="language_switch">Change language</string>
-    <string name="language_de">Deutsch</string>
-    <string name="language_en">English</string>
-    <string name="language_fr">Français</string>
-
     <string name="login_tagline">Reach your goals together</string>
     <string name="login_email">Email</string>
     <string name="login_password">Password</string>

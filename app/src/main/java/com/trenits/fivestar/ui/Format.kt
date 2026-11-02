@@ -114,7 +114,7 @@ fun relationshipAspectLabel(aspect: RelationshipAspect): String = stringResource
 )
 
 /**
- * Übersetzt Standard-Kategorienamen automatisch in die aktuell gewählte App-Sprache (DE/EN/FR).
+ * Übersetzt Standard-Kategorienamen in die englische Oberfläche (ältere deutsche Namen werden erkannt).
  */
 @Composable
 fun localizedCategoryName(category: Category): String {

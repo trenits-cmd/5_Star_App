@@ -203,6 +203,30 @@ object ReminderScheduler {
             .build()
         NotificationManagerCompat.from(context).notify(BASE_NOTIFICATION_ID + 500 + (task.id.hashCode() and 0xFF), notification)
     }
+
+    /**
+     * Sendet die tägliche Erinnerungs-Push um die eingestellte Uhrzeit (Standard 22:00),
+     * wenn der heutige Tag noch nicht vollständig ausgefüllt ist.
+     */
+    @SuppressLint("MissingPermission")
+    fun sendDailyReminderNotification(context: Context) {
+        createChannel(context)
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!allowed) return
+
+        val title = context.getString(R.string.reminder_daily_title)
+        val body = context.getString(R.string.reminder_daily_body)
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(BASE_NOTIFICATION_ID + 900, notification)
+    }
 }
 
 /**
@@ -282,6 +306,22 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 if (dueCategories.isNotEmpty()) {
                     ReminderScheduler.sendCategoryNotifications(applicationContext, dueCategories)
                     dueCategories.forEach { prefs.markNotifiedEpochHour(it.id, currentEpochHour) }
+                }
+
+                // Tägliche Erinnerung um die eingestellte Uhrzeit (Standard 22:00),
+                // falls der heutige Tag noch nicht vollständig ausgefüllt ist.
+                val reminderTime = prefs.time()
+                if (now.toLocalTime().hour == reminderTime.hour) {
+                    val allFilled = snapshots.isNotEmpty() && snapshots.all {
+                        ((it["stars"] as? Number)?.toInt() ?: 0) > 0
+                    }
+                    if (!allFilled) {
+                        val lastHour = prefs.lastNotifiedEpochHour("daily_reminder")
+                        if (currentEpochHour - lastHour >= 1L) {
+                            ReminderScheduler.sendDailyReminderNotification(applicationContext)
+                            prefs.markNotifiedEpochHour("daily_reminder", currentEpochHour)
+                        }
+                    }
                 }
                 Result.success()
             }

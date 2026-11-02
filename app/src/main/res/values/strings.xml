@@ -123,6 +123,11 @@
     <string name="settings_new_category">New category</string>
     <string name="settings_add_category">Add category</string>
     <string name="settings_rewards">Rewards and penalties</string>
+    <string name="settings_rewards_hint">Read-only overview. Managed in the Partner tab.</string>
+    <string name="settings_penalties">Possible penalties</string>
+    <string name="settings_penalties_hint">Read-only overview. Managed in the Partner tab.</string>
+    <string name="catalog_item_empty_rewards">No rewards available yet.</string>
+    <string name="catalog_item_empty_penalties">No penalties available yet.</string>
     <string name="settings_delete">Delete</string>
     <string name="settings_new_entry">New entry</string>
     <string name="settings_add_entry">Add entry</string>
@@ -215,6 +220,14 @@
 
     <string name="settings_display_name">Your own name (used as variable)</string>
     <string name="settings_display_name_hint">Choose your name (e.g. Rosie or Andi). It will be displayed everywhere for you and your partner.</string>
+    <string name="settings_partner_name">Partner name (used as variable)</string>
+    <string name="settings_partner_name_hint">Choose your partner\'s name (e.g. Rosie or Andi). It will be displayed everywhere for you.</string>
+    <string name="settings_no_category_crud">Categories, rewards and penalties are managed in the Partner tab. Here only the assignment (you / partner / both) and the push reminder time can be changed.</string>
+    <string name="save_confirmation">Saved and synced.</string>
+    <string name="archive_no_entry">No entry available</string>
+    <string name="archive_tap_details">Tap to show details</string>
+    <string name="reminder_daily_title">Reminder for today\'s rating</string>
+    <string name="reminder_daily_body">You haven\'t completed today\'s rating yet. Please fill in your categories and relationship aspects.</string>
     <string name="settings_save">Save</string>
     <string name="settings_cancel">Cancel</string>
     <string name="settings_target_label">%1$s · %2$s</string>

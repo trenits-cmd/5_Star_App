@@ -215,6 +215,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     val lastSync = MutableStateFlow<Instant?>(null)
 
+    /** Kurze Rückmeldung nach einem erfolgreichen Speichervorgang (Toast-Text). */
+    val toastMessage = MutableStateFlow<String?>(null)
+
     var busy by mutableStateOf(false)
         private set
 
@@ -324,6 +327,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         repo.saveDay(
             buildDayRecord(todayKey.value, uid, categories.value.items, stored + (categoryId to stars), counters),
         )
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     fun setCounter(categoryId: String, key: String, value: Double) {
@@ -332,6 +336,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val counters = myToday.value?.counters.orEmpty().toMutableMap()
         counters[categoryId] = counters[categoryId].orEmpty() + (key to value.coerceAtLeast(0.0))
         repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     /** Speichert die Bewertung einer Mahlzeit (Frühstück, Mittagessen, Abendessen: nichts, wenig, mittel, gesund). */
@@ -349,6 +354,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             ROTATION_STARS to stars.coerceIn(0, MAX_STARS).toDouble(),
         )
         repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     /** Speichert die Abendessen-Uhrzeit (wird von Andi eingegeben und in beiden Apps synchronisiert). */
@@ -361,6 +367,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             DINNER_MINUTE to minute.coerceIn(0, 59).toDouble(),
         )
         repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     /**
@@ -373,6 +380,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val currentRel = counters[RELATIONSHIP_COUNTER_KEY].orEmpty()
         counters[RELATIONSHIP_COUNTER_KEY] = currentRel + (aspect.key to stars.coerceIn(0, MAX_STARS).toDouble())
         repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     /**
@@ -389,6 +397,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             missingRelationshipAspects(record).isEmpty()
         val base = buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters)
         repo.saveDay(base.copy(confirmedAt = if (complete) System.currentTimeMillis() else null))
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     /**
@@ -643,6 +652,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveDisplayName(name: String) {
         localProfileStore.saveDisplayName(name)
+    }
+
+    fun savePartnerDisplayName(name: String) {
+        localProfileStore.savePartnerDisplayName(name.trim())
     }
 
     fun savePhoto(base64: String?) {

@@ -101,21 +101,7 @@ fun SettingsScreen(vm: AppViewModel) {
         }
     }
 
-    var categoryName by rememberSaveable { mutableStateOf("") }
-    var categoryWeight by rememberSaveable { mutableStateOf(3) }
-    var categoryKind by remember { mutableStateOf(CategoryKind.STARS) }
-    var categoryIcon by remember { mutableStateOf(CategoryIcon.STAR) }
-    var goalText by rememberSaveable { mutableStateOf("") }
-    var audience by remember { mutableStateOf(Audience.ME) }
-    var newCategoryPushEnabled by rememberSaveable { mutableStateOf(true) }
-    var newCategoryIntervalHours by rememberSaveable { mutableStateOf(0) }
-    var newCategoryPushHour by rememberSaveable { mutableStateOf(reminder.hour) }
-    var newCategoryPushMinute by rememberSaveable { mutableStateOf(reminder.minute) }
-    var newCategoryNotifications by remember { mutableStateOf(listOf<String>()) }
-    var newNotificationInput by rememberSaveable { mutableStateOf("") }
-
-    var editCategory by remember { mutableStateOf<Category?>(null) }
-    var editCatalogItem by remember { mutableStateOf<CatalogItem?>(null) }
+    var partnerNameInput by rememberSaveable { mutableStateOf(partnerName.orEmpty()) }
 
     var displayName by rememberSaveable(myName) { mutableStateOf(myName.orEmpty()) }
     var partnerEmail by rememberSaveable { mutableStateOf("") }
@@ -184,15 +170,43 @@ fun SettingsScreen(vm: AppViewModel) {
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Button(
-                        onClick = { vm.saveDisplayName(displayName) },
-                        enabled = displayName.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text(stringResource(R.string.settings_save)) }
-                }
-            }
-        }
-
+                    Button(
+                        onClick = { vm.saveDisplayName(displayName) },
+                        enabled = displayName.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.settings_save)) }
+                }
+            }
+        }
+
+        // 1b. Partner name (chosen by the user, shown as variable everywhere)
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(stringResource(R.string.settings_partner_name), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.settings_partner_name_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedTextField(
+                        value = partnerNameInput,
+                        onValueChange = { partnerNameInput = it },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Button(
+                        onClick = { vm.savePartnerDisplayName(partnerNameInput) },
+                        enabled = partnerNameInput.isNotBlank() && !vm.busy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.settings_save)) }
+                }
+            }
+        }
+
         // 2. Partner per E-Mail einladen & Partner zu Testzwecken löschen
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -440,8 +454,69 @@ fun SettingsScreen(vm: AppViewModel) {
             }
         }
 
-        
-        // -- Kategorien und Rewards/Penalties entfernt (Spec-Anforderung) --
+        // 7. Rewards & penalties overview (read-only; managed in the Partner tab)
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(stringResource(R.string.settings_rewards), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.settings_rewards_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val myRewards = catalog.value.items.filter { it.type == TaskType.REWARD && it.appliesTo(uid) }
+                    if (myRewards.isEmpty()) {
+                        Text(stringResource(R.string.catalog_item_empty_rewards), style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        myRewards.forEach { item ->
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text("• ", style = MaterialTheme.typography.bodySmall)
+                                Text(item.title, style = MaterialTheme.typography.bodySmall)
+                                Spacer(Modifier.weight(1f))
+                                Text(
+                                    targetLabel(item.targets, uid, partnerUid, myLabel, partnerLabel),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(stringResource(R.string.settings_penalties), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.settings_penalties_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val myPenalties = catalog.value.items.filter { it.type == TaskType.PENALTY && it.appliesTo(uid) }
+                    if (myPenalties.isEmpty()) {
+                        Text(stringResource(R.string.catalog_item_empty_penalties), style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        myPenalties.forEach { item ->
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text("• ", style = MaterialTheme.typography.bodySmall)
+                                Text(item.title, style = MaterialTheme.typography.bodySmall)
+                                Spacer(Modifier.weight(1f))
+                                Text(
+                                    targetLabel(item.targets, uid, partnerUid, myLabel, partnerLabel),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // 8. Sync & Abmelden
         item {
@@ -492,231 +567,7 @@ fun SettingsScreen(vm: AppViewModel) {
         }
     }
 
-    // Bestehende Kategorie bearbeiten (Gewicht, Zielgruppe, Bild, Kippschalter, Uhrzeit/Intervall & Push-Nachrichten)
-    editCategory?.let { category ->
-        var dialogWeight by remember(category.id) {
-            mutableStateOf(category.weight)
-        }
-        var dialogAudience by remember(category.id) {
-            mutableStateOf(audienceFromTargets(category.targets, vm.uid))
-        }
-        var dialogIcon by remember(category.id) {
-            mutableStateOf(category.resolvedIcon())
-        }
-        var dialogPushEnabled by remember(category.id) {
-            mutableStateOf(category.pushEnabled)
-        }
-        var dialogIntervalHours by remember(category.id) {
-            mutableStateOf(category.pushIntervalHours)
-        }
-        var dialogPushHour by remember(category.id) {
-            mutableStateOf(category.pushHour)
-        }
-        var dialogPushMinute by remember(category.id) {
-            mutableStateOf(category.pushMinute)
-        }
-        var dialogNotifications by remember(category.id) {
-            mutableStateOf(category.notifications)
-        }
-        var dialogNewMessage by remember(category.id) {
-            mutableStateOf("")
-        }
-
-        AlertDialog(
-            onDismissRequest = { editCategory = null },
-            title = { Text(stringResource(R.string.edit_target_for, localizedCategoryName(category))) },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        OutlinedButton(onClick = { dialogWeight = (dialogWeight - 1).coerceAtLeast(1) }) { Text("−") }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                stringResource(R.string.weight_label, dialogWeight),
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                priorityLabel(dialogWeight),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        OutlinedButton(onClick = { dialogWeight = (dialogWeight + 1).coerceAtMost(5) }) { Text("+") }
-                    }
-
-                    Text(stringResource(R.string.settings_targets), style = MaterialTheme.typography.labelLarge)
-                    AudienceSelector(
-                        audience = dialogAudience,
-                        hasPartner = partnerUid != null,
-                        myLabel = myLabel,
-                        partnerLabel = partnerLabel,
-                        onSelect = { dialogAudience = it },
-                    )
-
-                    Text(stringResource(R.string.settings_category_image), style = MaterialTheme.typography.labelLarge)
-                    IconSelector(selected = dialogIcon, onSelect = { dialogIcon = it })
-
-                    HorizontalDivider()
-
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            stringResource(R.string.push_category_enable),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Switch(
-                            checked = dialogPushEnabled,
-                            onCheckedChange = { dialogPushEnabled = it },
-                        )
-                    }
-
-                    if (dialogPushEnabled) {
-                        Text(stringResource(R.string.push_mode_label), style = MaterialTheme.typography.labelLarge)
-                        PushScheduleSelector(
-                            intervalHours = dialogIntervalHours,
-                            hour = dialogPushHour,
-                            minute = dialogPushMinute,
-                            onDailySelected = {
-                                dialogIntervalHours = 0
-                                TimePickerDialog(
-                                    context,
-                                    { _, h, m ->
-                                        dialogPushHour = h
-                                        dialogPushMinute = m
-                                    },
-                                    dialogPushHour,
-                                    dialogPushMinute,
-                                    true,
-                                ).show()
-                            },
-                            onIntervalSelected = { hours ->
-                                dialogIntervalHours = hours
-                            },
-                        )
-
-                        Text(
-                            stringResource(R.string.settings_category_notifications),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                        dialogNotifications.forEachIndexed { idx, msg ->
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text("• $msg", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                TextButton(
-                                    onClick = {
-                                        dialogNotifications = dialogNotifications.filterIndexed { i, _ -> i != idx }
-                                    },
-                                ) {
-                                    Text(stringResource(R.string.settings_delete))
-                                }
-                            }
-                        }
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedTextField(
-                                value = dialogNewMessage,
-                                onValueChange = { dialogNewMessage = it },
-                                label = { Text(stringResource(R.string.settings_new_notification)) },
-                                singleLine = true,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            OutlinedButton(
-                                onClick = {
-                                    if (dialogNewMessage.isNotBlank()) {
-                                        dialogNotifications = dialogNotifications + dialogNewMessage.trim()
-                                        dialogNewMessage = ""
-                                    }
-                                },
-                                enabled = dialogNewMessage.isNotBlank(),
-                            ) {
-                                Text("+")
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val targets = targetsForAudience(dialogAudience, vm.uid, partnerUid)
-                        val finalMessages = if (dialogNewMessage.isNotBlank()) {
-                            dialogNotifications + dialogNewMessage.trim()
-                        } else {
-                            dialogNotifications
-                        }
-                        vm.saveCategory(
-                            name = category.name,
-                            weight = dialogWeight,
-                            kind = category.kind,
-                            targets = targets,
-                            goal = category.goal,
-                            icon = dialogIcon.name,
-                            notifications = finalMessages,
-                            pushEnabled = dialogPushEnabled,
-                            pushIntervalHours = dialogIntervalHours,
-                            pushHour = dialogPushHour,
-                            pushMinute = dialogPushMinute,
-                            id = category.id,
-                        )
-                        editCategory = null
-                    },
-                ) { Text(stringResource(R.string.settings_save)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { editCategory = null }) {
-                    Text(stringResource(R.string.settings_cancel))
-                }
-            },
-        )
-    }
-
-    // Bestehenden Belohnungs-/Strafen-Eintrag auf Person(en) anpassen
-    editCatalogItem?.let { item ->
-        var dialogAudience by remember(item.id) {
-            mutableStateOf(audienceFromTargets(item.targets, vm.uid))
-        }
-        AlertDialog(
-            onDismissRequest = { editCatalogItem = null },
-            title = { Text(stringResource(R.string.edit_target_for, item.title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.settings_targets), style = MaterialTheme.typography.labelLarge)
-                    AudienceSelector(
-                        audience = dialogAudience,
-                        hasPartner = partnerUid != null,
-                        myLabel = myLabel,
-                        partnerLabel = partnerLabel,
-                        onSelect = { dialogAudience = it },
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val targets = targetsForAudience(dialogAudience, vm.uid, partnerUid)
-                        vm.saveCatalogItem(item.type, item.title, targets, item.id)
-                        editCatalogItem = null
-                    },
-                ) { Text(stringResource(R.string.settings_save)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { editCatalogItem = null }) {
-                    Text(stringResource(R.string.settings_cancel))
-                }
-            },
-        )
-    }
+
 }
 
 @OptIn(ExperimentalLayoutApi::class)

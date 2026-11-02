@@ -41,6 +41,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -116,6 +118,15 @@ fun DashboardScreen(vm: AppViewModel) {
     val weekRecordsBeforeToday by vm.isoWeekRecordsBeforeToday.collectAsState()
     val streak by vm.weekSuccessfulDays.collectAsState()
     val weekRewardUnlocked by vm.weekRewardUnlocked.collectAsState()
+
+    // Toast-Bestätigung nach erfolgreichem Speichern
+    val toast by vm.toastMessage.collectAsState()
+    val context = LocalContext.current
+    LaunchedEffect(toast) {
+        if (toast != null) {
+            Toast.makeText(context, toast, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)

@@ -354,8 +354,29 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }.share(emptyList())
 
-    val myToday: StateFlow<DayRecord?> = combine(days, activeDayKey) { list, key ->
-        list.items.firstOrNull { it.ownerUid == uid && it.dayKey == key }
+    /** Lokaler Sofort-Cache für Tageseinträge, damit Eingaben (Lesen, Zähler, Sport) sofort synchron im State sind. */
+    private val localDayRecords = MutableStateFlow<Map<String, DayRecord>>(emptyMap())
+
+    val myToday: StateFlow<DayRecord?> = combine(days, localDayRecords, activeDayKey, targeted) { list, localMap, key, cats ->
+        val remote = list.items.firstOrNull { it.ownerUid == uid && it.dayKey == key }
+        val local = localMap[key]
+        if (remote == null && local == null) {
+            null
+        } else {
+            val mergedStored = remote?.snapshots?.associate { it.categoryId to it.stars }.orEmpty() +
+                local?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+            val mergedCounters = mutableMapOf<String, Map<String, Double>>()
+            remote?.counters?.forEach { (catId, map) -> mergedCounters[catId] = map }
+            local?.counters?.forEach { (catId, map) ->
+                mergedCounters[catId] = mergedCounters[catId].orEmpty() + map
+            }
+            val confirmedAt = local?.confirmedAt ?: remote?.confirmedAt
+            if (cats.isNotEmpty()) {
+                buildDayRecord(key, uid, cats, mergedStored, mergedCounters).copy(confirmedAt = confirmedAt)
+            } else {
+                (local ?: remote)?.copy(confirmedAt = confirmedAt)
+            }
+        }
     }.share(null)
 
     val partnerToday: StateFlow<DayRecord?> = combine(days, activeDayKey, partnerUid) { list, key, partner ->
@@ -487,6 +508,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         userRepository.markCatalogSeeded()
                     }
                 }
+                val repo = CoupleRepository(coupleId)
+                localDayRecords.value.values.forEach { pendingRecord ->
+                    repo.saveDay(pendingRecord)
+                }
             }
         }
         viewModelScope.launch {
@@ -568,33 +593,56 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         editingYesterday.value = useYesterday && canEditYesterday.value
     }
 
-    fun setStars(categoryId: String, stars: Int) {
-        val repo = repo() ?: return
-        val dayKey = activeDayKey.value
-        val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
-        val counters = myToday.value?.counters.orEmpty()
-        repo.saveDay(
-            buildDayRecord(dayKey, uid, targeted.value, stored + (categoryId to stars), counters),
-        )
-        toastMessage.value = text(R.string.save_confirmation)
+    private fun currentMergedDay(dayKey: String = activeDayKey.value): DayRecord? {
+        val remote = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == dayKey }
+        val local = localDayRecords.value[dayKey]
+        if (remote == null && local == null) return null
+        val mergedStored = remote?.snapshots?.associate { it.categoryId to it.stars }.orEmpty() +
+            local?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val mergedCounters = mutableMapOf<String, Map<String, Double>>()
+        remote?.counters?.forEach { (catId, map) -> mergedCounters[catId] = map }
+        local?.counters?.forEach { (catId, map) ->
+            mergedCounters[catId] = mergedCounters[catId].orEmpty() + map
+        }
+        val confirmedAt = local?.confirmedAt ?: remote?.confirmedAt
+        return buildDayRecord(dayKey, uid, targeted.value, mergedStored, mergedCounters).copy(confirmedAt = confirmedAt)
     }
 
-    fun setCounter(categoryId: String, key: String, value: Double) {
-        val repo = repo() ?: return
+    private fun saveUpdatedDay(record: DayRecord, showToast: Boolean = true) {
+        localDayRecords.value = localDayRecords.value + (record.dayKey to record)
+        repo()?.saveDay(record)
+        if (showToast) {
+            toastMessage.value = text(R.string.save_confirmation)
+        }
+    }
+
+    fun setStars(categoryId: String, stars: Int, showToast: Boolean = true) {
         val dayKey = activeDayKey.value
-        val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
-        val counters = myToday.value?.counters.orEmpty().toMutableMap()
+        val current = currentMergedDay(dayKey)
+        val stored = current?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = current?.counters.orEmpty()
+        val updated = buildDayRecord(dayKey, uid, targeted.value, stored + (categoryId to stars), counters)
+            .copy(confirmedAt = current?.confirmedAt)
+        saveUpdatedDay(updated, showToast)
+    }
+
+    fun setCounter(categoryId: String, key: String, value: Double, showToast: Boolean = true) {
+        val dayKey = activeDayKey.value
+        val current = currentMergedDay(dayKey)
+        val stored = current?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = current?.counters.orEmpty().toMutableMap()
         counters[categoryId] = counters[categoryId].orEmpty() + (key to value.coerceAtLeast(0.0))
-        repo.saveDay(buildDayRecord(dayKey, uid, targeted.value, stored, counters))
-        toastMessage.value = text(R.string.save_confirmation)
+        val updated = buildDayRecord(dayKey, uid, targeted.value, stored, counters)
+            .copy(confirmedAt = current?.confirmedAt)
+        saveUpdatedDay(updated, showToast)
     }
 
     /** Speichert die heute eingetragene Sport-Dauer in Minuten (Andi: 3 Tage/Woche à 45 Min, tägliche Eingabe). */
-    fun setSportMinutes(categoryId: String, minutes: Int) {
-        val repo = repo() ?: return
+    fun setSportMinutes(categoryId: String, minutes: Int, showToast: Boolean = true) {
         val dayKey = activeDayKey.value
-        val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
-        val counters = myToday.value?.counters.orEmpty().toMutableMap()
+        val current = currentMergedDay(dayKey)
+        val stored = current?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = current?.counters.orEmpty().toMutableMap()
         val doneDaysBeforeToday = sportDaysInWeek(categoryId, isoWeekRecordsBeforeToday.value)
         val remainingDaysAfterToday = (7 - LocalDate.now(zone).dayOfWeek.value).coerceAtLeast(0)
         val restDayOk = if (doneDaysBeforeToday + remainingDaysAfterToday >= SPORT_WEEKLY_DAYS_GOAL) 1.0 else 0.0
@@ -602,55 +650,59 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             SPORT_MINUTES to minutes.coerceAtLeast(0).toDouble(),
             SPORT_REST_DAY_OK to restDayOk,
         )
-        repo.saveDay(buildDayRecord(dayKey, uid, targeted.value, stored, counters))
-        toastMessage.value = text(R.string.save_confirmation)
+        val updated = buildDayRecord(dayKey, uid, targeted.value, stored, counters)
+            .copy(confirmedAt = current?.confirmedAt)
+        saveUpdatedDay(updated, showToast)
     }
 
     /** Speichert die Bewertung einer Mahlzeit (Frühstück, Mittagessen, Abendessen: nichts, wenig, mittel, gesund). */
     fun setMealLevel(categoryId: String, mealKey: String, level: MealLevel) {
-        setCounter(categoryId, mealKey, level.points.toDouble())
+        setCounter(categoryId, mealKey, level.points.toDouble(), showToast = true)
     }
 
     /** Speichert die heute ausgewählte Wechsel-Aufgabe und deren Sterne-Bewertung (0..5). */
     fun setRotation(categoryId: String, rotationTask: RotationTask, stars: Int) {
-        val repo = repo() ?: return
         val dayKey = activeDayKey.value
-        val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
-        val counters = myToday.value?.counters.orEmpty().toMutableMap()
+        val current = currentMergedDay(dayKey)
+        val stored = current?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = current?.counters.orEmpty().toMutableMap()
         counters[categoryId] = counters[categoryId].orEmpty() + mapOf(
             ROTATION_TASK_INDEX to rotationTask.index.toDouble(),
             ROTATION_STARS to stars.coerceIn(0, MAX_STARS).toDouble(),
         )
-        repo.saveDay(buildDayRecord(dayKey, uid, targeted.value, stored, counters))
-        toastMessage.value = text(R.string.save_confirmation)
+        val updated = buildDayRecord(dayKey, uid, targeted.value, stored, counters)
+            .copy(confirmedAt = current?.confirmedAt)
+        saveUpdatedDay(updated, showToast = true)
     }
 
     /** Speichert die Abendessen-Uhrzeit (wird von Andi eingegeben und in beiden Apps synchronisiert). */
     fun setDinnerTime(categoryId: String, hour: Int, minute: Int) {
-        val repo = repo() ?: return
         val dayKey = activeDayKey.value
-        val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
-        val counters = myToday.value?.counters.orEmpty().toMutableMap()
+        val current = currentMergedDay(dayKey)
+        val stored = current?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = current?.counters.orEmpty().toMutableMap()
         counters[categoryId] = counters[categoryId].orEmpty() + mapOf(
             DINNER_HOUR to hour.coerceIn(0, 23).toDouble(),
             DINNER_MINUTE to minute.coerceIn(0, 59).toDouble(),
         )
-        repo.saveDay(buildDayRecord(dayKey, uid, targeted.value, stored, counters))
-        toastMessage.value = text(R.string.save_confirmation)
+        val updated = buildDayRecord(dayKey, uid, targeted.value, stored, counters)
+            .copy(confirmedAt = current?.confirmedAt)
+        saveUpdatedDay(updated, showToast = true)
     }
 
     /**
      * Speichert die Sterne-Bewertung (0..5) für eine der 5 Dimensionen des Beziehungstrackers.
      */
     fun setRelationshipStars(aspect: RelationshipAspect, stars: Int) {
-        val repo = repo() ?: return
         val dayKey = activeDayKey.value
-        val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
-        val counters = myToday.value?.counters.orEmpty().toMutableMap()
+        val current = currentMergedDay(dayKey)
+        val stored = current?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = current?.counters.orEmpty().toMutableMap()
         val currentRel = counters[RELATIONSHIP_COUNTER_KEY].orEmpty()
         counters[RELATIONSHIP_COUNTER_KEY] = currentRel + (aspect.key to stars.coerceIn(0, MAX_STARS).toDouble())
-        repo.saveDay(buildDayRecord(dayKey, uid, targeted.value, stored, counters))
-        toastMessage.value = text(R.string.save_confirmation)
+        val updated = buildDayRecord(dayKey, uid, targeted.value, stored, counters)
+            .copy(confirmedAt = current?.confirmedAt)
+        saveUpdatedDay(updated, showToast = true)
     }
 
     /**
@@ -659,19 +711,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * Liegt das Tagesergebnis unter 80 %, wird außerdem direkt die tägliche Strafe angelegt.
      */
     fun confirmToday() {
-        val repo = repo() ?: return
         val dayKey = activeDayKey.value
-        val record = myToday.value
+        val record = currentMergedDay(dayKey)
         val stored = record?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
         val counters = record?.counters.orEmpty()
         val complete = missingCategoryIds(targeted.value, record).isEmpty() &&
             missingRelationshipAspects(record).isEmpty()
         val base = buildDayRecord(dayKey, uid, targeted.value, stored, counters)
-        repo.saveDay(base.copy(confirmedAt = if (complete) System.currentTimeMillis() else null))
+            .copy(confirmedAt = if (complete) System.currentTimeMillis() else record?.confirmedAt)
+        saveUpdatedDay(base, showToast = true)
         if (dayOutcomeFor(base, targeted.value) == DayOutcome.PENALTY) {
             ensurePenaltyTaskForDay(dayKey)
         }
-        toastMessage.value = text(R.string.save_confirmation)
     }
 
     /** Legt für [dayKey] eine offene Strafe für den aktuellen Nutzer an, falls noch keine existiert. */

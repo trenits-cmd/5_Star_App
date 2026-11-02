@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -42,13 +43,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import android.widget.Toast
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -230,7 +232,7 @@ fun DashboardScreen(vm: AppViewModel) {
                         category = category,
                         sharePercent = sharePercent,
                         values = values,
-                        onChange = { key, value -> vm.setCounter(category.id, key, value) },
+                        onChange = { key, value, showToast -> vm.setCounter(category.id, key, value, showToast) },
                     )
                 }
                 CategoryKind.ROTATION -> {
@@ -278,8 +280,8 @@ fun DashboardScreen(vm: AppViewModel) {
                         category = category,
                         sharePercent = sharePercent,
                         values = values,
-                        onPagesChanged = { pages ->
-                            vm.setCounter(category.id, PAGES, pages.toDouble())
+                        onPagesChanged = { pages, showToast ->
+                            vm.setCounter(category.id, PAGES, pages.toDouble(), showToast)
                         },
                     )
                 }
@@ -289,8 +291,8 @@ fun DashboardScreen(vm: AppViewModel) {
                         sharePercent = sharePercent,
                         values = values,
                         weekRecordsBeforeToday = weekRecordsBeforeToday,
-                        onMinutesChanged = { minutes ->
-                            vm.setSportMinutes(category.id, minutes)
+                        onMinutesChanged = { minutes, showToast ->
+                            vm.setSportMinutes(category.id, minutes, showToast)
                         },
                     )
                 }
@@ -900,11 +902,27 @@ private fun ReadingCategoryCard(
     category: Category,
     sharePercent: Int,
     values: Map<String, Double>,
-    onPagesChanged: (Int) -> Unit,
+    onPagesChanged: (Int, Boolean) -> Unit,
 ) {
+    val focusManager = LocalFocusManager.current
+    val hasEntry = values.containsKey(PAGES)
     val pages = (values[PAGES] ?: 0.0).toInt().coerceAtLeast(0)
     val stars = counterStars(category, values)
-    var text by remember(category.id, pages) { mutableStateOf(if (pages == 0) "" else pages.toString()) }
+    var text by rememberSaveable(category.id) { mutableStateOf(if (!hasEntry && pages == 0) "" else pages.toString()) }
+    var isFocused by remember { mutableStateOf(false) }
+    var hadFocus by remember { mutableStateOf(false) }
+
+    LaunchedEffect(pages, hasEntry, isFocused) {
+        if (!isFocused) {
+            text = if (!hasEntry && pages == 0) "" else pages.toString()
+        }
+    }
+
+    val commitCurrentText: (Boolean) -> Unit = { showToast ->
+        val parsed = text.trim().toIntOrNull()?.coerceAtLeast(0) ?: 0
+        text = parsed.toString()
+        onPagesChanged(parsed, showToast)
+    }
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
@@ -928,23 +946,60 @@ private fun ReadingCategoryCard(
                 value = pages.toDouble(),
                 step = 5.0,
             ) { newVal ->
-                onPagesChanged(newVal.toInt().coerceAtLeast(0))
+                val updated = newVal.toInt().coerceAtLeast(0)
+                text = updated.toString()
+                onPagesChanged(updated, true)
             }
-            OutlinedTextField(
-                value = text,
-                onValueChange = { input ->
-                    text = input
-                    if (input.isBlank()) {
-                        onPagesChanged(0)
-                    } else {
-                        input.trim().toIntOrNull()?.let { onPagesChanged(it.coerceAtLeast(0)) }
-                    }
-                },
-                label = { Text(stringResource(R.string.reading_pages_label)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { input ->
+                        text = input
+                        if (input.isBlank()) {
+                            onPagesChanged(0, false)
+                        } else {
+                            input.trim().toIntOrNull()?.let { onPagesChanged(it.coerceAtLeast(0), false) }
+                        }
+                    },
+                    label = { Text(stringResource(R.string.reading_pages_label)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            commitCurrentText(true)
+                            focusManager.clearFocus()
+                        },
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .onFocusChanged { state ->
+                            isFocused = state.isFocused
+                            if (state.isFocused) {
+                                hadFocus = true
+                            } else if (hadFocus) {
+                                hadFocus = false
+                                if (text.isNotBlank()) {
+                                    commitCurrentText(true)
+                                }
+                            }
+                        },
+                )
+                Button(
+                    onClick = {
+                        commitCurrentText(true)
+                        focusManager.clearFocus()
+                    },
+                ) {
+                    Text(stringResource(R.string.settings_save))
+                }
+            }
             Spacer(Modifier.height(8.dp))
             Text(
                 stringResource(
@@ -969,8 +1024,9 @@ private fun SportCategoryCard(
     sharePercent: Int,
     values: Map<String, Double>,
     weekRecordsBeforeToday: List<DayRecord>,
-    onMinutesChanged: (Int) -> Unit,
+    onMinutesChanged: (Int, Boolean) -> Unit,
 ) {
+    val focusManager = LocalFocusManager.current
     val hasEntry = values.containsKey(SPORT_MINUTES)
     val minutes = (values[SPORT_MINUTES] ?: 0.0).toInt().coerceAtLeast(0)
     val stars = counterStars(category, values)
@@ -978,8 +1034,22 @@ private fun SportCategoryCard(
         sportDaysInWeek(category.id, weekRecordsBeforeToday)
     }
     val doneThisWeek = doneBeforeToday + if (minutes >= 45) 1 else 0
-    var text by remember(category.id, minutes, hasEntry) {
+    var text by rememberSaveable(category.id) {
         mutableStateOf(if (!hasEntry) "" else minutes.toString())
+    }
+    var isFocused by remember { mutableStateOf(false) }
+    var hadFocus by remember { mutableStateOf(false) }
+
+    LaunchedEffect(minutes, hasEntry, isFocused) {
+        if (!isFocused) {
+            text = if (!hasEntry) "" else minutes.toString()
+        }
+    }
+
+    val commitCurrentMinutes: (Boolean) -> Unit = { showToast ->
+        val parsed = text.trim().toIntOrNull()?.coerceAtLeast(0) ?: 0
+        text = parsed.toString()
+        onMinutesChanged(parsed, showToast)
     }
 
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -1009,22 +1079,34 @@ private fun SportCategoryCard(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FilterChip(
                     selected = hasEntry && minutes == 0,
-                    onClick = { onMinutesChanged(0) },
+                    onClick = {
+                        text = "0"
+                        onMinutesChanged(0, true)
+                    },
                     label = { Text(stringResource(R.string.sport_quick_0)) },
                 )
                 FilterChip(
                     selected = hasEntry && minutes == 30,
-                    onClick = { onMinutesChanged(30) },
+                    onClick = {
+                        text = "30"
+                        onMinutesChanged(30, true)
+                    },
                     label = { Text(stringResource(R.string.sport_quick_30)) },
                 )
                 FilterChip(
                     selected = hasEntry && minutes == 45,
-                    onClick = { onMinutesChanged(45) },
+                    onClick = {
+                        text = "45"
+                        onMinutesChanged(45, true)
+                    },
                     label = { Text(stringResource(R.string.sport_quick_45)) },
                 )
                 FilterChip(
                     selected = hasEntry && minutes == 60,
-                    onClick = { onMinutesChanged(60) },
+                    onClick = {
+                        text = "60"
+                        onMinutesChanged(60, true)
+                    },
                     label = { Text(stringResource(R.string.sport_quick_60)) },
                 )
             }
@@ -1034,21 +1116,60 @@ private fun SportCategoryCard(
                 value = minutes.toDouble(),
                 step = 15.0,
             ) { newVal ->
-                onMinutesChanged(newVal.toInt().coerceAtLeast(0))
+                val updated = newVal.toInt().coerceAtLeast(0)
+                text = updated.toString()
+                onMinutesChanged(updated, true)
             }
-            OutlinedTextField(
-                value = text,
-                onValueChange = { input ->
-                    text = input
-                    if (input.isNotBlank()) {
-                        input.trim().toIntOrNull()?.let { onMinutesChanged(it.coerceAtLeast(0)) }
-                    }
-                },
-                label = { Text(stringResource(R.string.sport_minutes_label)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { input ->
+                        text = input
+                        if (input.isBlank()) {
+                            onMinutesChanged(0, false)
+                        } else {
+                            input.trim().toIntOrNull()?.let { onMinutesChanged(it.coerceAtLeast(0), false) }
+                        }
+                    },
+                    label = { Text(stringResource(R.string.sport_minutes_label)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            commitCurrentMinutes(true)
+                            focusManager.clearFocus()
+                        },
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .onFocusChanged { state ->
+                            isFocused = state.isFocused
+                            if (state.isFocused) {
+                                hadFocus = true
+                            } else if (hadFocus) {
+                                hadFocus = false
+                                if (text.isNotBlank()) {
+                                    commitCurrentMinutes(true)
+                                }
+                            }
+                        },
+                )
+                Button(
+                    onClick = {
+                        commitCurrentMinutes(true)
+                        focusManager.clearFocus()
+                    },
+                ) {
+                    Text(stringResource(R.string.settings_save))
+                }
+            }
             Spacer(Modifier.height(8.dp))
             Text(
                 stringResource(
@@ -1068,7 +1189,7 @@ private fun CounterCard(
     category: Category,
     sharePercent: Int,
     values: Map<String, Double>,
-    onChange: (String, Double) -> Unit,
+    onChange: (String, Double, Boolean) -> Unit,
 ) {
     val stars = counterStars(category, values)
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -1091,15 +1212,15 @@ private fun CounterCard(
                 )
                 Spacer(Modifier.height(4.dp))
                 CounterRow(stringResource(R.string.counter_demi), values[DEMI] ?: 0.0, step = 1.0) {
-                    onChange(DEMI, it)
+                    onChange(DEMI, it, true)
                 }
                 CounterRow(stringResource(R.string.counter_pint), values[PINT] ?: 0.0, step = 1.0) {
-                    onChange(PINT, it)
+                    onChange(PINT, it, true)
                 }
                 LitersField(
                     categoryId = category.id,
                     value = values[LITERS] ?: 0.0,
-                    onChange = { onChange(LITERS, it) },
+                    onChange = { liters, showToast -> onChange(LITERS, liters, showToast) },
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -1116,12 +1237,12 @@ private fun CounterCard(
                 )
                 Spacer(Modifier.height(4.dp))
                 CounterRow(stringResource(R.string.counter_glasses), values[GLASSES] ?: 0.0, step = 1.0) {
-                    onChange(GLASSES, it)
+                    onChange(GLASSES, it, true)
                 }
                 LitersField(
                     categoryId = category.id,
                     value = values[LITERS] ?: 0.0,
-                    onChange = { onChange(LITERS, it) },
+                    onChange = { liters, showToast -> onChange(LITERS, liters, showToast) },
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -1338,23 +1459,74 @@ private fun CounterRow(label: String, value: Double, step: Double, onChange: (Do
 }
 
 @Composable
-private fun LitersField(categoryId: String, value: Double, onChange: (Double) -> Unit) {
-    var text by remember(categoryId) { mutableStateOf(if (value == 0.0) "" else value.toString()) }
-    OutlinedTextField(
-        value = text,
-        onValueChange = { input ->
-            text = input
-            if (input.isBlank()) {
-                onChange(0.0)
-            } else {
-                input.replace(',', '.').toDoubleOrNull()?.let(onChange)
-            }
-        },
-        label = { Text(stringResource(R.string.counter_liters)) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = Modifier.fillMaxWidth(),
-    )
+private fun LitersField(categoryId: String, value: Double, onChange: (Double, Boolean) -> Unit) {
+    val focusManager = LocalFocusManager.current
+    var text by rememberSaveable(categoryId) { mutableStateOf(if (value == 0.0) "" else value.toString()) }
+    var isFocused by remember { mutableStateOf(false) }
+    var hadFocus by remember { mutableStateOf(false) }
+
+    LaunchedEffect(value, isFocused) {
+        if (!isFocused) {
+            text = if (value == 0.0) "" else value.toString()
+        }
+    }
+
+    val commitLiters: (Boolean) -> Unit = { showToast ->
+        val parsed = text.trim().replace(',', '.').toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
+        text = if (parsed == 0.0) "" else parsed.toString()
+        onChange(parsed, showToast)
+    }
+
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = { input ->
+                text = input
+                if (input.isBlank()) {
+                    onChange(0.0, false)
+                } else {
+                    input.trim().replace(',', '.').toDoubleOrNull()?.let { onChange(it.coerceAtLeast(0.0), false) }
+                }
+            },
+            label = { Text(stringResource(R.string.counter_liters)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Decimal,
+                imeAction = ImeAction.Done,
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    commitLiters(true)
+                    focusManager.clearFocus()
+                },
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .onFocusChanged { state ->
+                    isFocused = state.isFocused
+                    if (state.isFocused) {
+                        hadFocus = true
+                    } else if (hadFocus) {
+                        hadFocus = false
+                        if (text.isNotBlank()) {
+                            commitLiters(true)
+                        }
+                    }
+                },
+        )
+        Button(
+            onClick = {
+                commitLiters(true)
+                focusManager.clearFocus()
+            },
+        ) {
+            Text(stringResource(R.string.settings_save))
+        }
+    }
 }
 
 @Composable

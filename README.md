@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.03112026_0045)
+## Features (v1.03112026_0055)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -85,7 +85,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.03112026_0045`** – Penalty & reward confirmation fixed across all tabs (`Today`, `Partner`, `Streak / Archive`) and deployed to Firestore rules (`starapp-99d8e`); immediate daily penalty selection & confirmation when `< 80 %`; Today/Yesterday switcher until 06:00 AM; expandable 7-day archive cards in `WeeklyScreen` with *"No entry available"* when empty; AI-readable code directory [`CODE_INDEX.md`](./CODE_INDEX.md) added.
+- **Latest: `v1.03112026_0055`** – Persistent input saving in category cards (`ReadingCategoryCard`, `SportCategoryCard`, `CounterCard`/`LitersField`) via synchronous in-memory `localDayRecords` state in `AppViewModel`, focus-safe text state hoisting, `ImeAction.Done` / `onFocusChanged` commits, and dedicated *Save* buttons next to input fields.
+- `v1.03112026_0045` – Penalty & reward confirmation fixed across all tabs (`Today`, `Partner`, `Streak / Archive`) and deployed to Firestore rules (`starapp-99d8e`); immediate daily penalty selection & confirmation when `< 80 %`; Today/Yesterday switcher until 06:00 AM; expandable 7-day archive cards in `WeeklyScreen` with *"No entry available"* when empty; AI-readable code directory [`CODE_INDEX.md`](./CODE_INDEX.md) added.
 - `v1.03112026_0030` – Canonical role-based categories, rewards & penalties for Andi (Sport 3× with 3 days/week × 45 min daily time input, Drink water 2× min. 2.5 L, Reading 2× pages read + 7 Rewards & 1 Penalty) and Rosie (5 Categories + 5 Rewards & 3 Penalties).
 - `v1.02112026_2240` – Quick Start preset buttons removed from Settings; automatic role-based sync & cleanup of categories, rewards, and penalties for Rosie & Andi; all remaining German push notifications and legacy catalog/snapshot titles translated to English; confirmation toast shown on every Save button click across all tabs; partner invite via code email & in-app button confirmation by inviter.
 - `v1.02112026_1600` – Partner name chooseable by user & shown as variable; 0 stars for missing day; entries until 6:00 AM; daily reminder push at configurable time (default 22:00) with category name; "No entry available" in archive; expandable archive days; save confirmation toast; dinner time options without brackets; Settings: read-only rewards/penalties overview, no category CRUD, only push time changeable; app version as last Settings item matching release.

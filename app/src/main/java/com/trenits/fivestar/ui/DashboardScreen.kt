@@ -176,17 +176,8 @@ fun DashboardScreen(vm: AppViewModel) {
             )
         }
 
-        // Gesonderte Anzeige 3: Separate Beziehungs-Stimmung pro Tag im Dashboard
-        item {
-            RelationshipMoodBanner(
-                myRecord = myToday,
-                partnerRecord = partnerToday,
-                myLabel = myLabel,
-                partnerLabel = partnerLabel,
-                partnerPhoto = partnerPhoto,
-                hasPartner = partnerUid != null,
-            )
-        }
+        // Beziehungs-Tracker an erster Stelle: 5 Dimensionen mit Bewertungen beider Partner
+        item { RelationshipTodaySection(vm, editable = true) }
 
         item { SectionTitle(stringResource(R.string.section_categories, myLabel)) }
         if (sortedCategories.isEmpty()) {
@@ -264,22 +255,6 @@ fun DashboardScreen(vm: AppViewModel) {
                     )
                 }
             }
-        }
-
-        item { SectionTitle(stringResource(R.string.relationship_title)) }
-        item { RelationshipTodaySection(vm) }
-
-        item { SectionTitle(stringResource(R.string.section_partner, partnerLabel)) }
-        item {
-            PartnerCard(
-                partnerLabel = partnerLabel,
-                partnerPhoto = partnerPhoto,
-                score = partnerToday?.scorePercent,
-                snapshots = partnerToday?.snapshots,
-                counters = partnerToday?.counters,
-                categories = sortedCategories,
-                offline = days.fromCache,
-            )
         }
 
         item { SectionTitle(stringResource(R.string.section_open_tasks)) }
@@ -1309,6 +1284,8 @@ fun PartnerTodayScreen(vm: AppViewModel) {
                 title = stringResource(R.string.score_for_name, partnerLabel),
             )
         }
+        // Beziehungs-Tracker (Read-Only, mit 7-Tage-Verlauf) oben im Partner-Tab
+        item { RelationshipTodaySection(vm, editable = false) }
         item { SectionTitle(stringResource(R.string.section_categories, partnerLabel)) }
         if (partnerCategories.isEmpty()) {
             item { HintCard(stringResource(R.string.categories_empty)) }

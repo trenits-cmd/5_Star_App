@@ -67,6 +67,8 @@ import kotlinx.coroutines.tasks.await
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
@@ -245,6 +247,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 delay(60_000)
             }
         }
+        fillDeadline()
     }
 
     /**
@@ -699,6 +702,34 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     targets = listOf(uid),
                 ),
             )
+        }
+    }
+
+    /**
+     * Deadline-Mechanismus:
+     * Wenn es nach 06:00 Uhr ist und der eigene Eintrag von gestern fehlt,
+     * wird ein Auto-Eintrag mit 0 Sternen für alle Beziehungs-Dimensionen erstellt.
+     * Das wird nur einmalig ausgeführt (beim App-Start).
+     */
+    private fun fillDeadline() {
+        val now = LocalTime.now(ZoneId.systemDefault())
+        if (now.hour < 6) return
+        val repo = repo() ?: return
+        if (categories.value.fromCache || days.value.fromCache) return
+        val yesterday = LocalDate.now(zone).minusDays(1).toString()
+        val myYesterday = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == yesterday }
+        if (myYesterday != null) return
+        val emptyRecords = categories.value.items
+            .filter { it.appliesTo(uid) }
+            .associate { it.id to buildDayRecord(yesterday, uid, categories.value.items, emptyMap(), emptyMap()) }
+        val yesterdayRecord = buildDayRecord(yesterday, uid, categories.value.items, emptyMap(), emptyMap())
+        repo.saveDay(yesterdayRecord)
+        if (partnerUid.value != null) {
+            val partnerYesterday = days.value.items.firstOrNull { it.ownerUid == partnerUid.value && it.dayKey == yesterday }
+            if (partnerYesterday == null) {
+                val pYesterdayRecord = buildDayRecord(yesterday, partnerUid.value!!, categories.value.items, emptyMap(), emptyMap())
+                repo.saveDay(pYesterdayRecord)
+            }
         }
     }
 

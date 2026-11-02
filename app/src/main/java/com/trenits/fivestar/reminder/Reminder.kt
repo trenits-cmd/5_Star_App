@@ -45,7 +45,7 @@ class ReminderPrefs(context: Context) {
         prefs.edit().putBoolean("enabled", enabled).apply()
     }
 
-    fun time(): LocalTime = LocalTime.of(prefs.getInt("hour", 20), prefs.getInt("minute", 0))
+    fun time(): LocalTime = LocalTime.of(prefs.getInt("hour", 22), prefs.getInt("minute", 0))
 
     fun save(time: LocalTime) {
         prefs.edit().putInt("hour", time.hour).putInt("minute", time.minute).apply()

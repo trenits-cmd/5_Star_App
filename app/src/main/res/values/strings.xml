@@ -3,302 +3,304 @@
     <string name="app_name">5 Star</string>
     <string name="app_version">Version %1$s</string>
 
-    <string name="language_switch">Sprache wechseln</string>
+    <string name="language_switch">Change language</string>
     <string name="language_de">Deutsch</string>
     <string name="language_en">English</string>
     <string name="language_fr">Français</string>
 
-    <string name="login_tagline">Gemeinsam Ziele erreichen</string>
-    <string name="login_email">E-Mail</string>
-    <string name="login_password">Passwort</string>
-    <string name="login_sign_in">Anmelden</string>
-    <string name="login_create_account">Konto erstellen</string>
-    <string name="login_google">Mit Google anmelden</string>
-    <string name="error_auth_failed">Anmeldung fehlgeschlagen. Bitte prüfe deine Eingaben.</string>
-    <string name="error_generic">Das hat nicht geklappt. Bitte prüfe deine Verbindung und versuche es erneut.</string>
-    <string name="error_invalid_code">Der Code ist ungültig.</string>
+    <string name="login_tagline">Reach your goals together</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_sign_in">Sign in</string>
+    <string name="login_create_account">Create account</string>
+    <string name="login_google">Sign in with Google</string>
+    <string name="error_auth_failed">Sign-in failed. Please check your input.</string>
+    <string name="error_generic">Something went wrong. Please check your connection and try again.</string>
+    <string name="error_invalid_code">The code is not valid.</string>
 
-    <string name="pairing_title">Paar verbinden</string>
-    <string name="pairing_info">Ihr seht gegenseitig alle Kategorien, Sterne, Scores und Aufgaben. Verbinde dich nur mit einer Person, der du das zutraust.</string>
-    <string name="pairing_create_code">Einladungscode erstellen</string>
-    <string name="pairing_or">oder Code eines Partners eingeben</string>
-    <string name="pairing_code_label">Einladungscode</string>
-    <string name="pairing_join">Beitreten</string>
-    <string name="invite_email_label">E-Mail-Adresse des Partners</string>
-    <string name="invite_send_email">Partner per E-Mail einladen</string>
-    <string name="invite_email_subject">Einladung zur 5 Star App</string>
-    <string name="invite_email_body">Hallo! Verbinde dich mit mir in der 5 Star App. Mein Einladungscode lautet: %1$s</string>
-    <string name="partner_remove_button">Partner löschen / Verbindung trennen (Test)</string>
-    <string name="partner_remove_hint">Trennt die aktuelle Partner-Verbindung zu Testzwecken, sodass neu eingeladen werden kann.</string>
+    <string name="pairing_title">Connect as a couple</string>
+    <string name="pairing_info">You can see each other\'s categories, stars, scores and tasks. Only connect with someone you trust.</string>
+    <string name="pairing_create_code">Create invitation code</string>
+    <string name="pairing_or">or enter your partner\'s code</string>
+    <string name="pairing_code_label">Invitation code</string>
+    <string name="pairing_join">Join</string>
+    <string name="invite_email_label">Partner\'s email address</string>
+    <string name="invite_send_email">Invite partner via email</string>
+    <string name="invite_email_subject">Invitation to 5 Star App</string>
+    <string name="invite_email_body">Hi! Connect with me in the 5 Star App. My invitation code is: %1$s</string>
+    <string name="partner_remove_button">Remove partner / Unpair (Test)</string>
+    <string name="partner_remove_hint">Disconnects the current partner for testing purposes so you can invite again.</string>
 
-    <string name="profile_photo_title">Dein Profilbild (Icon)</string>
-    <string name="profile_photo_upload">Foto auswählen / hochladen</string>
-    <string name="profile_photo_remove">Foto entfernen</string>
+    <string name="profile_photo_title">Your profile picture (icon)</string>
+    <string name="profile_photo_upload">Choose / upload photo</string>
+    <string name="profile_photo_remove">Remove photo</string>
 
-    <string name="tab_today">Heute</string>
-    <string name="tab_relationship">Beziehung</string>
-    <string name="tab_week">Woche / Archiv</string>
-    <string name="tab_history">Verlauf</string>
-    <string name="tab_settings">Einstellungen</string>
+    <string name="tab_today">Today</string>
+    <string name="tab_relationship">Relationship</string>
+    <string name="tab_week">Streak / Archive</string>
+    <string name="tab_history">History</string>
+    <string name="tab_settings">Settings</string>
     <string name="tab_partner">Partner</string>
+    <string name="tab_me">Me</string>
 
-    <string name="score_yours">Dein Score</string>
-    <string name="score_for_name">Tagesstand (%1$s)</string>
-    <string name="status_daily_title">Tagesstand (Ziel: 80 %%)</string>
-    <string name="status_daily_ok">Tagesziel erreicht (≥ 80 %%) ✓</string>
-    <string name="status_daily_below">Noch unter 80 %% – bei Verfehlen gibt es eine Tagesstrafe</string>
-    <string name="status_weekly_title">Wochenstand (7-Tage-Serie)</string>
-    <string name="status_weekly_progress">%1$d / %2$d Tage am Stück ≥ 80 %%</string>
-    <string name="status_relationship_title">Beziehungs-Stimmung heute</string>
-    <string name="status_relationship_summary">Ø %1$.1f / 5 ★ (%2$s)</string>
-    <string name="penalty_pool_reset_hint">Strafen-Pool wird jeden Sonntagabend nach der Wochenbilanz zurückgesetzt.</string>
-    <string name="confirm_push_title">%1$s wartet auf deine Bestätigung!</string>
-    <string name="confirm_push_body">%1$s: „%2$s“ – Bitte bestätige die Einlösung in der App (Auto-Confirm nach 48 Std.).</string>
+    <string name="score_yours">Your score</string>
+    <string name="score_for_name">Daily Status (%1$s)</string>
+    <string name="status_daily_title">Daily Status (Target: 80%%)</string>
+    <string name="status_daily_ok">Daily goal reached (≥ 80%%) ✓</string>
+    <string name="status_daily_below">Below 80%% – missing the target triggers a daily penalty</string>
+    <string name="status_weekly_title">Weekly Status (7-Day Streak)</string>
+    <string name="status_weekly_progress">%1$d / %2$d consecutive days ≥ 80%%</string>
+    <string name="status_relationship_title">Relationship Mood Today</string>
+    <string name="status_relationship_summary">Avg %1$.1f / 5 ★ (%2$s)</string>
+    <string name="penalty_pool_reset_hint">Penalty pool resets every Sunday evening after the weekly review.</string>
+    <string name="confirm_push_title">%1$s is waiting for your confirmation!</string>
+    <string name="confirm_push_body">%1$s: "%2$s" – Please confirm redemption in the app (auto-confirm after 48h).</string>
 
-    <string name="score_hint" formatted="false">Beim Verfehlen des Tagesziels (&lt; 80 %) gibt es eine Strafe. 7 Tage am Stück ab 80 % schalten eine Belohnung frei.</string>
-    <string name="percent_value">%1$.0f %%</string>
-    <string name="section_categories">Kategorien von %1$s</string>
-    <string name="categories_empty">Lege unter Einstellungen zuerst Kategorien an oder lade die Vorlagen für Rosie / Andi.</string>
-    <string name="weight_label">%1$d-fache Wertung</string>
-    <string name="weight_with_share">%1$d-fache Wertung (%2$s) · %3$d %% vom Score</string>
-    <string name="priority_5">5-fach · Höchste Priorität</string>
-    <string name="priority_4">4-fach · Sehr wichtig</string>
-    <string name="priority_3">3-fach · Wichtig (Essen/Wasser/Sport)</string>
-    <string name="priority_2">2-fach · Mittel (Alkohol-Grenze)</string>
-    <string name="priority_1">1-fach · Wechsel-Aufgaben</string>
+    <string name="score_hint" formatted="false">Missing the daily target (&lt; 80%) triggers a penalty. 7 consecutive days at 80%+ unlocks a reward.</string>
+    <string name="percent_value">%1$.0f%%</string>
+    <string name="section_categories">Categories of %1$s</string>
+    <string name="categories_empty">Create categories in Settings first or load the presets for Rosie / Andi.</string>
+    <string name="weight_label">%1$d× weight</string>
+    <string name="weight_with_share">%1$d× weight (%2$s) · %3$d%% of score</string>
+    <string name="priority_5">5× · Top Priority</string>
+    <string name="priority_4">4× · Very Important</string>
+    <string name="priority_3">3× · High (Food/Water/Sport)</string>
+    <string name="priority_2">2× · Medium (Alcohol limit)</string>
+    <string name="priority_1">1× · Alternating tasks</string>
 
-    <string name="section_partner">Übersicht von %1$s</string>
-    <string name="partner_no_rating">noch keine Bewertung</string>
-    <string name="partner_today">heute</string>
-    <string name="offline_stale">Offline. Angezeigt wird der letzte bekannte Stand.</string>
-    <string name="section_open_tasks">Offene Strafen &amp; Belohnungen</string>
-    <string name="no_open_tasks">Keine offenen Aufgaben. Gut gemacht!</string>
-    <string name="waiting_partner">Warte auf deinen Partner</string>
-    <string name="invite_share">Gib diesen Code an deinen Partner weiter oder sende ihn direkt per E-Mail.</string>
-    <string name="invite_create">Code erstellen</string>
-    <string name="invite_new">Neuen Code erstellen</string>
-    <string name="task_title_format">%1$s vom %2$s</string>
-    <string name="task_choose_action">Wähle deine Aktion per Dropdown (bereits gewählte verschwinden, bis alle verbraucht sind):</string>
-    <string name="task_select_placeholder">Bitte auswählen…</string>
-    <string name="task_select_confirm">Auswahl speichern</string>
-    <string name="task_remaining_count">%1$d von %2$d im aktuellen Durchlauf übrig</string>
-    <string name="task_catalog_empty">Keine Einträge dieser Art vorhanden. Lege sie unter Einstellungen an.</string>
-    <string name="task_waiting_confirm">%1$s – Wartet auf Bestätigung der Einlösung durch %2$s.</string>
-    <string name="task_partner_chooses">%1$s wählt noch eine Strafe/Belohnung im Dropdown aus.</string>
-    <string name="task_partner_label">Gewählt: %1$s</string>
-    <string name="task_confirm">Einlösung bestätigen</string>
+    <string name="section_partner">Overview of %1$s</string>
+    <string name="partner_no_rating">no rating yet</string>
+    <string name="partner_today">today</string>
+    <string name="offline_stale">Offline. Showing the last known state.</string>
+    <string name="section_open_tasks">Open penalties &amp; rewards</string>
+    <string name="no_open_tasks">No open tasks. Well done!</string>
+    <string name="waiting_partner">Waiting for your partner</string>
+    <string name="invite_share">Share this code with your partner or send it directly via email.</string>
+    <string name="invite_create">Create code</string>
+    <string name="invite_new">Create new code</string>
+    <string name="task_title_format">%1$s from %2$s</string>
+    <string name="task_choose_action">Select your action via dropdown (chosen items disappear until all have been used):</string>
+    <string name="task_select_placeholder">Select option…</string>
+    <string name="task_select_confirm">Save selection</string>
+    <string name="task_remaining_count">%1$d of %2$d remaining in current cycle</string>
+    <string name="task_catalog_empty">No entries of this type available. Add some in Settings.</string>
+    <string name="task_waiting_confirm">%1$s – Waiting for %2$s to confirm redemption.</string>
+    <string name="task_partner_chooses">%1$s is still choosing an option from the dropdown.</string>
+    <string name="task_partner_label">Chosen: %1$s</string>
+    <string name="task_confirm">Confirm redemption</string>
 
-    <string name="task_reward">Belohnung</string>
-    <string name="task_penalty">Strafe</string>
-    <string name="who_you">Du</string>
+    <string name="task_reward">Reward</string>
+    <string name="task_penalty">Penalty</string>
+    <string name="who_you">You</string>
     <string name="who_partner">Partner</string>
-    <string name="status_open">offen</string>
-    <string name="status_confirmed">eingelöst &amp; bestätigt</string>
-    <string name="status_auto_confirmed">automatisch bestätigt</string>
-    <string name="no_action_chosen">noch nicht ausgewählt</string>
+    <string name="status_open">open</string>
+    <string name="status_confirmed">redeemed &amp; confirmed</string>
+    <string name="status_auto_confirmed">automatically confirmed</string>
+    <string name="no_action_chosen">not chosen yet</string>
 
-    <string name="period_7">7 Tage</string>
-    <string name="period_30">30 Tage</string>
-    <string name="period_year">Dieses Jahr</string>
-    <string name="period_all">Gesamt</string>
-    <string name="history_empty">Für diesen Zeitraum gibt es noch keine Einträge.</string>
+    <string name="period_7">7 days</string>
+    <string name="period_30">30 days</string>
+    <string name="period_year">This year</string>
+    <string name="period_all">All</string>
+    <string name="history_empty">There are no entries for this period yet.</string>
     <string name="history_you">%1$s: %2$s</string>
     <string name="history_partner">%1$s: %2$s</string>
-    <string name="history_your_categories">Deine Kategorien: %1$s</string>
-    <string name="history_partner_categories">Kategorien des Partners: %1$s</string>
+    <string name="history_your_categories">Your categories: %1$s</string>
+    <string name="history_partner_categories">Partner\'s categories: %1$s</string>
     <string name="history_task_line">%1$s · %2$s: %3$s (%4$s)</string>
 
-    <string name="settings_presets_title">Schnellstart: Vorlagen für Rosie &amp; Andi</string>
-    <string name="settings_presets_hint">Rosie: Wasser (3×), Alkohol (2×), Wechsel-Aufgaben (1×), Abendessen vor 20h (3×), Essen (3×) + 5 Belohnungen &amp; 4 Strafen. Andi: Sport (3×), Wasser (2×), Lesen (2×), Abendessen vor 20h (3×) + Belohnungen &amp; Strafe.</string>
-    <string name="settings_preset_rosie">Rosie-Profil &amp; Kategorien laden</string>
-    <string name="settings_preset_andi">Andi-Profil &amp; Kategorien laden</string>
+    <string name="settings_presets_title">Quick Start: Presets for Rosie &amp; Andi</string>
+    <string name="settings_presets_hint">Rosie: Water (3×), Alcohol (2×), Alternating tasks (1×), Dinner before 20h (3×), Meals (3×) + 5 Rewards &amp; 4 Penalties. Andi: Sport (3×), Water (2×), Reading (2×), Dinner before 20h (3×) + Rewards &amp; Penalty.</string>
+    <string name="settings_preset_rosie">Load Rosie profile &amp; categories</string>
+    <string name="settings_preset_andi">Load Andi profile &amp; categories</string>
 
-    <string name="settings_categories">Kategorien</string>
-    <string name="settings_categories_hint">Gewichtung fließt ins Tages- und Wochenziel ein (z. B. Essen 3×, Wasser 3×, Alkohol 2×, Wechsel-Aufgaben 1×).</string>
-    <string name="settings_archive">Archivieren</string>
-    <string name="settings_new_category">Neue Kategorie</string>
-    <string name="settings_add_category">Kategorie hinzufügen</string>
-    <string name="settings_rewards">Belohnungen und Strafen</string>
-    <string name="settings_delete">Löschen</string>
-    <string name="settings_new_entry">Neuer Eintrag</string>
-    <string name="settings_add_entry">Eintrag hinzufügen</string>
+    <string name="settings_categories">Categories</string>
+    <string name="settings_categories_hint">Weights flow into the daily &amp; weekly target (e.g. Meals 3×, Water 3×, Alcohol 2×, Alternating tasks 1×).</string>
+    <string name="settings_archive">Archive</string>
+    <string name="settings_new_category">New category</string>
+    <string name="settings_add_category">Add category</string>
+    <string name="settings_rewards">Rewards and penalties</string>
+    <string name="settings_delete">Delete</string>
+    <string name="settings_new_entry">New entry</string>
+    <string name="settings_add_entry">Add entry</string>
     <string name="catalog_item_label">%1$s: %2$s (%3$s)</string>
-    <string name="settings_reminder">Erinnerung &amp; Push-Nachrichten</string>
-    <string name="settings_reminder_text" formatted="true">Standard-Uhrzeit: %1$s Uhr · Ruhepause: %2$s – %3$s Uhr</string>
-    <string name="settings_change_time">Uhrzeit ändern (%1$s)</string>
-    <string name="settings_test_push">Push-Nachrichten jetzt testen</string>
-    <string name="push_global_enable">Push-Benachrichtigungen aktiv</string>
-    <string name="push_category_enable">Push für diese Kategorie aktiv</string>
-    <string name="push_mode_label">Erinnerungs-Rhythmus</string>
-    <string name="push_mode_daily">Täglich um %1$s Uhr</string>
-    <string name="push_mode_interval">Alle %1$d Std.</string>
-    <string name="push_Summary_daily">Push: täglich %1$s</string>
-    <string name="push_summary_interval">Push: alle %1$d Std.</string>
-    <string name="push_summary_off">Push: aus</string>
-    <string name="quiet_hours_enable">Ruhepause aktiv (keine Push-Nachrichten)</string>
-    <string name="quiet_hours_range">Ruhepause: %1$s bis %2$s Uhr (Standard 23:00–09:00)</string>
-    <string name="quiet_hours_start">Beginn (%1$s)</string>
-    <string name="quiet_hours_end">Ende (%1$s)</string>
+    <string name="settings_reminder">Reminder &amp; push notifications</string>
+    <string name="settings_reminder_text" formatted="true">Default time: %1$s · Quiet hours: %2$s – %3$s</string>
+    <string name="settings_change_time">Change time (%1$s)</string>
+    <string name="settings_test_push">Test push notifications now</string>
+    <string name="push_global_enable">Push notifications enabled</string>
+    <string name="push_category_enable">Push enabled for this category</string>
+    <string name="push_mode_label">Reminder schedule</string>
+    <string name="push_mode_daily">Daily at %1$s</string>
+    <string name="push_mode_interval">Every %1$d h</string>
+    <string name="push_Summary_daily">Push: daily %1$s</string>
+    <string name="push_summary_interval">Push: every %1$d h</string>
+    <string name="push_summary_off">Push: off</string>
+    <string name="quiet_hours_enable">Quiet hours enabled (no push notifications)</string>
+    <string name="quiet_hours_range">Quiet hours: %1$s to %2$s (default 23:00–09:00)</string>
+    <string name="quiet_hours_start">Start (%1$s)</string>
+    <string name="quiet_hours_end">End (%1$s)</string>
     <string name="settings_sync">Sync</string>
-    <string name="sync_offline">Offline. Es wird der letzte bekannte Stand angezeigt.</string>
-    <string name="sync_online">Verbunden.</string>
-    <string name="sync_last">Letzte Synchronisation: %1$s</string>
-    <string name="sync_never">noch nicht</string>
-    <string name="sync_now">Jetzt synchronisieren</string>
+    <string name="sync_offline">Offline. Showing the last known state.</string>
+    <string name="sync_online">Connected.</string>
+    <string name="sync_last">Last sync: %1$s</string>
+    <string name="sync_never">not yet</string>
+    <string name="sync_now">Sync now</string>
 
-    <!-- Woche / Streak & Archiv -->
-    <string name="week_title">Tages- &amp; Wochenstand / Archiv</string>
-    <string name="week_streak">Wochenstand: %1$d von %2$d Tagen am Stück (≥ 80 %%)</string>
-    <string name="week_reward_unlocked">7 Tage am Stück geschafft – Belohnung freigeschaltet!</string>
-    <string name="week_no_reward">Noch %1$d Tag(e) am Stück bis zur nächsten Belohnung.</string>
-    <string name="week_no_data">Noch keine Bewertungen für die letzten 7 Tage.</string>
-    <string name="week_successful_days">Tagesstand der letzten 7 Tage</string>
-    <string name="week_reward_pool">Verfügbare Belohnungen</string>
-    <string name="week_penalty_pool">Mögliche Tagesstrafen</string>
-    <string name="archive_title">Archiv (Bestätigte Strafen &amp; Belohnungen)</string>
-    <string name="archive_empty">Noch keine bestätigten Strafen oder Belohnungen im Archiv.</string>
-    <string name="archive_penalty_date">Tag der Strafe: %1$s</string>
-    <string name="archive_reward_date">Tag der Belohnung: %1$s</string>
-    <string name="archive_redeemed_date">Tag der Einlösung: %1$s</string>
+    <!-- Week / Streak & Archive -->
+    <string name="week_title">Daily &amp; Weekly Status / Archive</string>
+    <string name="week_streak">Weekly status: %1$d of %2$d days in a row (≥ 80%%)</string>
+    <string name="week_reward_unlocked">7 days in a row achieved – Reward unlocked!</string>
+    <string name="week_no_reward">%1$d more consecutive day(s) until the next reward.</string>
+    <string name="week_no_data">No ratings for the last 7 days yet.</string>
+    <string name="week_successful_days">Daily status – Last 7 days</string>
+    <string name="week_reward_pool">Available rewards</string>
+    <string name="week_penalty_pool">Possible daily penalties</string>
+    <string name="archive_title">Archive (Confirmed Penalties &amp; Rewards)</string>
+    <string name="archive_empty">No confirmed penalties or rewards in the archive yet.</string>
+    <string name="archive_penalty_date">Penalty date: %1$s</string>
+    <string name="archive_reward_date">Reward date: %1$s</string>
+    <string name="archive_redeemed_date">Redemption date: %1$s</string>
 
-    <string name="settings_sign_out">Abmelden</string>
+    <string name="settings_sign_out">Sign out</string>
 
-    <!-- Rosie & Andi Belohnungen und Strafen -->
-    <string name="seed_reward_1">Vinted Budget: Rosie erhält 10 € von Andi</string>
-    <string name="seed_reward_2">Blumen: Rosie erhält Blumen von Andi</string>
-    <string name="seed_reward_3">Massage für 30 Minuten</string>
-    <string name="seed_reward_4">Essen gehen: Restaurant darf ausgesucht werden</string>
-    <string name="seed_reward_5">Gemeinsames Kochen nach Wahl: Ein Gericht, das Rosie liebt, von Andi zubereitet</string>
-    <string name="seed_reward_andi_1">Kuscheln für 30 Minuten</string>
-    <string name="seed_reward_andi_2">Massage für 30 Minuten</string>
+    <!-- Rosie & Andi Rewards and Penalties -->
+    <string name="seed_reward_1">Vinted Budget: Rosie gets 10 € from Andi</string>
+    <string name="seed_reward_2">Flowers: Rosie receives flowers from Andi</string>
+    <string name="seed_reward_3">Massage for 30 minutes</string>
+    <string name="seed_reward_4">Eat out: choose the restaurant</string>
+    <string name="seed_reward_5">Cooking of choice: a dish Rosie loves, prepared by Andi</string>
+    <string name="seed_reward_andi_1">Cuddling for 30 minutes</string>
+    <string name="seed_reward_andi_2">Massage for 30 minutes</string>
     <string name="seed_reward_andi_3">Edging</string>
     <string name="seed_reward_andi_4">Blowjob</string>
     <string name="seed_reward_andi_5">Handjob</string>
     <string name="seed_reward_andi_6">Video</string>
-    <string name="seed_reward_andi_7">Lieblingsgericht: Rosie kocht für Andi Leibgericht</string>
-    <string name="seed_penalty_1">kein Orgasmus: es gibt Sex, aber Rosie hat keinen Orgasmus</string>
-    <string name="seed_penalty_2">keine Bar für zwei Tage</string>
-    <string name="seed_penalty_3">Handy-Abgabe: Das Smartphone für eine Stunde an Andi abgeben, um Ablenkung zu stoppen</string>
-    <string name="seed_penalty_andi_1">Handy-Abgabe: Das Smartphone für eine Stunde an Rosie abgeben, um Ablenkung zu stoppen</string>
+    <string name="seed_reward_andi_7">Favourite dish: Rosie cooks Andi\'s favourite meal</string>
+    <string name="seed_penalty_1">no orgasm: sex happens, but Rosie has no orgasm</string>
+    <string name="seed_penalty_2">no bar for two days</string>
+    <string name="seed_penalty_3">Phone handover: hand over smartphone to Andi for 1 hour to stop distraction</string>
+    <string name="seed_penalty_andi_1">Phone handover: hand over smartphone to Rosie for 1 hour to stop distraction</string>
 
-    <string name="reminder_channel">Kategorie-Benachrichtigungen</string>
-    <string name="reminder_text">Deine Bewertung für heute fehlt noch.</string>
-    <string name="reminder_default_category">Vergiss heute nicht: %1$s ⭐</string>
+    <string name="reminder_channel">Category notifications</string>
+    <string name="reminder_text">Your rating for today is still missing.</string>
+    <string name="reminder_default_category">Don\'t forget today: %1$s ⭐</string>
 
-    <string name="connected_with">Verbunden mit %1$s</string>
-    <string name="kind_stars">Sterne (1–5 ★)</string>
-    <string name="kind_alcohol">Alkohol-Grenze (Demi/Pinte/L)</string>
-    <string name="kind_water">Wasser trinken (Gläser/Liter)</string>
-    <string name="kind_rotation">Wechsel-Aufgaben (Wochen-Rotation)</string>
-    <string name="kind_dinner">Abendessen vor 20h (Uhrzeit)</string>
-    <string name="kind_meals">Essen (Frühstück, Mittag, Abend)</string>
-    <string name="kind_reading">Lesen (Seitenanzahl)</string>
+    <string name="connected_with">Connected with %1$s</string>
+    <string name="kind_stars">Stars (1–5 ★)</string>
+    <string name="kind_alcohol">Alcohol limit (demi/pint/L)</string>
+    <string name="kind_water">Drink water (glasses/liters)</string>
+    <string name="kind_rotation">Alternating tasks (weekly rotation)</string>
+    <string name="kind_dinner">Dinner before 20h (time)</string>
+    <string name="kind_meals">Meals (breakfast, lunch, dinner)</string>
+    <string name="kind_reading">Reading (page count)</string>
 
-    <string name="target_me">Für %1$s</string>
-    <string name="target_partner">Für %1$s</string>
-    <string name="target_both">Für %1$s &amp; %2$s</string>
-    <string name="settings_kind">Art</string>
-    <string name="settings_targets">Gilt für</string>
-    <string name="settings_edit_target">Bearbeiten</string>
-    <string name="edit_target_for">%1$s bearbeiten</string>
+    <string name="target_me">For %1$s</string>
+    <string name="target_partner">For %1$s</string>
+    <string name="target_both">For %1$s &amp; %2$s</string>
+    <string name="settings_kind">Type</string>
+    <string name="settings_targets">Applies to</string>
+    <string name="settings_edit_target">Edit</string>
+    <string name="edit_target_for">Edit %1$s</string>
 
-    <string name="counter_pint">Pinte (0,5 L)</string>
-    <string name="counter_demi">Demi (0,25 L)</string>
-    <string name="counter_glasses">Gläser (à 0,25 L)</string>
-    <string name="counter_liters">Zusätzliche Menge in Litern (Dezimalzahl)</string>
-    <string name="counter_water_goal_hint">Ziel: mind. %1$.2f L (= 5 ★, darunter prozentual weniger mit Abrunden)</string>
-    <string name="counter_alcohol_goal_hint">0,00 L = 5 ★ · sonst prozentual weniger bis %1$.2f L</string>
+    <string name="counter_pint">Pint (0.5 L)</string>
+    <string name="counter_demi">Demi (0.25 L)</string>
+    <string name="counter_glasses">Glasses (0.25 L each)</string>
+    <string name="counter_liters">Additional amount in liters (decimal)</string>
+    <string name="counter_water_goal_hint">Goal: at least %1$.2f L (= 5 ★, proportionally rounded down below)</string>
+    <string name="counter_alcohol_goal_hint">0.00 L = 5 ★ · proportionally less above up to %1$.2f L</string>
 
-    <string name="settings_display_name">Dein eigener Name (wird als Variable angezeigt)</string>
-    <string name="settings_display_name_hint">Wähle deinen Namen (z. B. Rosie oder Andi). Er wird überall für dich und bei deinem Partner angezeigt.</string>
-    <string name="settings_save">Speichern</string>
-    <string name="settings_cancel">Abbrechen</string>
+    <string name="settings_display_name">Your own name (used as variable)</string>
+    <string name="settings_display_name_hint">Choose your name (e.g. Rosie or Andi). It will be displayed everywhere for you and your partner.</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_cancel">Cancel</string>
     <string name="settings_target_label">%1$s · %2$s</string>
-    <string name="settings_goal_alcohol">Obergrenze für 0 ★ (Liter, 0 L = 5 ★)</string>
-    <string name="settings_goal_water">Tagesziel in Litern (z. B. 2,5)</string>
-    <string name="counter_rating">Bewertung: %1$s (%2$d/5 ★)</string>
-    <string name="counter_total_liters">Gesamtmenge heute: %1$.2f Liter</string>
+    <string name="settings_goal_alcohol">Max limit for 0 ★ (liters, 0 L = 5 ★)</string>
+    <string name="settings_goal_water">Daily goal in liters (e.g. 2.5)</string>
+    <string name="counter_rating">Rating: %1$s (%2$d/5 ★)</string>
+    <string name="counter_total_liters">Total today: %1$.2f liters</string>
 
-    <!-- Essen: Frühstück, Mittagessen, Abendessen -->
-    <string name="meals_hint">Alle 3 gesund = 5 ★, sonst entsprechend weniger.</string>
-    <string name="meal_breakfast">Frühstück</string>
-    <string name="meal_lunch">Mittagessen</string>
-    <string name="meal_dinner">Abendessen</string>
-    <string name="meal_level_none">nichts</string>
-    <string name="meal_level_little">wenig</string>
-    <string name="meal_level_medium">mittel</string>
-    <string name="meal_level_healthy">gesund</string>
+    <!-- Meals: Breakfast, Lunch, Dinner -->
+    <string name="meals_hint">All 3 healthy = 5 ★, otherwise proportionally fewer stars.</string>
+    <string name="meal_breakfast">Breakfast</string>
+    <string name="meal_lunch">Lunch</string>
+    <string name="meal_dinner">Dinner</string>
+    <string name="meal_level_none">nothing</string>
+    <string name="meal_level_little">little</string>
+    <string name="meal_level_medium">medium</string>
+    <string name="meal_level_healthy">healthy</string>
 
-    <!-- Wechsel-Aufgaben (Rotation) -->
-    <string name="rotation_today_label">Heutige Wechsel-Aufgabe auswählen:</string>
-    <string name="rotation_remaining_week">Diese Woche noch %1$d× offen</string>
-    <string name="rotation_done_week">Wochenziel erfüllt ✓</string>
-    <string name="rotation_task_lesson">Unterricht planen (3×/Woche)</string>
-    <string name="rotation_task_clean">Wohnung aufräumen (1×/Woche)</string>
-    <string name="rotation_task_trash">Müll runterbringen (1×/Woche)</string>
-    <string name="rotation_task_cook">Kochen (1×/Woche)</string>
-    <string name="rotation_task_dishes">Geschirr spülen (1×/Woche)</string>
-    <string name="rotation_yes">Ja (5 ★)</string>
-    <string name="rotation_no">Nein (0 ★)</string>
+    <!-- Alternating tasks (Rotation) -->
+    <string name="rotation_today_label">Select today\'s alternating task:</string>
+    <string name="rotation_remaining_week">%1$d× left this week</string>
+    <string name="rotation_done_week">Weekly target done ✓</string>
+    <string name="rotation_task_lesson">Plan lessons (3×/week)</string>
+    <string name="rotation_task_clean">Tidy up apartment (1×/week)</string>
+    <string name="rotation_task_trash">Take out trash (1×/week)</string>
+    <string name="rotation_task_cook">Cook meal (1×/week)</string>
+    <string name="rotation_task_dishes">Wash dishes (1×/week)</string>
+    <string name="rotation_yes">Yes (5 ★)</string>
+    <string name="rotation_no">No (0 ★)</string>
+    <string name="rotation_not_set">No alternating task chosen yet</string>
 
-    <!-- Abendessen vor 20h -->
-    <string name="dinner_rules_hint">Vor 20:00 Uhr = 5 ★ · Vor 21:00 Uhr = 1 ★ · Sonst = 0 ★</string>
-    <string name="dinner_time_current">Eingetragene Uhrzeit: %1$s Uhr</string>
-    <string name="dinner_time_not_set">Heute noch keine Abendessen-Uhrzeit eingetragen</string>
-    <string name="dinner_pick_time">Uhrzeit eingeben (Andi)</string>
-    <string name="dinner_tracked_by_andi">Die Uhrzeit wird von Andi eingegeben und in beiden Apps getrackt.</string>
-    <string name="dinner_quick_before_20">Vor 20h (19:30)</string>
-    <string name="dinner_quick_before_21">Vor 21h (20:30)</string>
-    <string name="dinner_quick_after_21">Ab 21h (21:15)</string>
+    <!-- Dinner before 20h -->
+    <string name="dinner_rules_hint">Before 20:00 = 5 ★ · Before 21:00 = 1 ★ · Otherwise = 0 ★</string>
+    <string name="dinner_time_current">Recorded time: %1$s</string>
+    <string name="dinner_time_not_set">No dinner time recorded for today yet</string>
+    <string name="dinner_pick_time">Enter time (Andi)</string>
+    <string name="dinner_tracked_by_andi">Time is entered by Andi and tracked in both apps.</string>
+    <string name="dinner_quick_before_20">Before 20h</string>
+    <string name="dinner_quick_before_21">Before 21h</string>
+    <string name="dinner_quick_after_21">21h+</string>
 
-    <!-- Übersetzbare Standard-Kategorienamen -->
-    <string name="cat_preset_water">Wasser trinken</string>
-    <string name="cat_preset_alcohol">Alkohol-Grenze</string>
-    <string name="cat_preset_rotation">Weitere Aufgaben (Wechsel)</string>
-    <string name="cat_preset_dinner">Abendessen vor 20h</string>
-    <string name="cat_preset_food">Essen</string>
+    <!-- Translatable preset category names -->
+    <string name="cat_preset_water">Drink water</string>
+    <string name="cat_preset_alcohol">Alcohol limit</string>
+    <string name="cat_preset_rotation">Other tasks (alternating)</string>
+    <string name="cat_preset_dinner">Dinner before 20h</string>
+    <string name="cat_preset_food">Meals</string>
     <string name="cat_preset_sport">Sport</string>
-    <string name="cat_preset_reading">Lesen</string>
-    <string name="reading_rules_hint">0–5 Seiten = 0 ★ · &gt; 50 Seiten = 5 ★ · 6–50 Seiten anteilig (1–4 ★)</string>
-    <string name="reading_pages_label">Gelesene Seiten heute</string>
-    <string name="reading_pages_summary">%1$d Seiten gelesen</string>
+    <string name="cat_preset_reading">Reading</string>
+    <string name="reading_rules_hint">0–5 pages = 0 ★ · &gt; 50 pages = 5 ★ · 6–50 pages proportional (1–4 ★)</string>
+    <string name="reading_pages_label">Pages read today</string>
+    <string name="reading_pages_summary">%1$d pages read</string>
 
-    <!-- Kategorie-Bilder & Push-Nachrichten -->
-    <string name="settings_category_image">Bild für Kategorie</string>
-    <string name="icon_food">Essen</string>
-    <string name="icon_water">Wasser</string>
-    <string name="icon_alcohol">Alkohol</string>
+    <!-- Category images & push notifications -->
+    <string name="settings_category_image">Category image</string>
+    <string name="icon_food">Food</string>
+    <string name="icon_water">Water</string>
+    <string name="icon_alcohol">Alcohol</string>
     <string name="icon_fitness">Sport</string>
-    <string name="icon_home">Ordnung</string>
+    <string name="icon_home">Home</string>
     <string name="icon_mind">Me-Time</string>
     <string name="icon_detox">Digital Detox</string>
-    <string name="icon_star">Sterne</string>
-    <string name="settings_category_notifications">Push-Nachrichten für diese Kategorie</string>
-    <string name="settings_new_notification">Neue Push-Nachricht…</string>
-    <string name="settings_add_notification">Nachricht +</string>
-    <string name="settings_notifications_count">%1$d Push-Nachricht(en)</string>
+    <string name="icon_star">Stars</string>
+    <string name="settings_category_notifications">Push notifications for this category</string>
+    <string name="settings_new_notification">New push message…</string>
+    <string name="settings_add_notification">Add message</string>
+    <string name="settings_notifications_count">%1$d push message(s)</string>
 
-    <!-- Beziehungstracker -->
-    <string name="relationship_title">Beziehungstracker</string>
-    <string name="relationship_subtitle">Wie fühlt sich eure Beziehung heute an? Beide Partner bewerten mit 1 bis 5 Sternen.</string>
-    <string name="relationship_score_couple">Gemeinsamer Beziehungs-Score</string>
+    <!-- Relationship Tracker -->
+    <string name="relationship_title">Relationship Tracker</string>
+    <string name="relationship_subtitle">How does your relationship feel today? Both partners rate with 1 to 5 stars.</string>
+    <string name="relationship_score_couple">Shared Relationship Score</string>
     <string name="relationship_score_you">%1$s: %2$s</string>
     <string name="relationship_score_partner">%1$s: %2$s</string>
-    <string name="relationship_partner_stars">%1$s heute: %2$s</string>
-    <string name="relationship_partner_not_rated">%1$s: heute noch nicht bewertet</string>
-    <string name="relationship_history_title">Beziehung der letzten 7 Tage</string>
-    <string name="rel_mood_general">Stimmung unabhängig von Beziehung</string>
-    <string name="rel_mood_relationship">Stimmung in der Beziehung</string>
-    <string name="rel_communication">Kommunikation</string>
-    <string name="rel_intimacy">Intimität</string>
+    <string name="relationship_partner_stars">%1$s today: %2$s</string>
+    <string name="relationship_partner_not_rated">%1$s: not rated today yet</string>
+    <string name="relationship_history_title">Relationship – Last 7 Days</string>
+    <string name="rel_mood_general">Mood independent of relationship</string>
+    <string name="rel_mood_relationship">Mood within the relationship</string>
+    <string name="rel_communication">Communication</string>
+    <string name="rel_intimacy">Intimacy</string>
     <string name="rel_sex">Sex</string>
-    <string name="account_signed_in_as">Angemeldet als: %1$s</string>
-    <string name="relationship_partner_avatar_hint">Rückmeldung von %1$s</string>
-    <string name="confirm_today_title">Heute abschließen</string>
-    <string name="confirm_today_button">Heute bestätigen</string>
-    <string name="confirm_today_button_again">Erneut bestätigen</string>
-    <string name="confirm_today_saved">Gespeichert und synchronisiert.</string>
-    <string name="confirm_today_done">Bestätigt um %1$s Uhr. Du kannst weitere Werte jederzeit ergänzen.</string>
-    <string name="confirm_today_missing_title">Noch nicht ausgefüllt:</string>
-    <string name="confirm_today_missing_hint">Bitte fülle diese Punkte aus, damit der Tag bestätigt werden kann.</string>
+    <string name="account_signed_in_as">Signed in as: %1$s</string>
+    <string name="relationship_partner_avatar_hint">Feedback from %1$s</string>
+    <string name="confirm_today_title">Finish today</string>
+    <string name="confirm_today_button">Confirm today</string>
+    <string name="confirm_today_button_again">Confirm again</string>
+    <string name="confirm_today_saved">Saved and synced.</string>
+    <string name="confirm_today_done">Confirmed at %1$s. You can still add more values at any time.</string>
+    <string name="confirm_today_missing_title">Still missing:</string>
+    <string name="confirm_today_missing_hint">Please fill in these items so the day can be confirmed.</string>
 </resources>

@@ -13,6 +13,7 @@ import com.trenits.fivestar.R
 import com.trenits.fivestar.data.CoupleRepository
 import com.trenits.fivestar.data.InvalidInviteException
 import com.trenits.fivestar.data.Listed
+import com.trenits.fivestar.data.LocalProfileStore
 import com.trenits.fivestar.data.UserProfile
 import com.trenits.fivestar.data.UserRepository
 import com.trenits.fivestar.domain.CatalogItem
@@ -66,6 +67,8 @@ import kotlinx.coroutines.tasks.await
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
@@ -86,6 +89,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val uid: String = Firebase.auth.currentUser?.uid.orEmpty()
     private val zone = ZoneId.systemDefault()
     private val userRepository = UserRepository(uid)
+    private val localProfileStore = LocalProfileStore(getApplication())
     private val clock = MutableStateFlow(Instant.now())
 
     val profile: StateFlow<UserProfile?> = userRepository.profile().share(null)
@@ -117,18 +121,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val myName: StateFlow<String?> = if (uid.isEmpty()) {
         flowOf(null).share(null)
     } else {
-        userRepository.nameOf(uid).share(null)
+        localProfileStore.displayName.share(null)
     }
 
-    val myPhoto: StateFlow<String?> = profile.map { it?.photoBase64 }.share(null)
+    val myPhoto: StateFlow<String?> = localProfileStore.photoBase64.share(null)
 
-    val partnerName: StateFlow<String?> = partnerUid
-        .flatMapLatest { id -> if (id == null) flowOf(null) else userRepository.nameOf(id) }
-        .share(null)
+    val partnerName: StateFlow<String?> = localProfileStore.partnerDisplayName.share(null)
 
-    val partnerPhoto: StateFlow<String?> = partnerUid
-        .flatMapLatest { id -> if (id == null) flowOf(null) else userRepository.photoOf(id) }
-        .share(null)
+    val partnerPhoto: StateFlow<String?> = localProfileStore.partnerPhotoBase64.share(null)
 
     /** Katalogeinträge, die ich selbst angelegt habe. */
     val myCatalog: StateFlow<List<CatalogItem>> = catalog
@@ -247,6 +247,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 delay(60_000)
             }
         }
+        fillDeadline()
     }
 
     /**
@@ -405,7 +406,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * - Strafen: kein Orgasmus, keine Bar
      */
     fun applyRosiePreset() {
-        userRepository.setDisplayName("Rosie")
+        localProfileStore.saveDisplayName("Rosie")
+        localProfileStore.savePartnerDisplayName("Andi")
         val repo = repo() ?: return
         val bothTargets = listOfNotNull(uid, partnerUid.value).distinct()
         val myTargets = listOf(uid)
@@ -429,7 +431,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             targets = bothTargets,
             goal = 20.0,
             icon = CategoryIcon.FOOD.name,
-            notifications = listOf("Abendessen vor 20:00 Uhr = 5 Sterne 🍽️"),
+            notifications = listOf("Dinner before 20:00 = 5 stars 🍽️"),
             id = "preset_dinner_$uid",
         )
         repo.saveCategory(
@@ -441,8 +443,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             goal = DEFAULT_WATER_GOAL,
             icon = CategoryIcon.WATER.name,
             notifications = listOf(
-                "Mindestens 2,5 Liter Wasser heute trinken 💧",
-                "Zwischenstand: Gläser oder Liter eintragen!",
+                "Drink at least 2.5 liters of water today 💧",
+                "Status: Enter glasses or liters!",
             ),
             pushEnabled = true,
             pushIntervalHours = 2,
@@ -456,7 +458,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             targets = myTargets,
             goal = DEFAULT_ALCOHOL_LIMIT,
             icon = CategoryIcon.ALCOHOL.name,
-            notifications = listOf("0 Liter Alkohol = 5 Sterne ⭐"),
+            notifications = listOf("0 Liter alcohol = 5 stars ⭐"),
             id = "preset_alcohol_$uid",
         )
         repo.saveCategory(
@@ -502,7 +504,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * - Strafe: Cooking
      */
     fun applyAndiPreset() {
-        userRepository.setDisplayName("Andi")
+        localProfileStore.saveDisplayName("Andi")
+        localProfileStore.savePartnerDisplayName("Rosie")
         val repo = repo() ?: return
         val bothTargets = listOfNotNull(uid, partnerUid.value).distinct()
         val myTargets = listOf(uid)
@@ -515,7 +518,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             targets = myTargets,
             goal = 0.0,
             icon = CategoryIcon.FITNESS.name,
-            notifications = listOf("Zeit für Sport heute 💪"),
+            notifications = listOf("Time for sport today 💪"),
             id = "preset_sport_$uid",
         )
         repo.saveCategory(
@@ -527,8 +530,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             goal = DEFAULT_WATER_GOAL,
             icon = CategoryIcon.WATER.name,
             notifications = listOf(
-                "Mindestens 2,5 Liter Wasser heute trinken 💧",
-                "Zwischenstand: Gläser oder Liter eintragen!",
+                "Drink at least 2.5 liters of water today 💧",
+                "Status: Enter glasses or liters!",
             ),
             pushEnabled = true,
             pushIntervalHours = 2,
@@ -553,7 +556,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             targets = bothTargets,
             goal = 20.0,
             icon = CategoryIcon.FOOD.name,
-            notifications = listOf("Abendessen-Uhrzeit eintragen (vor 20h = 5 ★) 🍽️"),
+            notifications = listOf("Enter dinner time (before 20h = 5 ★) 🍽️"),
             id = "preset_dinner_$uid",
         )
 
@@ -610,11 +613,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun saveDisplayName(name: String) {
-        userRepository.setDisplayName(name)
+        localProfileStore.saveDisplayName(name)
     }
 
     fun savePhoto(base64: String?) {
-        userRepository.setPhotoBase64(base64)
+        localProfileStore.savePhotoBase64(base64)
     }
 
     fun archiveCategory(id: String) {
@@ -699,6 +702,34 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     targets = listOf(uid),
                 ),
             )
+        }
+    }
+
+    /**
+     * Deadline-Mechanismus:
+     * Wenn es nach 06:00 Uhr ist und der eigene Eintrag von gestern fehlt,
+     * wird ein Auto-Eintrag mit 0 Sternen für alle Beziehungs-Dimensionen erstellt.
+     * Das wird nur einmalig ausgeführt (beim App-Start).
+     */
+    private fun fillDeadline() {
+        val now = LocalTime.now(ZoneId.systemDefault())
+        if (now.hour < 6) return
+        val repo = repo() ?: return
+        if (categories.value.fromCache || days.value.fromCache) return
+        val yesterday = LocalDate.now(zone).minusDays(1).toString()
+        val myYesterday = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == yesterday }
+        if (myYesterday != null) return
+        val emptyRecords = categories.value.items
+            .filter { it.appliesTo(uid) }
+            .associate { it.id to buildDayRecord(yesterday, uid, categories.value.items, emptyMap(), emptyMap()) }
+        val yesterdayRecord = buildDayRecord(yesterday, uid, categories.value.items, emptyMap(), emptyMap())
+        repo.saveDay(yesterdayRecord)
+        if (partnerUid.value != null) {
+            val partnerYesterday = days.value.items.firstOrNull { it.ownerUid == partnerUid.value && it.dayKey == yesterday }
+            if (partnerYesterday == null) {
+                val pYesterdayRecord = buildDayRecord(yesterday, partnerUid.value!!, categories.value.items, emptyMap(), emptyMap())
+                repo.saveDay(pYesterdayRecord)
+            }
         }
     }
 

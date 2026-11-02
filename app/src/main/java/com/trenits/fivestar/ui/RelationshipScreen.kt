@@ -206,15 +206,22 @@ fun RelationshipScreen(vm: AppViewModel) {
 /**
  * Kompakte Beziehungstracker-Karte für den Heute-Tab, damit beide Partner alle 5 Dimensionen
  * auch direkt auf der Tagesübersicht bewerten und vergleichen können.
+ *
+ * @param editable wenn false = Nur-Ansicht (Partner-Tab), keine Sterne-Bearbeitung
+ * @param showHistory wenn true = 7-Tage-Verlauf unten anzeigen (Partner-Tab)
  */
 @Composable
-fun RelationshipTodaySection(vm: AppViewModel) {
+fun RelationshipTodaySection(vm: AppViewModel, editable: Boolean = true) {
     val myToday by vm.myToday.collectAsState()
     val partnerToday by vm.partnerToday.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
+    val myName by vm.myName.collectAsState()
     val partnerName by vm.partnerName.collectAsState()
     val partnerPhoto by vm.partnerPhoto.collectAsState()
+    val weekDays by vm.weekDays.collectAsState()
+    val days by vm.days.collectAsState()
 
+    val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
     val myStars = relationshipStarsOf(myToday)
     val partnerStars = relationshipStarsOf(partnerToday)
@@ -289,7 +296,54 @@ fun RelationshipTodaySection(vm: AppViewModel) {
                                 }
                             }
                         }
-                        RelationshipStarRow(value = myVal) { vm.setRelationshipStars(aspect, it) }
+                        RelationshipStarRow(
+                            value = myVal,
+                            onChange = if (editable){{ stars -> vm.setRelationshipStars(aspect, stars) }} else null,
+                        )
+                    }
+                }
+            }
+
+            // 7-Tage-Verlauf nur im Partner-Tab anzeigen
+            if (editable) {
+                // nur heute – kein Verlauf im "Me"-Tab
+            } else {
+                HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                Text(
+                    stringResource(R.string.relationship_history_title),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        weekDays.reversed().forEach { dayKey ->
+                            val myRec = days.items.firstOrNull { it.ownerUid == vm.uid && it.dayKey == dayKey }
+                            val pRec = partnerUid?.let { p -> days.items.firstOrNull { it.ownerUid == p && it.dayKey == dayKey } }
+                            val mScore = relationshipScorePercent(relationshipStarsOf(myRec))
+                            val pScore = relationshipScorePercent(relationshipStarsOf(pRec))
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(formatDay(dayKey), style = MaterialTheme.typography.bodySmall)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        "$myLabel: ${formatPercent(mScore)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                    if (partnerUid != null) {
+                                        Text(
+                                            "$partnerLabel: ${formatPercent(pScore)}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -305,7 +359,7 @@ private fun RelationshipAspectCard(
     partnerLabel: String,
     partnerPhoto: String?,
     showPartner: Boolean,
-    onRate: (Int) -> Unit,
+    onRate: ((Int) -> Unit)? = null,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -350,7 +404,7 @@ private fun RelationshipAspectCard(
 }
 
 @Composable
-private fun RelationshipStarRow(value: Int, onChange: (Int) -> Unit) {
+private fun RelationshipStarRow(value: Int, onChange: ((Int) -> Unit)? = null) {
     Row {
         for (n in 1..MAX_STARS) {
             val filled = n <= value
@@ -359,8 +413,14 @@ private fun RelationshipStarRow(value: Int, onChange: (Int) -> Unit) {
                 fontSize = 26.sp,
                 color = if (filled) Amber else MaterialTheme.colorScheme.outline,
                 modifier = Modifier
-                    .clickable { onChange(if (value == n) 0 else n) }
-                    .padding(horizontal = 2.dp),
+                    .padding(horizontal = 2.dp)
+                    .then(
+                        if (onChange != null) {
+                            Modifier.clickable { onChange(if (value == n) 0 else n) }
+                        } else {
+                            Modifier
+                        }
+                    ),
             )
         }
     }

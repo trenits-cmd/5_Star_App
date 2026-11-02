@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.02112026_1216)
+## Features (v1.02112026_1500)
 
 - **Confirm today (Heute bestätigen):**
   - A button at the end of the *Today* tab saves and syncs all of today's values.
@@ -46,16 +46,17 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
   - **3 hours** after a selected action, the partner gets the push *„Rosie wartet auf deine Bestätigung!“* (or the respective name).
   - **48 hours** without confirmation → automatic confirmation into the archive.
 - **Relationship Tracker:**
-  - The partner's rating is shown next to their profile photo on the Dashboard and the Relationship tab.
+  - Shown at the top of the partner tab (read-only, with 7-day history).
   - Both partners rate each of the five aspects with 0–5 stars: *mood independent of relationship*, *mood within the relationship*, *communication*, *intimacy*, *sex*. Each aspect has the same weight.
 - **Push Notifications:**
   - Global and per-category switches (`Switch`).
+  - Default reminder time: **22:00** (adjustable).
   - Either a fixed daily time or an interval of 1, 2, 3 or 4 hours (e.g. drinking water every 2 hours).
   - **Quiet hours** (default 23:00 – 09:00) for all notifications, adjustable globally.
   - Several personalised messages per category.
 - **Category images:** illustrated icons for food, water, alcohol, fitness, home, mind, detox, stars, relationship and reading.
-- **Full i18n (DE / EN / FR):** every text is translated. The language switch remains top right.
-- **App version** is shown as the last item in Settings and matches the release tag.
+- **English only:** all UI text is in English.
+- **Settings (restricted):** Profile photo & name, partner invite/remove, presets (Rosie & Andi), push notifications & reminder, quiet hours, sync & sign out, app version. No category creation/editing/deletion and no rewards/penalties management in Settings (those are managed in the partner tab).
 
 ## Tech Stack
 
@@ -72,7 +73,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.02112026_1013`** – "Heute bestätigen" button at the end of the Today tab with a list of still-missing entries, confirmation time stored per day and synced; further values can still be added.
+- **Latest: `v1.02112026_1500`** – English only, 2 partner-named tabs ([Rosie] [Andi] [Woche] [Einstellungen]), relationship tracker in partner tab (read-only + 7-day history), Settings restricted (no category CRUD, no rewards/penalties), reminder default 22:00, deadline 06:00 (skipped = 0 stars).
+- `v1.02112026_1013` – "Heute bestätigen" button at the end of the Today tab with a list of still-missing entries, confirmation time stored per day and synced; further values can still be added.
 - `v1.02112026_1000` – Partner avatar next to partner ratings (Dashboard and Relationship tab), signed-in account shown in Settings, Rosie's flower reward text updated.
 - `v1.02112026_0949` – Alcohol benchmark 2.5 L, alternating tasks Ja/Nein (5 ★ / 0 ★), Andi's expanded rewards, Rosie's rewards and penalties, Andi's penalty to Rosie.
 - Previous: `v0.7.0`, `v0.6.1`, `v0.6.0`, `v0.5.1`, `v0.5.0`, `v0.3.1`, `v0.3.0`, `v0.2.0`, `v0.1.0`.

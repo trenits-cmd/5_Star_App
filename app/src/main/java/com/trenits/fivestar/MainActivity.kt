@@ -9,13 +9,11 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.trenits.fivestar.ui.AppRoot
 import com.trenits.fivestar.ui.AppViewModel
 import com.trenits.fivestar.ui.AuthViewModel
-import com.trenits.fivestar.ui.LanguageSwitcher
 import com.trenits.fivestar.ui.LoginScreen
 import com.trenits.fivestar.ui.theme.FiveStarTheme
 
@@ -36,8 +34,6 @@ class MainActivity : AppCompatActivity() {
                             val appViewModel: AppViewModel = viewModel(key = signedIn.uid)
                             AppRoot(appViewModel)
                         }
-
-                        LanguageSwitcher(Modifier.align(Alignment.TopEnd))
                     }
                 }
             }

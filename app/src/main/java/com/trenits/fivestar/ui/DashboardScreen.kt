@@ -176,17 +176,8 @@ fun DashboardScreen(vm: AppViewModel) {
             )
         }
 
-        // Gesonderte Anzeige 3: Separate Beziehungs-Stimmung pro Tag im Dashboard
-        item {
-            RelationshipMoodBanner(
-                myRecord = myToday,
-                partnerRecord = partnerToday,
-                myLabel = myLabel,
-                partnerLabel = partnerLabel,
-                partnerPhoto = partnerPhoto,
-                hasPartner = partnerUid != null,
-            )
-        }
+        // Beziehungs-Tracker an erster Stelle: 5 Dimensionen mit Bewertungen beider Partner
+        item { RelationshipTodaySection(vm, editable = true) }
 
         item { SectionTitle(stringResource(R.string.section_categories, myLabel)) }
         if (sortedCategories.isEmpty()) {
@@ -264,22 +255,6 @@ fun DashboardScreen(vm: AppViewModel) {
                     )
                 }
             }
-        }
-
-        item { SectionTitle(stringResource(R.string.relationship_title)) }
-        item { RelationshipTodaySection(vm) }
-
-        item { SectionTitle(stringResource(R.string.section_partner, partnerLabel)) }
-        item {
-            PartnerCard(
-                partnerLabel = partnerLabel,
-                partnerPhoto = partnerPhoto,
-                score = partnerToday?.scorePercent,
-                snapshots = partnerToday?.snapshots,
-                counters = partnerToday?.counters,
-                categories = sortedCategories,
-                offline = days.fromCache,
-            )
         }
 
         item { SectionTitle(stringResource(R.string.section_open_tasks)) }
@@ -381,6 +356,119 @@ private fun SectionTitle(text: String) {
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.padding(top = 8.dp),
     )
+}
+
+/**
+ * Zeigt eine einzelne Kategorie im Partner-Tab an (nur deren Kategorien, nicht editierbar).
+ * Liest den aktuellen Wert aus der gespeicherten Tagesbilanz und zeigt Stern-/Zählerwert an.
+ */
+@Composable
+private fun PartnerCategorySummaryCard(
+    category: Category,
+    values: Map<String, Double>,
+    snapshots: List<CategorySnapshot>,
+) {
+    val stars = snapshots.firstOrNull { it.categoryId == category.id }?.stars ?: 0
+    val counters = values
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CategoryImage(category = category, size = 38.dp)
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
+                    CategoryWeightSubtitle(category.weight, weightSharePercent(category.weight, listOf(WeightedCategory(category.id, category.weight))))
+                }
+            }
+            when (category.kind) {
+                CategoryKind.STARS -> StarsRow(stars)
+                CategoryKind.WATER, CategoryKind.ALCOHOL -> {
+                    if (values.containsKey(LITERS) || values.containsKey(GLASSES) ||
+                        values.containsKey(PINT) || values.containsKey(DEMI)
+                    ) {
+                        CounterSummary(localizedCategoryName(category), values)
+                    } else {
+                        StarsRow(stars)
+                    }
+                }
+                CategoryKind.DINNER_TIME -> {
+                    val hour = counters[DINNER_HOUR]?.toInt() ?: -1
+                    val minute = counters[DINNER_MINUTE]?.toInt() ?: 0
+                    if (hour >= 0) {
+                        Text(
+                            stringResource(R.string.dinner_time_current, "%02d:%02d".format(hour, minute)),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.dinner_time_not_set),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                CategoryKind.MEALS -> MealsSummaryRow(counters)
+                CategoryKind.READING -> {
+                    val pages = counters[PAGES]?.toInt() ?: 0
+                    if (pages > 0) {
+                        Text(
+                            stringResource(R.string.reading_pages_summary, pages),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.dinner_time_not_set),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                CategoryKind.ROTATION -> RotationSummaryRow(counters)
+                else -> StarsRow(stars)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StarsRow(stars: Int) {
+    Text(
+        "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
+        color = Amber,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+    )
+}
+
+@Composable
+private fun MealsSummaryRow(counters: Map<String, Double>) {
+    val b = mealLevelLabel(MealLevel.fromPoints(counters[MEAL_BREAKFAST]?.toInt() ?: 0))
+    val l = mealLevelLabel(MealLevel.fromPoints(counters[MEAL_LUNCH]?.toInt() ?: 0))
+    val d = mealLevelLabel(MealLevel.fromPoints(counters[MEAL_DINNER]?.toInt() ?: 0))
+    Text(
+        "${stringResource(R.string.meal_breakfast)}: $b · ${stringResource(R.string.meal_lunch)}: $l · ${stringResource(R.string.meal_dinner)}: $d",
+        style = MaterialTheme.typography.bodyMedium,
+    )
+}
+
+@Composable
+private fun RotationSummaryRow(counters: Map<String, Double>) {
+    val index = counters[ROTATION_TASK_INDEX]?.toInt()
+    val stars = counters[ROTATION_STARS]?.toInt() ?: 0
+    if (index == null) {
+        Text(
+            stringResource(R.string.rotation_not_set),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        val task = RotationTask.fromIndex(index)
+        val answer = if (stars > 0) stringResource(R.string.rotation_yes) else stringResource(R.string.rotation_no)
+        Text(
+            "${rotationTaskLabel(task)}: $answer",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
 }
 
 @Composable
@@ -1168,6 +1256,8 @@ fun PartnerTodayScreen(vm: AppViewModel) {
     val partnerOpenTasks = tasks.items.filter {
         it.status == TaskStatus.OPEN && (it.ownerUid == partnerUid || (partnerUid != null && it.appliesTo(partnerUid!!)))
     }
+    val partnerStored = partnerToday?.snapshots.orEmpty()
+    val partnerCounters = partnerToday?.counters.orEmpty()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -1194,16 +1284,17 @@ fun PartnerTodayScreen(vm: AppViewModel) {
                 title = stringResource(R.string.score_for_name, partnerLabel),
             )
         }
-        item {
-            PartnerCard(
-                partnerLabel = partnerLabel,
-                partnerPhoto = partnerPhoto,
-                score = partnerToday?.scorePercent,
-                snapshots = partnerToday?.snapshots,
-                counters = partnerToday?.counters,
-                categories = partnerCategories,
-                offline = days.fromCache,
-                partnerUid = partnerUid,
+        // Beziehungs-Tracker (Read-Only, mit 7-Tage-Verlauf) oben im Partner-Tab
+        item { RelationshipTodaySection(vm, editable = false) }
+        item { SectionTitle(stringResource(R.string.section_categories, partnerLabel)) }
+        if (partnerCategories.isEmpty()) {
+            item { HintCard(stringResource(R.string.categories_empty)) }
+        }
+        items(partnerCategories, key = { it.id }) { category ->
+            PartnerCategorySummaryCard(
+                category = category,
+                values = partnerCounters[category.id].orEmpty(),
+                snapshots = partnerStored,
             )
         }
         if (partnerOpenTasks.isNotEmpty()) {

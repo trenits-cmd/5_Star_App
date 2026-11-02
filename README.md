@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.02112026_1013)
+## Features (v1.02112026_1216)
 
 - **Confirm today (Heute bestätigen):**
   - A button at the end of the *Today* tab saves and syncs all of today's values.

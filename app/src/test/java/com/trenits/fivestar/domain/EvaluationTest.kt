@@ -1,10 +1,12 @@
 package com.trenits.fivestar.domain
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
+import java.time.LocalTime
 import kotlin.random.Random
 
 class EvaluationTest {
@@ -102,5 +104,18 @@ class EvaluationTest {
     @Test
     fun `Eingabe des Einladungscodes wird normalisiert`() {
         assertEquals("ABC123", normalizeInviteCode("  abc123 "))
+    }
+
+    @Test
+    fun `Ruhepause von 23 bis 9 Uhr blockiert Nachtstunden und erlaubt Tagstunden`() {
+        val start = LocalTime.of(23, 0)
+        val end = LocalTime.of(9, 0)
+        assertTrue(isWithinQuietHours(LocalTime.of(23, 0), start, end))
+        assertTrue(isWithinQuietHours(LocalTime.of(23, 45), start, end))
+        assertTrue(isWithinQuietHours(LocalTime.of(2, 30), start, end))
+        assertTrue(isWithinQuietHours(LocalTime.of(8, 59), start, end))
+        assertFalse(isWithinQuietHours(LocalTime.of(9, 0), start, end))
+        assertFalse(isWithinQuietHours(LocalTime.of(14, 0), start, end))
+        assertFalse(isWithinQuietHours(LocalTime.of(22, 59), start, end))
     }
 }

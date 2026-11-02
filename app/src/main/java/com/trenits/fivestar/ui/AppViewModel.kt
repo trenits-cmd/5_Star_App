@@ -409,6 +409,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 "Mindestens 2,5 Liter Wasser heute trinken 💧",
                 "Zwischenstand: Gläser oder Liter eintragen!",
             ),
+            pushEnabled = true,
+            pushIntervalHours = 2,
             id = "preset_water_$uid",
         )
         repo.saveCategory(
@@ -501,6 +503,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         goal: Double,
         icon: String = "",
         notifications: List<String> = emptyList(),
+        pushEnabled: Boolean = true,
+        pushIntervalHours: Int = 0,
+        pushHour: Int = 20,
+        pushMinute: Int = 0,
         id: String? = null,
     ) {
         repo()?.saveCategory(
@@ -512,8 +518,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             goal = goal.coerceAtLeast(0.0),
             icon = icon,
             notifications = notifications.map { it.trim() }.filter { it.isNotEmpty() },
+            pushEnabled = pushEnabled,
+            pushIntervalHours = pushIntervalHours.coerceIn(0, 12),
+            pushHour = pushHour.coerceIn(0, 23),
+            pushMinute = pushMinute.coerceIn(0, 59),
             id = id,
         )
+    }
+
+    fun setCategoryPushEnabled(id: String, enabled: Boolean) {
+        repo()?.setCategoryPushEnabled(id, enabled)
     }
 
     fun saveDisplayName(name: String) {

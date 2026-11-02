@@ -24,11 +24,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -43,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.trenits.fivestar.BuildConfig
@@ -58,10 +62,14 @@ import java.time.LocalTime
 
 private enum class Audience { ME, PARTNER, BOTH }
 
+private val INTERVAL_OPTIONS = listOf(1, 2, 3, 4)
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(vm: AppViewModel) {
     val context = LocalContext.current
+    val prefs = remember { ReminderPrefs(context) }
+
     val created by vm.created.collectAsState()
     val catalog by vm.myCatalog.collectAsState()
     val days by vm.days.collectAsState()
@@ -70,7 +78,13 @@ fun SettingsScreen(vm: AppViewModel) {
     val myPhoto by vm.myPhoto.collectAsState()
     val partnerName by vm.partnerName.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
-    var reminder by remember { mutableStateOf(ReminderPrefs(context).time()) }
+
+    var globalPushEnabled by remember { mutableStateOf(prefs.enabled()) }
+    var reminder by remember { mutableStateOf(prefs.time()) }
+    var globalIntervalHours by remember { mutableStateOf(prefs.intervalHours()) }
+    var quietEnabled by remember { mutableStateOf(prefs.quietHoursEnabled()) }
+    var quietStart by remember { mutableStateOf(prefs.quietStart()) }
+    var quietEnd by remember { mutableStateOf(prefs.quietEnd()) }
 
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
@@ -91,6 +105,10 @@ fun SettingsScreen(vm: AppViewModel) {
     var categoryIcon by remember { mutableStateOf(CategoryIcon.STAR) }
     var goalText by rememberSaveable { mutableStateOf("") }
     var audience by remember { mutableStateOf(Audience.ME) }
+    var newCategoryPushEnabled by rememberSaveable { mutableStateOf(true) }
+    var newCategoryIntervalHours by rememberSaveable { mutableStateOf(0) }
+    var newCategoryPushHour by rememberSaveable { mutableStateOf(reminder.hour) }
+    var newCategoryPushMinute by rememberSaveable { mutableStateOf(reminder.minute) }
     var newCategoryNotifications by remember { mutableStateOf(listOf<String>()) }
     var newNotificationInput by rememberSaveable { mutableStateOf("") }
 
@@ -104,415 +122,749 @@ fun SettingsScreen(vm: AppViewModel) {
     var catalogAudience by remember { mutableStateOf(Audience.ME) }
 
     LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        // Eigenes Profilbild (Icon) & eigener Name als Variable
+        item { Spacer(Modifier.height(28.dp)) }
+
+        // 1. Eigenes Profilbild (Icon) & eigener Name
         item {
-            Spacer(Modifier.height(40.dp))
-            Text(stringResource(R.string.profile_photo_title), style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(6.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                UserAvatar(photoBase64 = myPhoto, name = myLabel, size = 56.dp)
-                Spacer(Modifier.width(12.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    OutlinedButton(onClick = { photoPickerLauncher.launch("image/*") }) {
-                        Text(stringResource(R.string.profile_photo_upload))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(stringResource(R.string.profile_photo_title), style = MaterialTheme.typography.titleMedium)
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        UserAvatar(photoBase64 = myPhoto, name = myLabel, size = 56.dp)
+                        Spacer(Modifier.width(12.dp))
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            OutlinedButton(
+                                onClick = { photoPickerLauncher.launch("image/*") },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(stringResource(R.string.profile_photo_upload))
+                            }
+                            if (!myPhoto.isNullOrBlank()) {
+                                TextButton(onClick = { vm.savePhoto(null) }) {
+                                    Text(stringResource(R.string.profile_photo_remove))
+                                }
+                            }
+                        }
                     }
-                    if (!myPhoto.isNullOrBlank()) {
-                        TextButton(onClick = { vm.savePhoto(null) }) {
-                            Text(stringResource(R.string.profile_photo_remove))
+
+                    HorizontalDivider()
+
+                    Text(stringResource(R.string.settings_display_name), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.settings_display_name_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedTextField(
+                        value = displayName,
+                        onValueChange = { displayName = it },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Button(
+                        onClick = { vm.saveDisplayName(displayName) },
+                        enabled = displayName.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.settings_save)) }
+                }
+            }
+        }
+
+        // 2. Partner per E-Mail einladen & Partner zu Testzwecken löschen
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(stringResource(R.string.pairing_title), style = MaterialTheme.typography.titleMedium)
+                    OutlinedTextField(
+                        value = partnerEmail,
+                        onValueChange = { partnerEmail = it },
+                        label = { Text(stringResource(R.string.invite_email_label)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Button(
+                        onClick = {
+                            vm.invitePartnerByEmail(partnerEmail) { code ->
+                                launchInviteEmail(context, partnerEmail, code)
+                            }
+                        },
+                        enabled = !vm.busy && partnerEmail.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.invite_send_email))
+                    }
+                    HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                    Text(
+                        stringResource(R.string.partner_remove_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(
+                        onClick = { vm.removePartnerForTest() },
+                        enabled = !vm.busy,
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.partner_remove_button))
+                    }
+                }
+            }
+        }
+
+        // 3. Schnellstart-Vorlagen für Rosie und Andi
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(stringResource(R.string.settings_presets_title), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.settings_presets_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Button(
+                        onClick = { vm.applyRosiePreset() },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.settings_preset_rosie))
+                    }
+                    OutlinedButton(
+                        onClick = { vm.applyAndiPreset() },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.settings_preset_andi))
+                    }
+                }
+            }
+        }
+
+        // 4. Globale Push-Benachrichtigungen, Intervall & Ruhepause (23:00–09:00 Uhr)
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(stringResource(R.string.settings_reminder), style = MaterialTheme.typography.titleMedium)
+
+                    // Globaler Kippschalter für Push-Benachrichtigungen
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            stringResource(R.string.push_global_enable),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Switch(
+                            checked = globalPushEnabled,
+                            onCheckedChange = { enabled ->
+                                globalPushEnabled = enabled
+                                prefs.saveEnabled(enabled)
+                                ReminderScheduler.schedule(context, reminder)
+                            },
+                        )
+                    }
+
+                    if (globalPushEnabled) {
+                        Text(
+                            stringResource(
+                                R.string.settings_reminder_text,
+                                "%02d:%02d".format(reminder.hour, reminder.minute),
+                                "%02d:%02d".format(quietStart.hour, quietStart.minute),
+                                "%02d:%02d".format(quietEnd.hour, quietEnd.minute),
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+
+                        // Auswahl: Tägliche Uhrzeit vs. Globales Stunden-Intervall
+                        Text(
+                            stringResource(R.string.push_mode_label),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        PushScheduleSelector(
+                            intervalHours = globalIntervalHours,
+                            hour = reminder.hour,
+                            minute = reminder.minute,
+                            onDailySelected = {
+                                globalIntervalHours = 0
+                                prefs.saveIntervalHours(0)
+                                TimePickerDialog(
+                                    context,
+                                    { _, h, m ->
+                                        val t = LocalTime.of(h, m)
+                                        reminder = t
+                                        prefs.save(t)
+                                        ReminderScheduler.schedule(context, t)
+                                    },
+                                    reminder.hour,
+                                    reminder.minute,
+                                    true,
+                                ).show()
+                            },
+                            onIntervalSelected = { hours ->
+                                globalIntervalHours = hours
+                                prefs.saveIntervalHours(hours)
+                                ReminderScheduler.schedule(context, reminder)
+                            },
+                        )
+
+                        HorizontalDivider(Modifier.padding(vertical = 2.dp))
+
+                        // Ruhepause (Standard 23:00 – 09:00 Uhr)
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.quiet_hours_enable),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                                Text(
+                                    stringResource(
+                                        R.string.quiet_hours_range,
+                                        "%02d:%02d".format(quietStart.hour, quietStart.minute),
+                                        "%02d:%02d".format(quietEnd.hour, quietEnd.minute),
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Switch(
+                                checked = quietEnabled,
+                                onCheckedChange = { enabled ->
+                                    quietEnabled = enabled
+                                    prefs.saveQuietHoursEnabled(enabled)
+                                },
+                            )
+                        }
+
+                        if (quietEnabled) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        TimePickerDialog(
+                                            context,
+                                            { _, h, m ->
+                                                val t = LocalTime.of(h, m)
+                                                quietStart = t
+                                                prefs.saveQuietStart(t)
+                                            },
+                                            quietStart.hour,
+                                            quietStart.minute,
+                                            true,
+                                        ).show()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text(
+                                        stringResource(
+                                            R.string.quiet_hours_start,
+                                            "%02d:%02d".format(quietStart.hour, quietStart.minute),
+                                        ),
+                                    )
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        TimePickerDialog(
+                                            context,
+                                            { _, h, m ->
+                                                val t = LocalTime.of(h, m)
+                                                quietEnd = t
+                                                prefs.saveQuietEnd(t)
+                                            },
+                                            quietEnd.hour,
+                                            quietEnd.minute,
+                                            true,
+                                        ).show()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text(
+                                        stringResource(
+                                            R.string.quiet_hours_end,
+                                            "%02d:%02d".format(quietEnd.hour, quietEnd.minute),
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = { vm.sendTestPushNotifications() },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.settings_test_push))
                         }
                     }
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            Text(stringResource(R.string.settings_display_name), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.settings_display_name_hint), style = MaterialTheme.typography.bodySmall)
-            OutlinedTextField(
-                value = displayName,
-                onValueChange = { displayName = it },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedButton(
-                onClick = { vm.saveDisplayName(displayName) },
-                enabled = displayName.isNotBlank(),
-            ) { Text(stringResource(R.string.settings_save)) }
         }
 
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-
-        // Partner per E-Mail einladen & Partner zu Testzwecken löschen
+        // 5. Bestehende Kategorien (handyfreundliche Karten mit eigenem Push-Kippschalter)
         item {
-            Text(stringResource(R.string.pairing_title), style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(
-                value = partnerEmail,
-                onValueChange = { partnerEmail = it },
-                label = { Text(stringResource(R.string.invite_email_label)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(6.dp))
-            OutlinedButton(
-                onClick = {
-                    vm.invitePartnerByEmail(partnerEmail) { code ->
-                        launchInviteEmail(context, partnerEmail, code)
-                    }
-                },
-                enabled = !vm.busy && partnerEmail.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.invite_send_email))
-            }
-            Spacer(Modifier.height(8.dp))
+            Text(stringResource(R.string.settings_categories), style = MaterialTheme.typography.titleMedium)
             Text(
-                stringResource(R.string.partner_remove_hint),
+                stringResource(R.string.settings_categories_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            OutlinedButton(
-                onClick = { vm.removePartnerForTest() },
-                enabled = !vm.busy,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.partner_remove_button))
-            }
         }
 
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-
-        // Schnellstart-Vorlagen für Rosie und Andi
-        item {
-            Text(stringResource(R.string.settings_presets_title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.settings_presets_hint), style = MaterialTheme.typography.bodySmall)
-            Spacer(Modifier.height(6.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { vm.applyRosiePreset() }) {
-                    Text(stringResource(R.string.settings_preset_rosie))
-                }
-                OutlinedButton(onClick = { vm.applyAndiPreset() }) {
-                    Text(stringResource(R.string.settings_preset_andi))
-                }
-            }
-        }
-
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-
-        item { Text(stringResource(R.string.settings_categories), style = MaterialTheme.typography.titleMedium) }
-        item { Text(stringResource(R.string.settings_categories_hint)) }
         items(created, key = { it.id }) { category ->
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                CategoryImage(category = category, size = 36.dp)
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        "${localizedCategoryName(category)} (${stringResource(R.string.weight_label, category.weight)} · ${priorityLabel(category.weight)})",
-                    )
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CategoryImage(category = category, size = 38.dp)
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                localizedCategoryName(category),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                "${stringResource(R.string.weight_label, category.weight)} · ${priorityLabel(category.weight)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = category.pushEnabled,
+                            onCheckedChange = { enabled ->
+                                vm.setCategoryPushEnabled(category.id, enabled)
+                            },
+                        )
+                    }
+
+                    val pushSummary = when {
+                        !category.pushEnabled -> stringResource(R.string.push_summary_off)
+                        category.pushIntervalHours > 0 ->
+                            stringResource(R.string.push_summary_interval, category.pushIntervalHours)
+                        else -> stringResource(
+                            R.string.push_Summary_daily,
+                            "%02d:%02d".format(category.pushHour, category.pushMinute),
+                        )
+                    }
                     Text(
                         stringResource(
                             R.string.settings_target_label,
                             kindLabel(category.kind),
                             targetLabel(category.targets, vm.uid, partnerUid, myLabel, partnerLabel),
-                        ) + " · " + stringResource(R.string.settings_notifications_count, category.notifications.size),
+                        ) + " · $pushSummary · " +
+                            stringResource(R.string.settings_notifications_count, category.notifications.size),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = { editCategory = category }) {
+                            Text(stringResource(R.string.settings_edit_target))
+                        }
+                        TextButton(onClick = { vm.archiveCategory(category.id) }) {
+                            Text(stringResource(R.string.settings_archive))
+                        }
+                    }
+                }
+            }
+        }
+
+        // 6. Neue Kategorie anlegen (in eigener Card)
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(stringResource(R.string.settings_new_category), style = MaterialTheme.typography.titleMedium)
+                    OutlinedTextField(
+                        value = categoryName,
+                        onValueChange = { categoryName = it },
+                        label = { Text(stringResource(R.string.settings_new_category)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    // Gewichtungs-Steuerung (sauber zweizeilig für schmale Handys)
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        OutlinedButton(onClick = { categoryWeight = (categoryWeight - 1).coerceAtLeast(1) }) {
+                            Text("−")
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                stringResource(R.string.weight_label, categoryWeight),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                priorityLabel(categoryWeight),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        OutlinedButton(onClick = { categoryWeight = (categoryWeight + 1).coerceAtMost(5) }) {
+                            Text("+")
+                        }
+                    }
+
+                    Text(stringResource(R.string.settings_kind), style = MaterialTheme.typography.labelLarge)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        CategoryKind.entries.forEach { kind ->
+                            FilterChip(
+                                selected = categoryKind == kind,
+                                onClick = {
+                                    categoryKind = kind
+                                    goalText = defaultGoal(kind)
+                                    when (kind) {
+                                        CategoryKind.WATER -> {
+                                            categoryIcon = CategoryIcon.WATER
+                                            categoryWeight = 3
+                                            newCategoryIntervalHours = 2
+                                        }
+                                        CategoryKind.ALCOHOL -> {
+                                            categoryIcon = CategoryIcon.ALCOHOL
+                                            categoryWeight = 2
+                                            newCategoryIntervalHours = 0
+                                        }
+                                        CategoryKind.ROTATION -> {
+                                            categoryIcon = CategoryIcon.HOME
+                                            categoryWeight = 1
+                                            newCategoryIntervalHours = 0
+                                        }
+                                        CategoryKind.DINNER_TIME -> {
+                                            categoryIcon = CategoryIcon.FOOD
+                                            categoryWeight = 3
+                                            newCategoryIntervalHours = 0
+                                        }
+                                        CategoryKind.MEALS -> {
+                                            categoryIcon = CategoryIcon.FOOD
+                                            categoryWeight = 3
+                                            newCategoryIntervalHours = 0
+                                        }
+                                        CategoryKind.STARS -> {}
+                                    }
+                                },
+                                label = { Text(kindLabel(kind)) },
+                            )
+                        }
+                    }
+
+                    if (categoryKind == CategoryKind.ALCOHOL || categoryKind == CategoryKind.WATER) {
+                        OutlinedTextField(
+                            value = goalText,
+                            onValueChange = { goalText = it },
+                            label = {
+                                Text(
+                                    stringResource(
+                                        if (categoryKind == CategoryKind.ALCOHOL) R.string.settings_goal_alcohol
+                                        else R.string.settings_goal_water,
+                                    ),
+                                )
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+
+                    Text(stringResource(R.string.settings_category_image), style = MaterialTheme.typography.labelLarge)
+                    IconSelector(selected = categoryIcon, onSelect = { categoryIcon = it })
+
+                    HorizontalDivider()
+
+                    // Push-Kippschalter & Rhythmus für diese Kategorie
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            stringResource(R.string.push_category_enable),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Switch(
+                            checked = newCategoryPushEnabled,
+                            onCheckedChange = { newCategoryPushEnabled = it },
+                        )
+                    }
+
+                    if (newCategoryPushEnabled) {
+                        Text(stringResource(R.string.push_mode_label), style = MaterialTheme.typography.labelLarge)
+                        PushScheduleSelector(
+                            intervalHours = newCategoryIntervalHours,
+                            hour = newCategoryPushHour,
+                            minute = newCategoryPushMinute,
+                            onDailySelected = {
+                                newCategoryIntervalHours = 0
+                                TimePickerDialog(
+                                    context,
+                                    { _, h, m ->
+                                        newCategoryPushHour = h
+                                        newCategoryPushMinute = m
+                                    },
+                                    newCategoryPushHour,
+                                    newCategoryPushMinute,
+                                    true,
+                                ).show()
+                            },
+                            onIntervalSelected = { hours ->
+                                newCategoryIntervalHours = hours
+                            },
+                        )
+
+                        Text(
+                            stringResource(R.string.settings_category_notifications),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        newCategoryNotifications.forEachIndexed { idx, msg ->
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text("• $msg", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                TextButton(
+                                    onClick = {
+                                        newCategoryNotifications = newCategoryNotifications.filterIndexed { i, _ -> i != idx }
+                                    },
+                                ) {
+                                    Text(stringResource(R.string.settings_delete))
+                                }
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(
+                                value = newNotificationInput,
+                                onValueChange = { newNotificationInput = it },
+                                label = { Text(stringResource(R.string.settings_new_notification)) },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    if (newNotificationInput.isNotBlank()) {
+                                        newCategoryNotifications = newCategoryNotifications + newNotificationInput.trim()
+                                        newNotificationInput = ""
+                                    }
+                                },
+                                enabled = newNotificationInput.isNotBlank(),
+                            ) {
+                                Text("+")
+                            }
+                        }
+                    }
+
+                    Text(stringResource(R.string.settings_targets), style = MaterialTheme.typography.labelLarge)
+                    AudienceSelector(
+                        audience = audience,
+                        hasPartner = partnerUid != null,
+                        myLabel = myLabel,
+                        partnerLabel = partnerLabel,
+                        onSelect = { audience = it },
+                    )
+
+                    Button(
+                        onClick = {
+                            val partner = partnerUid
+                            val targets = targetsForAudience(audience, vm.uid, partner)
+                            val goal = goalText.replace(',', '.').toDoubleOrNull() ?: 0.0
+                            val pendingList = if (newNotificationInput.isNotBlank()) {
+                                newCategoryNotifications + newNotificationInput.trim()
+                            } else {
+                                newCategoryNotifications
+                            }
+                            vm.saveCategory(
+                                name = categoryName,
+                                weight = categoryWeight,
+                                kind = categoryKind,
+                                targets = targets,
+                                goal = goal,
+                                icon = categoryIcon.name,
+                                notifications = pendingList,
+                                pushEnabled = newCategoryPushEnabled,
+                                pushIntervalHours = newCategoryIntervalHours,
+                                pushHour = newCategoryPushHour,
+                                pushMinute = newCategoryPushMinute,
+                            )
+                            categoryName = ""
+                            newCategoryNotifications = emptyList()
+                            newNotificationInput = ""
+                        },
+                        enabled = categoryName.isNotBlank() && (audience == Audience.ME || partnerUid != null),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.settings_add_category)) }
+                }
+            }
+        }
+
+        // 7. Belohnungen und Strafen Katalog
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(stringResource(R.string.settings_rewards), style = MaterialTheme.typography.titleMedium)
+                    catalog.forEach { item ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text(
+                                    stringResource(
+                                        R.string.catalog_item_label,
+                                        typeLabel(item.type),
+                                        item.title,
+                                        targetLabel(item.targets, vm.uid, partnerUid, myLabel, partnerLabel),
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End,
+                                ) {
+                                    if (partnerUid != null) {
+                                        TextButton(onClick = { editCatalogItem = item }) {
+                                            Text(stringResource(R.string.settings_edit_target))
+                                        }
+                                    }
+                                    TextButton(onClick = { vm.deleteCatalogItem(item.id) }) {
+                                        Text(stringResource(R.string.settings_delete))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(Modifier.padding(vertical = 4.dp))
+
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        TaskType.entries.forEach { type ->
+                            FilterChip(
+                                selected = catalogType == type,
+                                onClick = { catalogType = type },
+                                label = { Text(typeLabel(type)) },
+                            )
+                        }
+                    }
+                    OutlinedTextField(
+                        value = catalogTitle,
+                        onValueChange = { catalogTitle = it },
+                        label = { Text(stringResource(R.string.settings_new_entry)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(stringResource(R.string.settings_targets), style = MaterialTheme.typography.labelLarge)
+                    AudienceSelector(
+                        audience = catalogAudience,
+                        hasPartner = partnerUid != null,
+                        myLabel = myLabel,
+                        partnerLabel = partnerLabel,
+                        onSelect = { catalogAudience = it },
+                    )
+                    Button(
+                        onClick = {
+                            val targets = targetsForAudience(catalogAudience, vm.uid, partnerUid)
+                            vm.saveCatalogItem(catalogType, catalogTitle, targets)
+                            catalogTitle = ""
+                        },
+                        enabled = catalogTitle.isNotBlank() && (catalogAudience == Audience.ME || partnerUid != null),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.settings_add_entry)) }
+                }
+            }
+        }
+
+        // 8. Sync & Abmelden
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(stringResource(R.string.settings_sync), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(if (days.fromCache) R.string.sync_offline else R.string.sync_online),
                         style = MaterialTheme.typography.bodySmall,
                     )
-                }
-                TextButton(onClick = { editCategory = category }) {
-                    Text(stringResource(R.string.settings_edit_target))
-                }
-                TextButton(onClick = { vm.archiveCategory(category.id) }) {
-                    Text(stringResource(R.string.settings_archive))
-                }
-            }
-        }
-        item {
-            OutlinedTextField(
-                value = categoryName,
-                onValueChange = { categoryName = it },
-                label = { Text(stringResource(R.string.settings_new_category)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = { categoryWeight = (categoryWeight - 1).coerceAtLeast(1) }) { Text("−") }
-                Text("  ${stringResource(R.string.weight_label, categoryWeight)} (${priorityLabel(categoryWeight)})  ")
-                OutlinedButton(onClick = { categoryWeight = (categoryWeight + 1).coerceAtMost(5) }) { Text("+") }
-            }
-        }
-        item {
-            Text(stringResource(R.string.settings_kind))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                CategoryKind.entries.forEach { kind ->
-                    FilterChip(
-                        selected = categoryKind == kind,
-                        onClick = {
-                            categoryKind = kind
-                            goalText = defaultGoal(kind)
-                            when (kind) {
-                                CategoryKind.WATER -> {
-                                    categoryIcon = CategoryIcon.WATER
-                                    categoryWeight = 3
-                                }
-                                CategoryKind.ALCOHOL -> {
-                                    categoryIcon = CategoryIcon.ALCOHOL
-                                    categoryWeight = 2
-                                }
-                                CategoryKind.ROTATION -> {
-                                    categoryIcon = CategoryIcon.HOME
-                                    categoryWeight = 1
-                                }
-                                CategoryKind.DINNER_TIME -> {
-                                    categoryIcon = CategoryIcon.FOOD
-                                    categoryWeight = 3
-                                }
-                                CategoryKind.MEALS -> {
-                                    categoryIcon = CategoryIcon.FOOD
-                                    categoryWeight = 3
-                                }
-                                CategoryKind.STARS -> {}
-                            }
-                        },
-                        label = { Text(kindLabel(kind)) },
+                    Text(
+                        stringResource(
+                            R.string.sync_last,
+                            lastSync?.let { formatTime(it) } ?: stringResource(R.string.sync_never),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                }
-            }
-        }
-        if (categoryKind == CategoryKind.ALCOHOL || categoryKind == CategoryKind.WATER) {
-            item {
-                OutlinedTextField(
-                    value = goalText,
-                    onValueChange = { goalText = it },
-                    label = {
-                        Text(
-                            stringResource(
-                                if (categoryKind == CategoryKind.ALCOHOL) R.string.settings_goal_alcohol
-                                else R.string.settings_goal_water,
-                            ),
-                        )
-                    },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-        item {
-            Text(stringResource(R.string.settings_category_image))
-            IconSelector(selected = categoryIcon, onSelect = { categoryIcon = it })
-        }
-        item {
-            Text(stringResource(R.string.settings_category_notifications))
-            newCategoryNotifications.forEachIndexed { idx, msg ->
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("• $msg", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                    TextButton(
-                        onClick = {
-                            newCategoryNotifications = newCategoryNotifications.filterIndexed { i, _ -> i != idx }
-                        },
+                    OutlinedButton(
+                        onClick = { vm.syncNow() },
+                        enabled = !vm.busy,
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(stringResource(R.string.settings_delete))
+                        Text(stringResource(R.string.sync_now))
+                    }
+                    HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                    Button(
+                        onClick = { vm.signOut() },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.settings_sign_out))
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = newNotificationInput,
-                    onValueChange = { newNotificationInput = it },
-                    label = { Text(stringResource(R.string.settings_new_notification)) },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(Modifier.width(8.dp))
-                OutlinedButton(
-                    onClick = {
-                        if (newNotificationInput.isNotBlank()) {
-                            newCategoryNotifications = newCategoryNotifications + newNotificationInput.trim()
-                            newNotificationInput = ""
-                        }
-                    },
-                    enabled = newNotificationInput.isNotBlank(),
-                ) {
-                    Text(stringResource(R.string.settings_add_notification))
-                }
-            }
-        }
-        item {
-            Text(stringResource(R.string.settings_targets))
-            AudienceSelector(
-                audience = audience,
-                hasPartner = partnerUid != null,
-                myLabel = myLabel,
-                partnerLabel = partnerLabel,
-                onSelect = { audience = it },
-            )
-        }
-        item {
-            Button(
-                onClick = {
-                    val partner = partnerUid
-                    val targets = targetsForAudience(audience, vm.uid, partner)
-                    val goal = goalText.replace(',', '.').toDoubleOrNull() ?: 0.0
-                    val pendingList = if (newNotificationInput.isNotBlank()) {
-                        newCategoryNotifications + newNotificationInput.trim()
-                    } else {
-                        newCategoryNotifications
-                    }
-                    vm.saveCategory(
-                        name = categoryName,
-                        weight = categoryWeight,
-                        kind = categoryKind,
-                        targets = targets,
-                        goal = goal,
-                        icon = categoryIcon.name,
-                        notifications = pendingList,
-                    )
-                    categoryName = ""
-                    newCategoryNotifications = emptyList()
-                    newNotificationInput = ""
-                },
-                enabled = categoryName.isNotBlank() && (audience == Audience.ME || partnerUid != null),
-            ) { Text(stringResource(R.string.settings_add_category)) }
         }
 
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-
-        item { Text(stringResource(R.string.settings_rewards), style = MaterialTheme.typography.titleMedium) }
-        items(catalog, key = { it.id }) { item ->
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    stringResource(
-                        R.string.catalog_item_label,
-                        typeLabel(item.type),
-                        item.title,
-                        targetLabel(item.targets, vm.uid, partnerUid, myLabel, partnerLabel),
-                    ),
-                    modifier = Modifier.weight(1f),
-                )
-                if (partnerUid != null) {
-                    TextButton(onClick = { editCatalogItem = item }) {
-                        Text(stringResource(R.string.settings_edit_target))
-                    }
-                }
-                TextButton(onClick = { vm.deleteCatalogItem(item.id) }) {
-                    Text(stringResource(R.string.settings_delete))
-                }
-            }
-        }
-        item {
-            Row {
-                TaskType.entries.forEach { type ->
-                    FilterChip(
-                        selected = catalogType == type,
-                        onClick = { catalogType = type },
-                        label = { Text(typeLabel(type)) },
-                    )
-                }
-            }
-        }
-        item {
-            OutlinedTextField(
-                value = catalogTitle,
-                onValueChange = { catalogTitle = it },
-                label = { Text(stringResource(R.string.settings_new_entry)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        item {
-            Text(stringResource(R.string.settings_targets))
-            AudienceSelector(
-                audience = catalogAudience,
-                hasPartner = partnerUid != null,
-                myLabel = myLabel,
-                partnerLabel = partnerLabel,
-                onSelect = { catalogAudience = it },
-            )
-        }
-        item {
-            Button(
-                onClick = {
-                    val targets = targetsForAudience(catalogAudience, vm.uid, partnerUid)
-                    vm.saveCatalogItem(catalogType, catalogTitle, targets)
-                    catalogTitle = ""
-                },
-                enabled = catalogTitle.isNotBlank() && (catalogAudience == Audience.ME || partnerUid != null),
-            ) { Text(stringResource(R.string.settings_add_entry)) }
-        }
-
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-
-        item { Text(stringResource(R.string.settings_reminder), style = MaterialTheme.typography.titleMedium) }
-        item {
-            Text(
-                stringResource(
-                    R.string.settings_reminder_text,
-                    String.format("%02d:%02d", reminder.hour, reminder.minute),
-                ),
-            )
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = {
-                    TimePickerDialog(context, { _, hour, minute ->
-                        val time = LocalTime.of(hour, minute)
-                        reminder = time
-                        ReminderPrefs(context).save(time)
-                        ReminderScheduler.schedule(context, time)
-                    }, reminder.hour, reminder.minute, true).show()
-                }) { Text(stringResource(R.string.settings_change_time)) }
-
-                OutlinedButton(onClick = { vm.sendTestPushNotifications() }) {
-                    Text(stringResource(R.string.settings_test_push))
-                }
-            }
-        }
-
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-
-        item { Text(stringResource(R.string.settings_sync), style = MaterialTheme.typography.titleMedium) }
-        item {
-            Text(
-                stringResource(if (days.fromCache) R.string.sync_offline else R.string.sync_online),
-            )
-        }
-        item {
-            Text(
-                stringResource(
-                    R.string.sync_last,
-                    lastSync?.let { formatTime(it) } ?: stringResource(R.string.sync_never),
-                ),
-            )
-        }
-        item {
-            OutlinedButton(onClick = { vm.syncNow() }, enabled = !vm.busy) {
-                Text(stringResource(R.string.sync_now))
-            }
-        }
-
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-
-        item {
-            Button(onClick = { vm.signOut() }) { Text(stringResource(R.string.settings_sign_out)) }
-            Spacer(Modifier.height(12.dp))
-        }
-
-        // App-Version als allerletzter Punkt in den Einstellungen
+        // 9. App-Version als allerletzter Punkt in den Einstellungen
         item {
             Text(
                 stringResource(R.string.app_version, BuildConfig.VERSION_NAME),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
             )
-            Spacer(Modifier.height(16.dp))
         }
     }
 
-    // Bestehende Kategorie bearbeiten (Gewicht, Zielgruppe, Bild und mehrere Push-Nachrichten)
+    // Bestehende Kategorie bearbeiten (Gewicht, Zielgruppe, Bild, Kippschalter, Uhrzeit/Intervall & Push-Nachrichten)
     editCategory?.let { category ->
         var dialogWeight by remember(category.id) {
             mutableStateOf(category.weight)
@@ -522,6 +874,18 @@ fun SettingsScreen(vm: AppViewModel) {
         }
         var dialogIcon by remember(category.id) {
             mutableStateOf(category.resolvedIcon())
+        }
+        var dialogPushEnabled by remember(category.id) {
+            mutableStateOf(category.pushEnabled)
+        }
+        var dialogIntervalHours by remember(category.id) {
+            mutableStateOf(category.pushIntervalHours)
+        }
+        var dialogPushHour by remember(category.id) {
+            mutableStateOf(category.pushHour)
+        }
+        var dialogPushMinute by remember(category.id) {
+            mutableStateOf(category.pushMinute)
         }
         var dialogNotifications by remember(category.id) {
             mutableStateOf(category.notifications)
@@ -540,9 +904,22 @@ fun SettingsScreen(vm: AppViewModel) {
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
                         OutlinedButton(onClick = { dialogWeight = (dialogWeight - 1).coerceAtLeast(1) }) { Text("−") }
-                        Text("  ${stringResource(R.string.weight_label, dialogWeight)} (${priorityLabel(dialogWeight)})  ")
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                stringResource(R.string.weight_label, dialogWeight),
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                priorityLabel(dialogWeight),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                         OutlinedButton(onClick = { dialogWeight = (dialogWeight + 1).coerceAtMost(5) }) { Text("+") }
                     }
 
@@ -558,38 +935,85 @@ fun SettingsScreen(vm: AppViewModel) {
                     Text(stringResource(R.string.settings_category_image), style = MaterialTheme.typography.labelLarge)
                     IconSelector(selected = dialogIcon, onSelect = { dialogIcon = it })
 
-                    Text(stringResource(R.string.settings_category_notifications), style = MaterialTheme.typography.labelLarge)
-                    dialogNotifications.forEachIndexed { idx, msg ->
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text("• $msg", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                            TextButton(
-                                onClick = {
-                                    dialogNotifications = dialogNotifications.filterIndexed { i, _ -> i != idx }
-                                },
-                            ) {
-                                Text(stringResource(R.string.settings_delete))
-                            }
-                        }
-                    }
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = dialogNewMessage,
-                            onValueChange = { dialogNewMessage = it },
-                            label = { Text(stringResource(R.string.settings_new_notification)) },
-                            singleLine = true,
+                    HorizontalDivider()
+
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            stringResource(R.string.push_category_enable),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
                             modifier = Modifier.weight(1f),
                         )
-                        Spacer(Modifier.width(6.dp))
-                        OutlinedButton(
-                            onClick = {
-                                if (dialogNewMessage.isNotBlank()) {
-                                    dialogNotifications = dialogNotifications + dialogNewMessage.trim()
-                                    dialogNewMessage = ""
-                                }
+                        Switch(
+                            checked = dialogPushEnabled,
+                            onCheckedChange = { dialogPushEnabled = it },
+                        )
+                    }
+
+                    if (dialogPushEnabled) {
+                        Text(stringResource(R.string.push_mode_label), style = MaterialTheme.typography.labelLarge)
+                        PushScheduleSelector(
+                            intervalHours = dialogIntervalHours,
+                            hour = dialogPushHour,
+                            minute = dialogPushMinute,
+                            onDailySelected = {
+                                dialogIntervalHours = 0
+                                TimePickerDialog(
+                                    context,
+                                    { _, h, m ->
+                                        dialogPushHour = h
+                                        dialogPushMinute = m
+                                    },
+                                    dialogPushHour,
+                                    dialogPushMinute,
+                                    true,
+                                ).show()
                             },
-                            enabled = dialogNewMessage.isNotBlank(),
-                        ) {
-                            Text("+")
+                            onIntervalSelected = { hours ->
+                                dialogIntervalHours = hours
+                            },
+                        )
+
+                        Text(
+                            stringResource(R.string.settings_category_notifications),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        dialogNotifications.forEachIndexed { idx, msg ->
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text("• $msg", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                TextButton(
+                                    onClick = {
+                                        dialogNotifications = dialogNotifications.filterIndexed { i, _ -> i != idx }
+                                    },
+                                ) {
+                                    Text(stringResource(R.string.settings_delete))
+                                }
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(
+                                value = dialogNewMessage,
+                                onValueChange = { dialogNewMessage = it },
+                                label = { Text(stringResource(R.string.settings_new_notification)) },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    if (dialogNewMessage.isNotBlank()) {
+                                        dialogNotifications = dialogNotifications + dialogNewMessage.trim()
+                                        dialogNewMessage = ""
+                                    }
+                                },
+                                enabled = dialogNewMessage.isNotBlank(),
+                            ) {
+                                Text("+")
+                            }
                         }
                     }
                 }
@@ -611,6 +1035,10 @@ fun SettingsScreen(vm: AppViewModel) {
                             goal = category.goal,
                             icon = dialogIcon.name,
                             notifications = finalMessages,
+                            pushEnabled = dialogPushEnabled,
+                            pushIntervalHours = dialogIntervalHours,
+                            pushHour = dialogPushHour,
+                            pushMinute = dialogPushMinute,
                             id = category.id,
                         )
                         editCategory = null
@@ -660,6 +1088,33 @@ fun SettingsScreen(vm: AppViewModel) {
                 }
             },
         )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PushScheduleSelector(
+    intervalHours: Int,
+    hour: Int,
+    minute: Int,
+    onDailySelected: () -> Unit,
+    onIntervalSelected: (Int) -> Unit,
+) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        FilterChip(
+            selected = intervalHours == 0,
+            onClick = onDailySelected,
+            label = {
+                Text(stringResource(R.string.push_mode_daily, "%02d:%02d".format(hour, minute)))
+            },
+        )
+        INTERVAL_OPTIONS.forEach { h ->
+            FilterChip(
+                selected = intervalHours == h,
+                onClick = { onIntervalSelected(h) },
+                label = { Text(stringResource(R.string.push_mode_interval, h)) },
+            )
+        }
     }
 }
 

@@ -22,6 +22,7 @@ import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.dayKeyOf
+import com.trenits.fivestar.domain.isWithinQuietHours
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 import java.time.Duration
@@ -37,10 +38,61 @@ private const val BASE_NOTIFICATION_ID = 1001
 class ReminderPrefs(context: Context) {
     private val prefs = context.getSharedPreferences("reminder", Context.MODE_PRIVATE)
 
+    fun enabled(): Boolean = prefs.getBoolean("enabled", true)
+
+    fun saveEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("enabled", enabled).apply()
+    }
+
     fun time(): LocalTime = LocalTime.of(prefs.getInt("hour", 20), prefs.getInt("minute", 0))
 
     fun save(time: LocalTime) {
         prefs.edit().putInt("hour", time.hour).putInt("minute", time.minute).apply()
+    }
+
+    /** 0 = einmal täglich zur festen Uhrzeit, > 0 = alle X Stunden. */
+    fun intervalHours(): Int = prefs.getInt("intervalHours", 0)
+
+    fun saveIntervalHours(hours: Int) {
+        prefs.edit().putInt("intervalHours", hours.coerceIn(0, 12)).apply()
+    }
+
+    /** Ruhepause aktiv (Standard: true, 23:00 bis 09:00 Uhr). */
+    fun quietHoursEnabled(): Boolean = prefs.getBoolean("quietEnabled", true)
+
+    fun saveQuietHoursEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("quietEnabled", enabled).apply()
+    }
+
+    fun quietStart(): LocalTime = LocalTime.of(
+        prefs.getInt("quietStartHour", 23),
+        prefs.getInt("quietStartMinute", 0),
+    )
+
+    fun saveQuietStart(time: LocalTime) {
+        prefs.edit()
+            .putInt("quietStartHour", time.hour)
+            .putInt("quietStartMinute", time.minute)
+            .apply()
+    }
+
+    fun quietEnd(): LocalTime = LocalTime.of(
+        prefs.getInt("quietEndHour", 9),
+        prefs.getInt("quietEndMinute", 0),
+    )
+
+    fun saveQuietEnd(time: LocalTime) {
+        prefs.edit()
+            .putInt("quietEndHour", time.hour)
+            .putInt("quietEndMinute", time.minute)
+            .apply()
+    }
+
+    fun lastNotifiedEpochHour(categoryId: String): Long =
+        prefs.getLong("last_notify_$categoryId", -1L)
+
+    fun markNotifiedEpochHour(categoryId: String, epochHour: Long) {
+        prefs.edit().putLong("last_notify_$categoryId", epochHour).apply()
     }
 }
 
@@ -57,13 +109,27 @@ object ReminderScheduler {
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    /** Täglich zur gewählten Uhrzeit. Ein bereits geplanter Lauf wird mit der neuen Zeit ersetzt. */
+    /**
+     * Plant den periodischen Check für tägliche Uhrzeiten und mehrstündige Intervalle
+     * (z. B. alle 2 Std. fürs Wassertrinken unter Beachtung der Ruhepause 23:00–09:00 Uhr).
+     */
     fun schedule(context: Context, time: LocalTime, now: ZonedDateTime = ZonedDateTime.now()) {
-        var next = now.toLocalDate().atTime(time).atZone(now.zone)
-        if (!next.isAfter(now)) next = next.plusDays(1)
-        val request = PeriodicWorkRequestBuilder<ReminderWorker>(1, TimeUnit.DAYS)
-            .setInitialDelay(Duration.between(now, next).toMillis(), TimeUnit.MILLISECONDS)
-            .build()
+        val prefs = ReminderPrefs(context)
+        if (!prefs.enabled()) {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+            return
+        }
+        val interval = prefs.intervalHours()
+        val request = if (interval > 0) {
+            PeriodicWorkRequestBuilder<ReminderWorker>(interval.toLong().coerceAtLeast(1L), TimeUnit.HOURS)
+                .build()
+        } else {
+            var next = now.toLocalDate().atTime(time).atZone(now.zone)
+            if (!next.isAfter(now)) next = next.plusDays(1)
+            PeriodicWorkRequestBuilder<ReminderWorker>(1, TimeUnit.HOURS)
+                .setInitialDelay(Duration.between(now, next).toMillis().coerceAtMost(3600_000L), TimeUnit.MILLISECONDS)
+                .build()
+        }
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             WORK_NAME,
             ExistingPeriodicWorkPolicy.UPDATE,
@@ -71,7 +137,7 @@ object ReminderScheduler {
         )
     }
 
-    /** Sendet für jede übergebene Kategorie ihre personalisierten Push-Nachrichten. */
+    /** Sendet für jede übergebene aktive Kategorie ihre personalisierten Push-Nachrichten. */
     @SuppressLint("MissingPermission")
     fun sendCategoryNotifications(context: Context, categories: List<Category>) {
         createChannel(context)
@@ -82,7 +148,7 @@ object ReminderScheduler {
 
         val manager = NotificationManagerCompat.from(context)
         var seq = 0
-        categories.forEach { category ->
+        categories.filter { it.pushEnabled }.forEach { category ->
             val messages = category.notifications
                 .map { it.trim() }
                 .filter { it.isNotEmpty() }
@@ -104,13 +170,25 @@ object ReminderScheduler {
 }
 
 /**
- * Sendet personalisierte Push-Nachrichten für alle aktiven Kategorien der Person
- * (auch mehrere Nachrichten pro Kategorie), für die heute noch keine Bewertung vorliegt
- * oder für die eigene Push-Nachrichten hinterlegt sind.
+ * Prüft stündlich bzw. zur gewählten Uhrzeit, welche Kategorien eine Push-Benachrichtigung senden sollen:
+ * - Beachtet den globalen Kippschalter sowie den Kippschalter je Kategorie.
+ * - Beachtet die Ruhepause (Standard: 23:00 bis 09:00 Uhr – keine Benachrichtigungen).
+ * - Unterstützt sowohl feste tägliche Uhrzeiten als auch Intervalle (z. B. alle 2 Std. Wasser trinken).
  */
 class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        val prefs = ReminderPrefs(applicationContext)
+        if (!prefs.enabled()) return Result.success()
+
+        val now = ZonedDateTime.now()
+        if (prefs.quietHoursEnabled() &&
+            isWithinQuietHours(now.toLocalTime(), prefs.quietStart(), prefs.quietEnd())
+        ) {
+            // Während der Ruhepause (z. B. 23:00–09:00 Uhr) keine Benachrichtigungen senden
+            return Result.success()
+        }
+
         val uid = Firebase.auth.currentUser?.uid ?: return Result.success()
         val db = Firebase.firestore
         return try {
@@ -131,30 +209,47 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                         name = doc.getString("name") ?: "",
                         weight = doc.getLong("weight")?.toInt() ?: 1,
                         archived = doc.getBoolean("archived") ?: false,
-                        kind = doc.getString("kind")?.let { runCatching { CategoryKind.valueOf(it) }.getOrNull() } ?: CategoryKind.STARS,
+                        kind = doc.getString("kind")?.let { runCatching { CategoryKind.valueOf(it) }.getOrNull() }
+                            ?: CategoryKind.STARS,
                         targets = if (targets.isNullOrEmpty()) listOf(owner) else targets,
                         goal = doc.getDouble("goal") ?: 0.0,
                         icon = doc.getString("icon") ?: "",
                         notifications = notifications,
+                        pushEnabled = doc.getBoolean("pushEnabled") ?: true,
+                        pushIntervalHours = doc.getLong("pushIntervalHours")?.toInt() ?: 0,
+                        pushHour = doc.getLong("pushHour")?.toInt() ?: prefs.time().hour,
+                        pushMinute = doc.getLong("pushMinute")?.toInt() ?: prefs.time().minute,
                     )
-                    cat.takeIf { it.appliesTo(uid) }
+                    cat.takeIf { it.appliesTo(uid) && it.pushEnabled }
                 }
 
                 val record = coupleRef.collection("days").document("${today}_$uid").get().await()
                 @Suppress("UNCHECKED_CAST")
                 val snapshots = (record.get("snapshots") as? List<Map<String, Any>>).orEmpty()
-                val ratedIds = snapshots
-                    .filter { ((it["stars"] as? Number)?.toInt() ?: 0) > 0 }
+                val fullStarIds = snapshots
+                    .filter { ((it["stars"] as? Number)?.toInt() ?: 0) >= 5 }
                     .mapNotNull { it["categoryId"] as? String }
                     .toSet()
 
-                val toNotify = myCategories.filter { it.id !in ratedIds || it.notifications.isNotEmpty() }
-                if (toNotify.isNotEmpty()) {
-                    ReminderScheduler.sendCategoryNotifications(applicationContext, toNotify)
+                val currentEpochHour = Instant.now().epochSecond / 3600L
+                val dueCategories = myCategories.filter { cat ->
+                    if (cat.id in fullStarIds) return@filter false
+                    val lastHour = prefs.lastNotifiedEpochHour(cat.id)
+                    val interval = if (cat.pushIntervalHours > 0) cat.pushIntervalHours else prefs.intervalHours()
+                    if (interval > 0) {
+                        lastHour < 0L || (currentEpochHour - lastHour) >= interval
+                    } else {
+                        now.hour >= cat.pushHour && (lastHour < 0L || (currentEpochHour - lastHour) >= 20L)
+                    }
+                }
+
+                if (dueCategories.isNotEmpty()) {
+                    ReminderScheduler.sendCategoryNotifications(applicationContext, dueCategories)
+                    dueCategories.forEach { prefs.markNotifiedEpochHour(it.id, currentEpochHour) }
                 }
                 Result.success()
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Result.success()
         }
     }

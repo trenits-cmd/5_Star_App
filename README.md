@@ -40,9 +40,12 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
     3. **Communication** (*Kommunikation*)
     4. **Intimacy** (*Intimität*)
     5. **Sex** (*Sex*)
-- **Category Images & Personalized Push Notifications:**
+- **Category Images & Personalized Push Notifications (Switch, Interval & Quiet Hours):**
   - Expressive vector illustrations (`FOOD`, `WATER`, `ALCOHOL`, `FITNESS`, `HOME`, `MIND`, `DETOX`, `STAR`, `cat_relationship`).
-  - Multiple custom push notification messages per category (`notifications: List<String>`), sent daily via `WorkManager` + instant test button in Settings.
+  - **Toggle Switches (`Switch`):** Enable or disable push notifications globally as well as individually per category.
+  - **Daily Time or Multi-Hour Interval:** Configure either a fixed daily reminder time (e.g. `20:00`) or a repeating interval (**every 1, 2, 3, or 4 hours** – e.g. every 2 hours for drinking water).
+  - **Global Quiet Hours (Ruhepause, default `23:00 – 09:00`):** No push notifications are sent during the configurable quiet window (`isWithinQuietHours`).
+  - Multiple custom push notification messages per category (`notifications: List<String>`) + instant test button in Settings.
 - **Full i18n (DE / EN / FR) & App Version (`0.7.0`) at the very bottom of Settings.**
 
 ## Tech Stack

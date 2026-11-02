@@ -57,6 +57,10 @@ class CoupleRepository(private val coupleId: String) {
             goal = doc.getDouble("goal") ?: 0.0,
             icon = doc.getString("icon") ?: "",
             notifications = notifications,
+            pushEnabled = doc.getBoolean("pushEnabled") ?: true,
+            pushIntervalHours = doc.getLong("pushIntervalHours")?.toInt() ?: 0,
+            pushHour = doc.getLong("pushHour")?.toInt() ?: 20,
+            pushMinute = doc.getLong("pushMinute")?.toInt() ?: 0,
         )
     }
 
@@ -69,6 +73,10 @@ class CoupleRepository(private val coupleId: String) {
         goal: Double,
         icon: String = "",
         notifications: List<String> = emptyList(),
+        pushEnabled: Boolean = true,
+        pushIntervalHours: Int = 0,
+        pushHour: Int = 20,
+        pushMinute: Int = 0,
         id: String? = null,
     ) {
         val collection = couple.collection("categories")
@@ -83,8 +91,16 @@ class CoupleRepository(private val coupleId: String) {
                 "goal" to goal,
                 "icon" to icon,
                 "notifications" to notifications,
+                "pushEnabled" to pushEnabled,
+                "pushIntervalHours" to pushIntervalHours,
+                "pushHour" to pushHour,
+                "pushMinute" to pushMinute,
             ),
         )
+    }
+
+    fun setCategoryPushEnabled(id: String, enabled: Boolean) {
+        couple.collection("categories").document(id).update("pushEnabled", enabled)
     }
 
     fun archiveCategory(id: String) {

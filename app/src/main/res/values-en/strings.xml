@@ -119,9 +119,21 @@
     <string name="settings_add_entry">Add entry</string>
     <string name="catalog_item_label">%1$s: %2$s (%3$s)</string>
     <string name="settings_reminder">Reminder &amp; push notifications</string>
-    <string name="settings_reminder_text" formatted="true">Daily at %1$s your custom category push notifications are sent.</string>
-    <string name="settings_change_time">Change time</string>
+    <string name="settings_reminder_text" formatted="true">Default time: %1$s · Quiet hours: %2$s – %3$s</string>
+    <string name="settings_change_time">Change time (%1$s)</string>
     <string name="settings_test_push">Test push notifications now</string>
+    <string name="push_global_enable">Push notifications enabled</string>
+    <string name="push_category_enable">Push enabled for this category</string>
+    <string name="push_mode_label">Reminder schedule</string>
+    <string name="push_mode_daily">Daily at %1$s</string>
+    <string name="push_mode_interval">Every %1$d h</string>
+    <string name="push_Summary_daily">Push: daily %1$s</string>
+    <string name="push_summary_interval">Push: every %1$d h</string>
+    <string name="push_summary_off">Push: off</string>
+    <string name="quiet_hours_enable">Quiet hours enabled (no push notifications)</string>
+    <string name="quiet_hours_range">Quiet hours: %1$s to %2$s (default 23:00–09:00)</string>
+    <string name="quiet_hours_start">Start (%1$s)</string>
+    <string name="quiet_hours_end">End (%1$s)</string>
     <string name="settings_sync">Sync</string>
     <string name="sync_offline">Offline. Showing the last known state.</string>
     <string name="sync_online">Connected.</string>

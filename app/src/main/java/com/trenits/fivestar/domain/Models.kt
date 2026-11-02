@@ -3,6 +3,7 @@ package com.trenits.fivestar.domain
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.temporal.WeekFields
 import kotlin.math.floor
@@ -80,6 +81,10 @@ data class Category(
     val goal: Double = 0.0,
     val icon: String = "",
     val notifications: List<String> = emptyList(),
+    val pushEnabled: Boolean = true,
+    val pushIntervalHours: Int = 0,
+    val pushHour: Int = 20,
+    val pushMinute: Int = 0,
 ) {
     /** Gilt die Kategorie für diese Person? */
     fun appliesTo(uid: String): Boolean = !archived && uid in targets
@@ -192,6 +197,24 @@ data class CatalogItem(
 /** Tagesschlüssel in der Zeitzone des Nutzers, z. B. "2026-11-01". */
 fun dayKeyOf(instant: Instant, zone: ZoneId): String =
     instant.atZone(zone).toLocalDate().toString()
+
+/**
+ * Prüft, ob [time] innerhalb der Ruhepause liegt (Standard: 23:00 bis 09:00 Uhr).
+ * Während der Ruhepause werden keine Push-Benachrichtigungen gesendet.
+ */
+fun isWithinQuietHours(
+    time: LocalTime,
+    quietStart: LocalTime = LocalTime.of(23, 0),
+    quietEnd: LocalTime = LocalTime.of(9, 0),
+): Boolean {
+    if (quietStart == quietEnd) return false
+    return if (quietStart.isAfter(quietEnd)) {
+        // Über Mitternacht (z. B. 23:00 bis 09:00 Uhr)
+        !time.isBefore(quietStart) || time.isBefore(quietEnd)
+    } else {
+        !time.isBefore(quietStart) && time.isBefore(quietEnd)
+    }
+}
 
 /**
  * Gesamte Alkoholmenge in Litern aus Pinte (0,5 L), Demi (0,25 L)

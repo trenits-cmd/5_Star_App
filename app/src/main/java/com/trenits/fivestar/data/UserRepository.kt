@@ -11,7 +11,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
-data class UserProfile(val coupleId: String?, val catalogSeeded: Boolean)
+data class UserProfile(
+    val coupleId: String?,
+    val catalogSeeded: Boolean,
+    val displayName: String? = null,
+    val photoBase64: String? = null,
+)
 
 class InvalidInviteException : Exception()
 
@@ -25,7 +30,14 @@ class UserRepository(private val uid: String) {
                 close(error)
                 return@addSnapshotListener
             }
-            trySend(UserProfile(snapshot?.getString("coupleId"), snapshot?.getBoolean("catalogSeeded") ?: false))
+            trySend(
+                UserProfile(
+                    coupleId = snapshot?.getString("coupleId"),
+                    catalogSeeded = snapshot?.getBoolean("catalogSeeded") ?: false,
+                    displayName = snapshot?.getString("displayName")?.takeIf { it.isNotBlank() },
+                    photoBase64 = snapshot?.getString("photoBase64")?.takeIf { it.isNotBlank() },
+                ),
+            )
         }
         awaitClose { registration.remove() }
     }
@@ -37,10 +49,16 @@ class UserRepository(private val uid: String) {
         return ref.id
     }
 
-    suspend fun createInvite(coupleId: String): String {
+    suspend fun createInvite(coupleId: String, invitedEmail: String? = null): String {
         val code = generateInviteCode()
-        Firebase.firestore.collection("invites").document(code)
-            .set(mapOf("coupleId" to coupleId, "createdBy" to uid)).await()
+        val data = mutableMapOf<String, Any>(
+            "coupleId" to coupleId,
+            "createdBy" to uid,
+        )
+        if (!invitedEmail.isNullOrBlank()) {
+            data["invitedEmail"] = invitedEmail.trim()
+        }
+        Firebase.firestore.collection("invites").document(code).set(data).await()
         return code
     }
 
@@ -54,12 +72,33 @@ class UserRepository(private val uid: String) {
         invite.reference.delete().await()
     }
 
+    /**
+     * Entfernt den Partner zu Testzwecken aus dem Paar (bzw. legt ein neues Einzel-Paar an,
+     * falls die Server-Regeln das Entfernen aus dem bestehenden Dokument blockieren).
+     */
+    suspend fun removePartner(currentCoupleId: String?) {
+        if (currentCoupleId != null) {
+            try {
+                Firebase.firestore.collection("couples").document(currentCoupleId)
+                    .update("members", listOf(uid)).await()
+                return
+            } catch (_: Exception) {
+                // Fallback: neues Einzel-Paar für diesen Nutzer anlegen
+            }
+        }
+        createCouple()
+    }
+
     fun markCatalogSeeded() {
         user.set(mapOf("catalogSeeded" to true), SetOptions.merge())
     }
 
     fun setDisplayName(name: String) {
         user.set(mapOf("displayName" to name.trim()), SetOptions.merge())
+    }
+
+    fun setPhotoBase64(base64: String?) {
+        user.set(mapOf("photoBase64" to (base64 ?: "")), SetOptions.merge())
     }
 
     /** Anzeigename einer anderen Person, sonst deren E-Mail. Nur im selben Paar lesbar. */
@@ -73,6 +112,20 @@ class UserRepository(private val uid: String) {
                 val name = snapshot?.getString("displayName")?.takeIf { it.isNotBlank() }
                     ?: snapshot?.getString("email")
                 trySend(name)
+            }
+        awaitClose { registration.remove() }
+    }
+
+    /** Profilfoto (Base64) einer Person im selben Paar. */
+    fun photoOf(otherUid: String): Flow<String?> = callbackFlow {
+        val registration = Firebase.firestore.collection("users").document(otherUid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val photo = snapshot?.getString("photoBase64")?.takeIf { it.isNotBlank() }
+                trySend(photo)
             }
         awaitClose { registration.remove() }
     }

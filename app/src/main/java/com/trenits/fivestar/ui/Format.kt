@@ -1,27 +1,47 @@
 package com.trenits.fivestar.ui
 
+import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.util.Base64
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryIcon
 import com.trenits.fivestar.domain.CategoryKind
+import com.trenits.fivestar.domain.MealLevel
 import com.trenits.fivestar.domain.Period
 import com.trenits.fivestar.domain.RelationshipAspect
 import com.trenits.fivestar.domain.RotationTask
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
+import java.io.ByteArrayOutputStream
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.min
 
 @Composable
 fun formatPercent(value: Double?): String =
@@ -73,6 +93,16 @@ fun rotationTaskLabel(task: RotationTask): String = stringResource(
 )
 
 @Composable
+fun mealLevelLabel(level: MealLevel): String = stringResource(
+    when (level) {
+        MealLevel.NONE -> R.string.meal_level_none
+        MealLevel.LITTLE -> R.string.meal_level_little
+        MealLevel.MEDIUM -> R.string.meal_level_medium
+        MealLevel.HEALTHY -> R.string.meal_level_healthy
+    },
+)
+
+@Composable
 fun relationshipAspectLabel(aspect: RelationshipAspect): String = stringResource(
     when (aspect) {
         RelationshipAspect.MOOD_GENERAL -> R.string.rel_mood_general
@@ -90,19 +120,28 @@ fun relationshipAspectLabel(aspect: RelationshipAspect): String = stringResource
 fun localizedCategoryName(category: Category): String {
     val trimmed = category.name.trim()
     return when {
-        trimmed in setOf("Wasser trinken", "Drink water", "Boire de l'eau") ->
+        trimmed in setOf("Wasser trinken", "Drink water", "Boire de l'eau") ||
+            category.kind == CategoryKind.WATER ->
             stringResource(R.string.cat_preset_water)
-        trimmed in setOf("Alkohol-Grenze", "Alkohol Grenze", "Alcohol limit", "Limite d'alcool") ->
+        trimmed in setOf("Alkohol-Grenze", "Alkohol Grenze", "Alcohol limit", "Limite d'alcool") ||
+            category.kind == CategoryKind.ALCOHOL ->
             stringResource(R.string.cat_preset_alcohol)
         trimmed.startsWith("Wechsel-Aufgaben") ||
+            trimmed.startsWith("Weitere Aufgaben") ||
             trimmed.startsWith("Alternating tasks") ||
-            trimmed.startsWith("Tâches alternées") ->
+            trimmed.startsWith("Other tasks") ||
+            trimmed.startsWith("Tâches alternées") ||
+            trimmed.startsWith("Autres tâches") ||
+            category.kind == CategoryKind.ROTATION ->
             stringResource(R.string.cat_preset_rotation)
         trimmed in setOf("Abendessen vor 20h", "Dinner before 20h", "Dîner avant 20h") ||
             category.kind == CategoryKind.DINNER_TIME ->
             stringResource(R.string.cat_preset_dinner)
-        trimmed in setOf("Regelmäßig essen", "Eat regularly", "Manger régulièrement") ->
+        trimmed in setOf("Essen", "Regelmäßig essen", "Meals", "Eat regularly", "Repas", "Manger régulièrement") ||
+            category.kind == CategoryKind.MEALS ->
             stringResource(R.string.cat_preset_food)
+        trimmed in setOf("Sport", "Fitness") ->
+            stringResource(R.string.cat_preset_sport)
         else -> category.name
     }
 }
@@ -144,4 +183,89 @@ fun CategoryImage(category: Category, size: Dp = 40.dp, modifier: Modifier = Mod
         contentDescription = category.name,
         modifier = modifier.size(size),
     )
+}
+
+/**
+ * Zeigt das hochgeladene Foto des Nutzers (oder einen runden Initialen-Avatar) als Icon an.
+ */
+@Composable
+fun UserAvatar(
+    photoBase64: String?,
+    name: String?,
+    size: Dp = 36.dp,
+    modifier: Modifier = Modifier,
+) {
+    val bitmap = remember(photoBase64) {
+        if (photoBase64.isNullOrBlank()) {
+            null
+        } else {
+            runCatching {
+                val bytes = Base64.decode(photoBase64, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+            }.getOrNull()
+        }
+    }
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap,
+            contentDescription = name,
+            contentScale = ContentScale.Crop,
+            modifier = modifier.size(size).clip(CircleShape),
+        )
+    } else {
+        val initial = name?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "★"
+        Box(
+            modifier = modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                initial,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+/**
+ * Liest ein Bild aus einer Galerie-URI, schneidet es quadratisch zu, skaliert es auf 128×128
+ * und kodiert es als Base64-String für Firestore.
+ */
+fun encodeAvatarUri(context: Context, uri: Uri): String? = runCatching {
+    val raw = context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
+        ?: return null
+    val edge = min(raw.width, raw.height)
+    val x = (raw.width - edge) / 2
+    val y = (raw.height - edge) / 2
+    val cropped = Bitmap.createBitmap(raw, x, y, edge, edge)
+    val scaled = Bitmap.createScaledBitmap(cropped, 128, 128, true)
+    val out = ByteArrayOutputStream()
+    scaled.compress(Bitmap.CompressFormat.JPEG, 75, out)
+    Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
+}.getOrNull()
+
+/**
+ * Öffnet die E-Mail-App mit vorausgefüllter Einladung und Code für den Partner.
+ */
+fun launchInviteEmail(context: Context, email: String, code: String) {
+    val subject = context.getString(R.string.invite_email_subject)
+    val body = context.getString(R.string.invite_email_body, code)
+    val intent = Intent(Intent.ACTION_SENDTO).apply {
+        data = Uri.parse("mailto:${Uri.encode(email.trim())}?subject=${Uri.encode(subject)}&body=${Uri.encode(body)}")
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    runCatching { context.startActivity(intent) }.onFailure {
+        val fallback = Intent(Intent.ACTION_SEND).apply {
+            type = "message/rfc822"
+            putExtra(Intent.EXTRA_EMAIL, arrayOf(email.trim()))
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            putExtra(Intent.EXTRA_TEXT, body)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        runCatching { context.startActivity(Intent.createChooser(fallback, subject)) }
+    }
 }

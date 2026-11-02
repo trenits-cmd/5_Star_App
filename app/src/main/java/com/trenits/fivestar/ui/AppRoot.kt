@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.trenits.fivestar.R
 import com.trenits.fivestar.reminder.ReminderPrefs
@@ -63,6 +64,8 @@ private fun MainTabs(viewModel: AppViewModel) {
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val partnerUid by viewModel.partnerUid.collectAsState()
+    val partnerName by viewModel.partnerName.collectAsState()
+    val partnerPhoto by viewModel.partnerPhoto.collectAsState()
 
     LaunchedEffect(Unit) {
         ReminderScheduler.schedule(context, ReminderPrefs(context).time())
@@ -82,11 +85,21 @@ private fun MainTabs(viewModel: AppViewModel) {
         bottomBar = {
             NavigationBar {
                 visibleTabs.forEach { item ->
-                    val label = stringResource(item.labelRes)
+                    val label = if (item == Tab.PARTNER) {
+                        partnerName ?: stringResource(item.labelRes)
+                    } else {
+                        stringResource(item.labelRes)
+                    }
                     NavigationBarItem(
                         selected = tab == item,
                         onClick = { tab = item },
-                        icon = { Icon(item.icon, contentDescription = label) },
+                        icon = {
+                            if (item == Tab.PARTNER && !partnerPhoto.isNullOrBlank()) {
+                                UserAvatar(photoBase64 = partnerPhoto, name = partnerName, size = 24.dp)
+                            } else {
+                                Icon(item.icon, contentDescription = label)
+                            }
+                        },
                         label = { Text(label) },
                     )
                 }

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
@@ -43,6 +42,11 @@ fun WeeklyScreen(vm: AppViewModel) {
     val weekRewardUnlocked by vm.weekRewardUnlocked.collectAsState()
     val currentWeeklyReward by vm.currentWeeklyReward.collectAsState()
     val archivedTasks by vm.archivedTasks.collectAsState()
+    val myName by vm.myName.collectAsState()
+    val partnerName by vm.partnerName.collectAsState()
+
+    val myLabel = myName ?: stringResource(R.string.who_you)
+    val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 
     val streakInCurrentCycle = if (streak > 0 && streak % STREAK_DAYS_FOR_REWARD == 0) {
         STREAK_DAYS_FOR_REWARD
@@ -63,7 +67,7 @@ fun WeeklyScreen(vm: AppViewModel) {
             )
         }
 
-        // 7-Tage-Streak Karte
+        // 7-Tage-Streak Karte (Wochenstand)
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(20.dp)) {
@@ -105,7 +109,7 @@ fun WeeklyScreen(vm: AppViewModel) {
             }
         }
 
-        // Letzte 7 Tage Übersicht
+        // Letzte 7 Tage Übersicht (Tagesstand)
         item {
             Text(
                 stringResource(R.string.week_successful_days),
@@ -187,15 +191,25 @@ fun WeeklyScreen(vm: AppViewModel) {
             }
         } else {
             items(archivedTasks, key = { it.id }) { task ->
-                ArchivedTaskCard(task = task, myUid = vm.uid)
+                ArchivedTaskCard(
+                    task = task,
+                    myUid = vm.uid,
+                    myLabel = myLabel,
+                    partnerLabel = partnerLabel,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ArchivedTaskCard(task: Task, myUid: String) {
-    val who = stringResource(if (task.ownerUid == myUid) R.string.who_you else R.string.who_partner)
+private fun ArchivedTaskCard(
+    task: Task,
+    myUid: String,
+    myLabel: String,
+    partnerLabel: String,
+) {
+    val who = if (task.ownerUid == myUid) myLabel else partnerLabel
     val action = task.title.ifEmpty { stringResource(R.string.no_action_chosen) }
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {

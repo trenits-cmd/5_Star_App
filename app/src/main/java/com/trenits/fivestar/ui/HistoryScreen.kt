@@ -37,6 +37,10 @@ fun HistoryScreen(vm: AppViewModel) {
     val tasks by vm.tasks.collectAsState()
     val targeted by vm.targeted.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
+    val myName by vm.myName.collectAsState()
+    val partnerName by vm.partnerName.collectAsState()
+    val myLabel = myName ?: stringResource(R.string.who_you)
+    val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
     var period by rememberSaveable { mutableStateOf(Period.SEVEN_DAYS) }
     val today = remember { LocalDate.now() }
     val start = period.startDay(today)
@@ -72,6 +76,8 @@ fun HistoryScreen(vm: AppViewModel) {
                 dayTasks = tasks.items.filter { it.dayKey == key },
                 myUid = vm.uid,
                 partnerUid = partnerUid,
+                myLabel = myLabel,
+                partnerLabel = partnerLabel,
                 categories = targeted,
                 showPartner = partnerUid != null,
             )
@@ -87,15 +93,17 @@ private fun DayCard(
     dayTasks: List<Task>,
     myUid: String,
     partnerUid: String?,
+    myLabel: String,
+    partnerLabel: String,
     categories: List<Category>,
     showPartner: Boolean,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Text(formatDay(dayKey), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.history_you, formatPercent(myScore?.scorePercent)))
+            Text(stringResource(R.string.history_you, myLabel, formatPercent(myScore?.scorePercent)))
             if (showPartner) {
-                Text(stringResource(R.string.history_partner, formatPercent(partnerScore?.scorePercent)))
+                Text(stringResource(R.string.history_partner, partnerLabel, formatPercent(partnerScore?.scorePercent)))
             }
             myScore?.snapshots?.takeIf { it.isNotEmpty() }?.let {
                 Text(

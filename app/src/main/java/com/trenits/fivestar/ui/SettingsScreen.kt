@@ -1,6 +1,8 @@
 package com.trenits.fivestar.ui
 
 import android.app.TimePickerDialog
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -63,8 +66,24 @@ fun SettingsScreen(vm: AppViewModel) {
     val catalog by vm.myCatalog.collectAsState()
     val days by vm.days.collectAsState()
     val lastSync by vm.lastSync.collectAsState()
+    val myName by vm.myName.collectAsState()
+    val myPhoto by vm.myPhoto.collectAsState()
+    val partnerName by vm.partnerName.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
     var reminder by remember { mutableStateOf(ReminderPrefs(context).time()) }
+
+    val myLabel = myName ?: stringResource(R.string.who_you)
+    val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { uri ->
+        if (uri != null) {
+            encodeAvatarUri(context, uri)?.let { base64 ->
+                vm.savePhoto(base64)
+            }
+        }
+    }
 
     var categoryName by rememberSaveable { mutableStateOf("") }
     var categoryWeight by rememberSaveable { mutableStateOf(3) }
@@ -78,7 +97,8 @@ fun SettingsScreen(vm: AppViewModel) {
     var editCategory by remember { mutableStateOf<Category?>(null) }
     var editCatalogItem by remember { mutableStateOf<CatalogItem?>(null) }
 
-    var displayName by rememberSaveable { mutableStateOf("") }
+    var displayName by rememberSaveable(myName) { mutableStateOf(myName.orEmpty()) }
+    var partnerEmail by rememberSaveable { mutableStateOf("") }
     var catalogTitle by rememberSaveable { mutableStateOf("") }
     var catalogType by remember { mutableStateOf(TaskType.REWARD) }
     var catalogAudience by remember { mutableStateOf(Audience.ME) }
@@ -87,10 +107,28 @@ fun SettingsScreen(vm: AppViewModel) {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        // Eigenes Profilbild (Icon) & eigener Name als Variable
         item {
             Spacer(Modifier.height(40.dp))
+            Text(stringResource(R.string.profile_photo_title), style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                UserAvatar(photoBase64 = myPhoto, name = myLabel, size = 56.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    OutlinedButton(onClick = { photoPickerLauncher.launch("image/*") }) {
+                        Text(stringResource(R.string.profile_photo_upload))
+                    }
+                    if (!myPhoto.isNullOrBlank()) {
+                        TextButton(onClick = { vm.savePhoto(null) }) {
+                            Text(stringResource(R.string.profile_photo_remove))
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
             Text(stringResource(R.string.settings_display_name), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.settings_display_name_hint))
+            Text(stringResource(R.string.settings_display_name_hint), style = MaterialTheme.typography.bodySmall)
             OutlinedTextField(
                 value = displayName,
                 onValueChange = { displayName = it },
@@ -101,6 +139,47 @@ fun SettingsScreen(vm: AppViewModel) {
                 onClick = { vm.saveDisplayName(displayName) },
                 enabled = displayName.isNotBlank(),
             ) { Text(stringResource(R.string.settings_save)) }
+        }
+
+        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+
+        // Partner per E-Mail einladen & Partner zu Testzwecken löschen
+        item {
+            Text(stringResource(R.string.pairing_title), style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(
+                value = partnerEmail,
+                onValueChange = { partnerEmail = it },
+                label = { Text(stringResource(R.string.invite_email_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(6.dp))
+            OutlinedButton(
+                onClick = {
+                    vm.invitePartnerByEmail(partnerEmail) { code ->
+                        launchInviteEmail(context, partnerEmail, code)
+                    }
+                },
+                enabled = !vm.busy && partnerEmail.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.invite_send_email))
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.partner_remove_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(
+                onClick = { vm.removePartnerForTest() },
+                enabled = !vm.busy,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.partner_remove_button))
+            }
         }
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
@@ -136,7 +215,7 @@ fun SettingsScreen(vm: AppViewModel) {
                         stringResource(
                             R.string.settings_target_label,
                             kindLabel(category.kind),
-                            targetLabel(category.targets, vm.uid, partnerUid),
+                            targetLabel(category.targets, vm.uid, partnerUid, myLabel, partnerLabel),
                         ) + " · " + stringResource(R.string.settings_notifications_count, category.notifications.size),
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -181,15 +260,19 @@ fun SettingsScreen(vm: AppViewModel) {
                                 }
                                 CategoryKind.ALCOHOL -> {
                                     categoryIcon = CategoryIcon.ALCOHOL
-                                    categoryWeight = 4
+                                    categoryWeight = 2
                                 }
                                 CategoryKind.ROTATION -> {
                                     categoryIcon = CategoryIcon.HOME
-                                    categoryWeight = 3
+                                    categoryWeight = 1
                                 }
                                 CategoryKind.DINNER_TIME -> {
                                     categoryIcon = CategoryIcon.FOOD
-                                    categoryWeight = 5
+                                    categoryWeight = 3
+                                }
+                                CategoryKind.MEALS -> {
+                                    categoryIcon = CategoryIcon.FOOD
+                                    categoryWeight = 3
                                 }
                                 CategoryKind.STARS -> {}
                             }
@@ -263,6 +346,8 @@ fun SettingsScreen(vm: AppViewModel) {
             AudienceSelector(
                 audience = audience,
                 hasPartner = partnerUid != null,
+                myLabel = myLabel,
+                partnerLabel = partnerLabel,
                 onSelect = { audience = it },
             )
         }
@@ -304,7 +389,7 @@ fun SettingsScreen(vm: AppViewModel) {
                         R.string.catalog_item_label,
                         typeLabel(item.type),
                         item.title,
-                        targetLabel(item.targets, vm.uid, partnerUid),
+                        targetLabel(item.targets, vm.uid, partnerUid, myLabel, partnerLabel),
                     ),
                     modifier = Modifier.weight(1f),
                 )
@@ -343,6 +428,8 @@ fun SettingsScreen(vm: AppViewModel) {
             AudienceSelector(
                 audience = catalogAudience,
                 hasPartner = partnerUid != null,
+                myLabel = myLabel,
+                partnerLabel = partnerLabel,
                 onSelect = { catalogAudience = it },
             )
         }
@@ -463,6 +550,8 @@ fun SettingsScreen(vm: AppViewModel) {
                     AudienceSelector(
                         audience = dialogAudience,
                         hasPartner = partnerUid != null,
+                        myLabel = myLabel,
+                        partnerLabel = partnerLabel,
                         onSelect = { dialogAudience = it },
                     )
 
@@ -550,6 +639,8 @@ fun SettingsScreen(vm: AppViewModel) {
                     AudienceSelector(
                         audience = dialogAudience,
                         hasPartner = partnerUid != null,
+                        myLabel = myLabel,
+                        partnerLabel = partnerLabel,
                         onSelect = { dialogAudience = it },
                     )
                 }
@@ -598,24 +689,26 @@ private fun IconSelector(selected: CategoryIcon, onSelect: (CategoryIcon) -> Uni
 private fun AudienceSelector(
     audience: Audience,
     hasPartner: Boolean,
+    myLabel: String,
+    partnerLabel: String,
     onSelect: (Audience) -> Unit,
 ) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         FilterChip(
             selected = audience == Audience.ME,
             onClick = { onSelect(Audience.ME) },
-            label = { Text(stringResource(R.string.target_me)) },
+            label = { Text(stringResource(R.string.target_me, myLabel)) },
         )
         if (hasPartner) {
             FilterChip(
                 selected = audience == Audience.PARTNER,
                 onClick = { onSelect(Audience.PARTNER) },
-                label = { Text(stringResource(R.string.target_partner)) },
+                label = { Text(stringResource(R.string.target_partner, partnerLabel)) },
             )
             FilterChip(
                 selected = audience == Audience.BOTH,
                 onClick = { onSelect(Audience.BOTH) },
-                label = { Text(stringResource(R.string.target_both)) },
+                label = { Text(stringResource(R.string.target_both, myLabel, partnerLabel)) },
             )
         }
     }
@@ -640,6 +733,7 @@ private fun defaultGoal(kind: CategoryKind): String = when (kind) {
     CategoryKind.WATER -> "2.5"
     CategoryKind.ROTATION -> ""
     CategoryKind.DINNER_TIME -> "20"
+    CategoryKind.MEALS -> ""
 }
 
 @Composable
@@ -650,15 +744,20 @@ private fun kindLabel(kind: CategoryKind): String = stringResource(
         CategoryKind.WATER -> R.string.kind_water
         CategoryKind.ROTATION -> R.string.kind_rotation
         CategoryKind.DINNER_TIME -> R.string.kind_dinner
+        CategoryKind.MEALS -> R.string.kind_meals
     },
 )
 
 @Composable
-private fun targetLabel(targets: List<String>, uid: String, partnerUid: String?): String = stringResource(
-    when {
-        targets.size > 1 -> R.string.target_both
-        targets.firstOrNull() == uid -> R.string.target_me
-        partnerUid != null && targets.firstOrNull() == partnerUid -> R.string.target_partner
-        else -> R.string.target_partner
-    },
-)
+private fun targetLabel(
+    targets: List<String>,
+    uid: String,
+    partnerUid: String?,
+    myLabel: String,
+    partnerLabel: String,
+): String = when {
+    targets.size > 1 -> stringResource(R.string.target_both, myLabel, partnerLabel)
+    targets.firstOrNull() == uid -> stringResource(R.string.target_me, myLabel)
+    partnerUid != null && targets.firstOrNull() == partnerUid -> stringResource(R.string.target_partner, partnerLabel)
+    else -> stringResource(R.string.target_partner, partnerLabel)
+}

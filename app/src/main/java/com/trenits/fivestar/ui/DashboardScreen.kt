@@ -38,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,10 +62,16 @@ import com.trenits.fivestar.domain.DayRecord
 import com.trenits.fivestar.domain.GLASSES
 import com.trenits.fivestar.domain.LITERS
 import com.trenits.fivestar.domain.MAX_STARS
+import com.trenits.fivestar.domain.MEAL_BREAKFAST
+import com.trenits.fivestar.domain.MEAL_DINNER
+import com.trenits.fivestar.domain.MEAL_LUNCH
+import com.trenits.fivestar.domain.MealLevel
 import com.trenits.fivestar.domain.PINT
 import com.trenits.fivestar.domain.ROTATION_STARS
 import com.trenits.fivestar.domain.ROTATION_TASK_INDEX
 import com.trenits.fivestar.domain.RotationTask
+import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
+import com.trenits.fivestar.domain.THRESHOLD_PERCENT
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
@@ -87,7 +94,9 @@ fun DashboardScreen(vm: AppViewModel) {
         sortedCategories.map { WeightedCategory(it.id, it.weight) }
     }
     val myName by vm.myName.collectAsState()
+    val myPhoto by vm.myPhoto.collectAsState()
     val partnerName by vm.partnerName.collectAsState()
+    val partnerPhoto by vm.partnerPhoto.collectAsState()
     val myToday by vm.myToday.collectAsState()
     val partnerToday by vm.partnerToday.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
@@ -96,9 +105,13 @@ fun DashboardScreen(vm: AppViewModel) {
     val tasks by vm.tasks.collectAsState()
     val catalog by vm.catalog.collectAsState()
     val weekRecordsBeforeToday by vm.isoWeekRecordsBeforeToday.collectAsState()
+    val streak by vm.weekSuccessfulDays.collectAsState()
+    val weekRewardUnlocked by vm.weekRewardUnlocked.collectAsState()
+
+    val myLabel = myName ?: stringResource(R.string.who_you)
+    val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 
     val stored = myToday?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
-    // Offene Strafen & Belohnungen bleiben sichtbar, bis der Partner die Einlösung bestätigt hat.
     val openTasks = tasks.items
         .filter { it.status == TaskStatus.OPEN }
         .sortedWith(compareByDescending<Task> { it.dayKey }.thenByDescending { it.createdAt })
@@ -108,22 +121,29 @@ fun DashboardScreen(vm: AppViewModel) {
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Column {
-                Text(stringResource(R.string.tab_today), style = MaterialTheme.typography.headlineMedium)
-                Text(
-                    dateHeader(LocalDate.now()),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (partnerUid != null) {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                UserAvatar(photoBase64 = myPhoto, name = myLabel, size = 48.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
                     Text(
-                        stringResource(
-                            R.string.connected_with,
-                            partnerName ?: stringResource(R.string.who_partner),
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        "${stringResource(R.string.tab_today)} · $myLabel",
+                        style = MaterialTheme.typography.headlineMedium,
                     )
+                    Text(
+                        dateHeader(LocalDate.now()),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (partnerUid != null) {
+                        Text(
+                            stringResource(R.string.connected_with, partnerLabel),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
             }
         }
@@ -132,9 +152,23 @@ fun DashboardScreen(vm: AppViewModel) {
             item { WaitingForPartnerCard(vm) }
         }
 
-        item { ScoreHero(myToday?.scorePercent, stringResource(R.string.score_yours)) }
+        // Gesonderte Anzeige 1: Tagesstand
+        item {
+            ScoreHero(
+                score = myToday?.scorePercent,
+                title = stringResource(R.string.score_for_name, myLabel),
+            )
+        }
 
-        item { SectionTitle(stringResource(R.string.section_categories)) }
+        // Gesonderte Anzeige 2: Wochenstand (7-Tage-Serie)
+        item {
+            WeeklyStatusBanner(
+                streak = streak,
+                rewardUnlocked = weekRewardUnlocked,
+            )
+        }
+
+        item { SectionTitle(stringResource(R.string.section_categories, myLabel)) }
         if (sortedCategories.isEmpty()) {
             item { HintCard(stringResource(R.string.categories_empty)) }
         }
@@ -178,7 +212,6 @@ fun DashboardScreen(vm: AppViewModel) {
                     } else {
                         partnerDinnerValues.orEmpty()
                     }
-                    // Andi gibt die Uhrzeit ein (oder solange kein Partner namens "Andi" exklusiv gesetzt ist)
                     val partnerIsAndi = partnerName?.trim()?.equals("Andi", ignoreCase = true) == true
                     val iAmRosie = myName?.trim()?.equals("Rosie", ignoreCase = true) == true
                     val canEditTime = !(iAmRosie && partnerIsAndi)
@@ -190,15 +223,27 @@ fun DashboardScreen(vm: AppViewModel) {
                         onTimeSelected = { h, m -> vm.setDinnerTime(category.id, h, m) },
                     )
                 }
+                CategoryKind.MEALS -> {
+                    MealsCategoryCard(
+                        category = category,
+                        sharePercent = sharePercent,
+                        values = values,
+                        onMealLevelSelected = { mealKey, level ->
+                            vm.setMealLevel(category.id, mealKey, level)
+                        },
+                    )
+                }
             }
         }
 
         item { SectionTitle(stringResource(R.string.relationship_title)) }
         item { RelationshipTodaySection(vm) }
 
-        item { SectionTitle(stringResource(R.string.section_partner)) }
+        item { SectionTitle(stringResource(R.string.section_partner, partnerLabel)) }
         item {
             PartnerCard(
+                partnerLabel = partnerLabel,
+                partnerPhoto = partnerPhoto,
                 score = partnerToday?.scorePercent,
                 snapshots = partnerToday?.snapshots,
                 counters = partnerToday?.counters,
@@ -214,7 +259,13 @@ fun DashboardScreen(vm: AppViewModel) {
         items(openTasks, key = { it.id }) { task ->
             @Suppress("UNUSED_EXPRESSION")
             catalog
-            TaskCard(vm, task, partnerUid)
+            TaskCard(
+                vm = vm,
+                task = task,
+                partnerUid = partnerUid,
+                myLabel = myLabel,
+                partnerLabel = partnerLabel,
+            )
         }
     }
 }
@@ -240,6 +291,7 @@ private fun CategoryWeightSubtitle(weight: Int, sharePercent: Int) {
 @Composable
 private fun ScoreHero(score: Double?, title: String) {
     val progress = ((score ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
+    val reached = (score ?: 0.0) >= THRESHOLD_PERCENT
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
@@ -256,18 +308,74 @@ private fun ScoreHero(score: Double?, title: String) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary,
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small),
                 color = Amber,
                 trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f),
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
-                stringResource(R.string.score_hint),
+                stringResource(if (reached) R.string.status_daily_ok else R.string.status_daily_below),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+    }
+}
+
+/**
+ * Gesonderte Anzeige für den Wochenstand (7-Tage-Serie bis zur Wochenbelohnung).
+ */
+@Composable
+private fun WeeklyStatusBanner(streak: Int, rewardUnlocked: Boolean) {
+    val cycleStreak = if (streak > 0 && streak % STREAK_DAYS_FOR_REWARD == 0) {
+        STREAK_DAYS_FOR_REWARD
+    } else {
+        streak % STREAK_DAYS_FOR_REWARD
+    }
+    val remaining = (STREAK_DAYS_FOR_REWARD - cycleStreak).coerceAtLeast(0)
+    val progress = (cycleStreak.toFloat() / STREAK_DAYS_FOR_REWARD.toFloat()).coerceIn(0f, 1f)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.status_weekly_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text(
+                    stringResource(R.string.status_weekly_progress, cycleStreak, STREAK_DAYS_FOR_REWARD),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small),
+                color = Amber,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                if (rewardUnlocked) {
+                    stringResource(R.string.week_reward_unlocked)
+                } else {
+                    stringResource(R.string.week_no_reward, remaining)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
         }
     }
@@ -275,6 +383,9 @@ private fun ScoreHero(score: Double?, title: String) {
 
 @Composable
 private fun WaitingForPartnerCard(vm: AppViewModel) {
+    val context = LocalContext.current
+    var partnerEmail by rememberSaveable { mutableStateOf("") }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
@@ -298,6 +409,27 @@ private fun WaitingForPartnerCard(vm: AppViewModel) {
                         if (vm.inviteCode == null) R.string.invite_create else R.string.invite_new,
                     ),
                 )
+            }
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = partnerEmail,
+                onValueChange = { partnerEmail = it },
+                label = { Text(stringResource(R.string.invite_email_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(6.dp))
+            Button(
+                onClick = {
+                    vm.invitePartnerByEmail(partnerEmail) { code ->
+                        launchInviteEmail(context, partnerEmail, code)
+                    }
+                },
+                enabled = !vm.busy && partnerEmail.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.invite_send_email))
             }
         }
     }
@@ -323,6 +455,76 @@ private fun CategoryCard(
                 CategoryWeightSubtitle(category.weight, sharePercent)
             }
             StarRating(value, onChange)
+        }
+    }
+}
+
+/**
+ * Karte für die Kategorie "Essen" (Frühstück, Mittagessen, Abendessen: nichts, wenig, mittel, gesund).
+ * Wenn bei allen 3 "gesund" herauskommt, gibt es 5 Sterne, ansonsten entsprechend weniger.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MealsCategoryCard(
+    category: Category,
+    sharePercent: Int,
+    values: Map<String, Double>,
+    onMealLevelSelected: (String, MealLevel) -> Unit,
+) {
+    val stars = counterStars(category, values)
+    val meals = listOf(
+        MEAL_BREAKFAST to stringResource(R.string.meal_breakfast),
+        MEAL_LUNCH to stringResource(R.string.meal_lunch),
+        MEAL_DINNER to stringResource(R.string.meal_dinner),
+    )
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CategoryImage(category = category, size = 42.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
+                    CategoryWeightSubtitle(category.weight, sharePercent)
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(R.string.meals_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+
+            meals.forEach { (mealKey, mealLabel) ->
+                val currentLevel = MealLevel.fromPoints(values[mealKey]?.toInt() ?: 0)
+                Text(
+                    mealLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    MealLevel.entries.forEach { level ->
+                        FilterChip(
+                            selected = currentLevel == level,
+                            onClick = { onMealLevelSelected(mealKey, level) },
+                            label = { Text(mealLevelLabel(level)) },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+            }
+
+            Spacer(Modifier.height(4.dp))
+            Text(
+                stringResource(
+                    R.string.counter_rating,
+                    "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
+                    stars,
+                ),
+                color = Amber,
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }
@@ -354,11 +556,11 @@ private fun CounterCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(4.dp))
-                CounterRow(stringResource(R.string.counter_pint), values[PINT] ?: 0.0, step = 1.0) {
-                    onChange(PINT, it)
-                }
                 CounterRow(stringResource(R.string.counter_demi), values[DEMI] ?: 0.0, step = 1.0) {
                     onChange(DEMI, it)
+                }
+                CounterRow(stringResource(R.string.counter_pint), values[PINT] ?: 0.0, step = 1.0) {
+                    onChange(PINT, it)
                 }
                 LitersField(
                     categoryId = category.id,
@@ -631,6 +833,8 @@ private fun StarRating(value: Int, onChange: (Int) -> Unit) {
 
 @Composable
 private fun PartnerCard(
+    partnerLabel: String,
+    partnerPhoto: String?,
     score: Double?,
     snapshots: List<CategorySnapshot>?,
     counters: Map<String, Map<String, Double>>?,
@@ -641,6 +845,8 @@ private fun PartnerCard(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                UserAvatar(photoBase64 = partnerPhoto, name = partnerLabel, size = 36.dp)
+                Spacer(Modifier.width(10.dp))
                 Text(
                     formatPercent(score),
                     style = MaterialTheme.typography.titleLarge,
@@ -691,12 +897,17 @@ private fun PartnerCard(
 
 @Composable
 fun PartnerTodayScreen(vm: AppViewModel) {
+    val myName by vm.myName.collectAsState()
     val partnerName by vm.partnerName.collectAsState()
+    val partnerPhoto by vm.partnerPhoto.collectAsState()
     val partnerToday by vm.partnerToday.collectAsState()
     val days by vm.days.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
     val allCategories by vm.categories.collectAsState()
     val tasks by vm.tasks.collectAsState()
+
+    val myLabel = myName ?: stringResource(R.string.who_you)
+    val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 
     val partnerCategories = allCategories.items
         .filter { it.appliesTo(partnerUid ?: vm.uid) }
@@ -711,21 +922,29 @@ fun PartnerTodayScreen(vm: AppViewModel) {
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Text(stringResource(R.string.tab_partner), style = MaterialTheme.typography.headlineMedium)
-            Text(
-                stringResource(R.string.connected_with, partnerName ?: stringResource(R.string.who_partner)),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                UserAvatar(photoBase64 = partnerPhoto, name = partnerLabel, size = 44.dp)
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(partnerLabel, style = MaterialTheme.typography.headlineMedium)
+                    Text(
+                        stringResource(R.string.connected_with, partnerLabel),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
         }
         item {
             ScoreHero(
                 score = partnerToday?.scorePercent,
-                title = partnerName ?: stringResource(R.string.who_partner),
+                title = stringResource(R.string.score_for_name, partnerLabel),
             )
         }
         item {
             PartnerCard(
+                partnerLabel = partnerLabel,
+                partnerPhoto = partnerPhoto,
                 score = partnerToday?.scorePercent,
                 snapshots = partnerToday?.snapshots,
                 counters = partnerToday?.counters,
@@ -737,7 +956,13 @@ fun PartnerTodayScreen(vm: AppViewModel) {
         if (partnerOpenTasks.isNotEmpty()) {
             item { SectionTitle(stringResource(R.string.section_open_tasks)) }
             items(partnerOpenTasks, key = { it.id }) { task ->
-                TaskCard(vm, task, partnerUid)
+                TaskCard(
+                    vm = vm,
+                    task = task,
+                    partnerUid = partnerUid,
+                    myLabel = myLabel,
+                    partnerLabel = partnerLabel,
+                )
             }
         }
     }
@@ -754,7 +979,13 @@ private fun HintCard(text: String) {
 }
 
 @Composable
-private fun TaskCard(vm: AppViewModel, task: Task, partnerUid: String?) {
+private fun TaskCard(
+    vm: AppViewModel,
+    task: Task,
+    partnerUid: String?,
+    myLabel: String,
+    partnerLabel: String,
+) {
     val isMine = task.ownerUid == vm.uid
     val (availableOptions, totalPoolSize) = vm.availableChoicesFor(task)
     var dropdownExpanded by remember(task.id) { mutableStateOf(false) }
@@ -764,7 +995,7 @@ private fun TaskCard(vm: AppViewModel, task: Task, partnerUid: String?) {
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            val whoText = stringResource(if (isMine) R.string.who_you else R.string.who_partner)
+            val whoText = if (isMine) myLabel else partnerLabel
             Text(
                 "$whoText · ${stringResource(R.string.task_title_format, typeLabel(task.type), formatDay(task.dayKey))}",
                 style = MaterialTheme.typography.titleSmall,
@@ -784,10 +1015,11 @@ private fun TaskCard(vm: AppViewModel, task: Task, partnerUid: String?) {
             )
             Text(
                 when {
-                    task.targets.size > 1 -> stringResource(R.string.target_both)
-                    task.targets.firstOrNull() == vm.uid -> stringResource(R.string.target_me)
-                    partnerUid != null && task.targets.firstOrNull() == partnerUid -> stringResource(R.string.target_partner)
-                    else -> stringResource(R.string.target_partner)
+                    task.targets.size > 1 -> stringResource(R.string.target_both, myLabel, partnerLabel)
+                    task.targets.firstOrNull() == vm.uid -> stringResource(R.string.target_me, myLabel)
+                    partnerUid != null && task.targets.firstOrNull() == partnerUid ->
+                        stringResource(R.string.target_partner, partnerLabel)
+                    else -> stringResource(R.string.target_partner, partnerLabel)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -850,8 +1082,8 @@ private fun TaskCard(vm: AppViewModel, task: Task, partnerUid: String?) {
                         }
                     }
                 }
-                isMine -> Text(stringResource(R.string.task_waiting_confirm, task.title))
-                task.title.isEmpty() -> Text(stringResource(R.string.task_partner_chooses))
+                isMine -> Text(stringResource(R.string.task_waiting_confirm, task.title, partnerLabel))
+                task.title.isEmpty() -> Text(stringResource(R.string.task_partner_chooses, partnerLabel))
                 else -> {
                     Text(
                         stringResource(R.string.task_partner_label, task.title),

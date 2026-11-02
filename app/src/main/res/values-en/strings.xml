@@ -24,6 +24,16 @@
     <string name="pairing_or">or enter your partner\'s code</string>
     <string name="pairing_code_label">Invitation code</string>
     <string name="pairing_join">Join</string>
+    <string name="invite_email_label">Partner\'s email address</string>
+    <string name="invite_send_email">Invite partner via email</string>
+    <string name="invite_email_subject">Invitation to 5 Star App</string>
+    <string name="invite_email_body">Hi! Connect with me in the 5 Star App. My invitation code is: %1$s</string>
+    <string name="partner_remove_button">Remove partner / Unpair (Test)</string>
+    <string name="partner_remove_hint">Disconnects the current partner for testing purposes so you can invite again.</string>
+
+    <string name="profile_photo_title">Your profile picture (icon)</string>
+    <string name="profile_photo_upload">Choose / upload photo</string>
+    <string name="profile_photo_remove">Remove photo</string>
 
     <string name="tab_today">Today</string>
     <string name="tab_relationship">Relationship</string>
@@ -33,26 +43,33 @@
     <string name="tab_partner">Partner</string>
 
     <string name="score_yours">Your score</string>
-    <string name="score_hint" formatted="false">Food has the highest weight (5). Below 80% triggers a daily penalty; 7 consecutive days at 80%+ unlocks a reward.</string>
-    <string name="percent_value">%1$.0f%%</string>
-    <string name="section_categories">Categories</string>
-    <string name="categories_empty">Create categories in Settings first or load the presets for Rosie / Andi.</string>
-    <string name="weight_label">Weight %1$d</string>
-    <string name="weight_with_share">Weight %1$d (%2$s) · %3$d%% of score</string>
-    <string name="priority_5">Top Priority / Food</string>
-    <string name="priority_4">Very Important</string>
-    <string name="priority_3">Important</string>
-    <string name="priority_2">Daily / Alternating</string>
-    <string name="priority_1">Minor / Bonus</string>
+    <string name="score_for_name">Daily Status (%1$s)</string>
+    <string name="status_daily_title">Daily Status (Target: 80%%)</string>
+    <string name="status_daily_ok">Daily goal reached (≥ 80%%) ✓</string>
+    <string name="status_daily_below">Below 80%% – missing the target triggers a daily penalty</string>
+    <string name="status_weekly_title">Weekly Status (7-Day Streak)</string>
+    <string name="status_weekly_progress">%1$d / %2$d consecutive days ≥ 80%%</string>
 
-    <string name="section_partner">Partner</string>
+    <string name="score_hint" formatted="false">Missing the daily target (&lt; 80%) triggers a penalty. 7 consecutive days at 80%+ unlocks a reward.</string>
+    <string name="percent_value">%1$.0f%%</string>
+    <string name="section_categories">Categories of %1$s</string>
+    <string name="categories_empty">Create categories in Settings first or load the presets for Rosie / Andi.</string>
+    <string name="weight_label">%1$d× weight</string>
+    <string name="weight_with_share">%1$d× weight (%2$s) · %3$d%% of score</string>
+    <string name="priority_5">5× · Top Priority</string>
+    <string name="priority_4">4× · Very Important</string>
+    <string name="priority_3">3× · High (Food/Water/Sport)</string>
+    <string name="priority_2">2× · Medium (Alcohol limit)</string>
+    <string name="priority_1">1× · Alternating tasks</string>
+
+    <string name="section_partner">Overview of %1$s</string>
     <string name="partner_no_rating">no rating yet</string>
     <string name="partner_today">today</string>
     <string name="offline_stale">Offline. Showing the last known state.</string>
     <string name="section_open_tasks">Open penalties &amp; rewards</string>
     <string name="no_open_tasks">No open tasks. Well done!</string>
     <string name="waiting_partner">Waiting for your partner</string>
-    <string name="invite_share">Share this code with your partner.</string>
+    <string name="invite_share">Share this code with your partner or send it directly via email.</string>
     <string name="invite_create">Create code</string>
     <string name="invite_new">Create new code</string>
     <string name="task_title_format">%1$s from %2$s</string>
@@ -61,8 +78,8 @@
     <string name="task_select_confirm">Save selection</string>
     <string name="task_remaining_count">%1$d of %2$d remaining in current cycle</string>
     <string name="task_catalog_empty">No entries of this type available. Add some in Settings.</string>
-    <string name="task_waiting_confirm">%1$s – Waiting for your partner to confirm redemption.</string>
-    <string name="task_partner_chooses">Your partner is still choosing an option from the dropdown.</string>
+    <string name="task_waiting_confirm">%1$s – Waiting for %2$s to confirm redemption.</string>
+    <string name="task_partner_chooses">%1$s is still choosing an option from the dropdown.</string>
     <string name="task_partner_label">Chosen: %1$s</string>
     <string name="task_confirm">Confirm redemption</string>
 
@@ -80,19 +97,19 @@
     <string name="period_year">This year</string>
     <string name="period_all">All</string>
     <string name="history_empty">There are no entries for this period yet.</string>
-    <string name="history_you">You: %1$s</string>
-    <string name="history_partner">Partner: %1$s</string>
+    <string name="history_you">%1$s: %2$s</string>
+    <string name="history_partner">%1$s: %2$s</string>
     <string name="history_your_categories">Your categories: %1$s</string>
     <string name="history_partner_categories">Partner\'s categories: %1$s</string>
     <string name="history_task_line">%1$s · %2$s: %3$s (%4$s)</string>
 
     <string name="settings_presets_title">Quick Start: Presets for Rosie &amp; Andi</string>
-    <string name="settings_presets_hint">Creates the tailored categories with balanced weights (Food = 5, Alcohol = 4, Water 2.5 L = 3, Alternating tasks = 3).</string>
-    <string name="settings_preset_rosie">Load Rosie\'s categories</string>
-    <string name="settings_preset_andi">Load Andi\'s categories</string>
+    <string name="settings_presets_hint">Rosie: Water (3×), Alcohol (2×), Alternating tasks (1×), Dinner before 20h (3×), Meals (3×) + Rewards &amp; Penalties. Andi: Sport (3×), Dinner before 20h (3×) + Penalty Cooking.</string>
+    <string name="settings_preset_rosie">Load Rosie profile &amp; categories</string>
+    <string name="settings_preset_andi">Load Andi profile &amp; categories</string>
 
     <string name="settings_categories">Categories</string>
-    <string name="settings_categories_hint">Weight 1 (Minor) to 5 (Top Priority Food). Each category has an icon and custom push notifications.</string>
+    <string name="settings_categories_hint">Weights flow into the daily &amp; weekly target (e.g. Meals 3×, Water 3×, Alcohol 2×, Alternating tasks 1×).</string>
     <string name="settings_archive">Archive</string>
     <string name="settings_new_category">New category</string>
     <string name="settings_add_category">Add category</string>
@@ -113,15 +130,15 @@
     <string name="sync_now">Sync now</string>
 
     <!-- Week / Streak & Archive -->
-    <string name="week_title">7-Day Streak &amp; Archive</string>
-    <string name="week_streak">Current streak: %1$d of %2$d days in a row (≥ 80%%)</string>
+    <string name="week_title">Daily &amp; Weekly Status / Archive</string>
+    <string name="week_streak">Weekly status: %1$d of %2$d days in a row (≥ 80%%)</string>
     <string name="week_reward_unlocked">7 days in a row achieved – Reward unlocked!</string>
     <string name="week_no_reward">%1$d more consecutive day(s) until the next reward.</string>
     <string name="week_no_data">No ratings for the last 7 days yet.</string>
-    <string name="week_successful_days">Last 7 days</string>
+    <string name="week_successful_days">Daily status – Last 7 days</string>
     <string name="week_reward_pool">Available rewards</string>
     <string name="week_penalty_pool">Possible daily penalties</string>
-    <string name="archive_title">Archive (Redeemed Penalties &amp; Rewards)</string>
+    <string name="archive_title">Archive (Confirmed Penalties &amp; Rewards)</string>
     <string name="archive_empty">No confirmed penalties or rewards in the archive yet.</string>
     <string name="archive_penalty_date">Penalty date: %1$s</string>
     <string name="archive_reward_date">Reward date: %1$s</string>
@@ -129,28 +146,31 @@
 
     <string name="settings_sign_out">Sign out</string>
 
-    <string name="seed_reward_1">Cook favourite meal</string>
-    <string name="seed_reward_2">DJ &amp; evening director on the couch</string>
-    <string name="seed_reward_3">Wish massage (20 min)</string>
-    <string name="seed_penalty_1">Service duty: coffee/mate in bed or dishes</string>
-    <string name="seed_penalty_2">Outfit dictate for the evening</string>
-    <string name="seed_penalty_3">15 min back scratch without return</string>
-    <string name="seed_penalty_4">Errand run: mailbox or small grocery trip</string>
+    <!-- Rosie & Andi Rewards and Penalties -->
+    <string name="seed_reward_1">Vinted Budget: Rosie gets 10 € from Andi</string>
+    <string name="seed_reward_2">Flowers</string>
+    <string name="seed_reward_3">Massage for 30 minutes</string>
+    <string name="seed_reward_4">Eat out: choose the restaurant</string>
+    <string name="seed_penalty_1">no orgasm</string>
+    <string name="seed_penalty_2">no bar</string>
+    <string name="seed_penalty_3">Cooking</string>
+    <string name="seed_penalty_4">Service duty: coffee/mate in bed or dishes</string>
 
     <string name="reminder_channel">Category notifications</string>
     <string name="reminder_text">Your rating for today is still missing.</string>
     <string name="reminder_default_category">Don\'t forget today: %1$s ⭐</string>
 
     <string name="connected_with">Connected with %1$s</string>
-    <string name="kind_stars">Stars</string>
-    <string name="kind_alcohol">Alcohol limit (pint/demi/L)</string>
+    <string name="kind_stars">Stars (1–5 ★)</string>
+    <string name="kind_alcohol">Alcohol limit (demi/pint/L)</string>
     <string name="kind_water">Drink water (glasses/liters)</string>
     <string name="kind_rotation">Alternating tasks (weekly rotation)</string>
-    <string name="kind_dinner">Dinner before 8 PM (time)</string>
+    <string name="kind_dinner">Dinner before 20h (time)</string>
+    <string name="kind_meals">Meals (breakfast, lunch, dinner)</string>
 
-    <string name="target_me">For me</string>
-    <string name="target_partner">For partner</string>
-    <string name="target_both">For both</string>
+    <string name="target_me">For %1$s</string>
+    <string name="target_partner">For %1$s</string>
+    <string name="target_both">For %1$s &amp; %2$s</string>
     <string name="settings_kind">Type</string>
     <string name="settings_targets">Applies to</string>
     <string name="settings_edit_target">Edit</string>
@@ -163,8 +183,8 @@
     <string name="counter_water_goal_hint">Goal: at least %1$.2f L (= 5 ★, proportionally rounded down below)</string>
     <string name="counter_alcohol_goal_hint">0.00 L = 5 ★ · proportionally less above up to %1$.2f L</string>
 
-    <string name="settings_display_name">Your name</string>
-    <string name="settings_display_name_hint">Your partner sees this name (e.g. Rosie or Andi).</string>
+    <string name="settings_display_name">Your own name (used as variable)</string>
+    <string name="settings_display_name_hint">Choose your name (e.g. Rosie or Andi). It will be displayed everywhere for you and your partner.</string>
     <string name="settings_save">Save</string>
     <string name="settings_cancel">Cancel</string>
     <string name="settings_target_label">%1$s · %2$s</string>
@@ -172,6 +192,16 @@
     <string name="settings_goal_water">Daily goal in liters (e.g. 2.5)</string>
     <string name="counter_rating">Rating: %1$s (%2$d/5 ★)</string>
     <string name="counter_total_liters">Total today: %1$.2f liters</string>
+
+    <!-- Meals: Breakfast, Lunch, Dinner -->
+    <string name="meals_hint">All 3 healthy = 5 ★, otherwise proportionally fewer stars.</string>
+    <string name="meal_breakfast">Breakfast</string>
+    <string name="meal_lunch">Lunch</string>
+    <string name="meal_dinner">Dinner</string>
+    <string name="meal_level_none">nothing</string>
+    <string name="meal_level_little">little</string>
+    <string name="meal_level_medium">medium</string>
+    <string name="meal_level_healthy">healthy</string>
 
     <!-- Alternating tasks (Rotation) -->
     <string name="rotation_today_label">Select today\'s alternating task:</string>
@@ -184,11 +214,11 @@
     <string name="rotation_task_dishes">Wash dishes (1×/week)</string>
 
     <!-- Dinner before 20h -->
-    <string name="dinner_rules_hint">Before 20:00 = 5 ★ · Before 21:00 = 1 ★ · 21:00 or later = 0 ★</string>
+    <string name="dinner_rules_hint">Before 20:00 = 5 ★ · Before 21:00 = 1 ★ · Otherwise = 0 ★</string>
     <string name="dinner_time_current">Recorded time: %1$s</string>
     <string name="dinner_time_not_set">No dinner time recorded for today yet</string>
     <string name="dinner_pick_time">Enter time (Andi)</string>
-    <string name="dinner_tracked_by_andi">Time is entered by Andi and synced in both apps.</string>
+    <string name="dinner_tracked_by_andi">Time is entered by Andi and tracked in both apps.</string>
     <string name="dinner_quick_before_20">Before 20h (19:30)</string>
     <string name="dinner_quick_before_21">Before 21h (20:30)</string>
     <string name="dinner_quick_after_21">21h+ (21:15)</string>
@@ -196,16 +226,17 @@
     <!-- Translatable preset category names -->
     <string name="cat_preset_water">Drink water</string>
     <string name="cat_preset_alcohol">Alcohol limit</string>
-    <string name="cat_preset_rotation">Alternating tasks (home &amp; lessons)</string>
+    <string name="cat_preset_rotation">Other tasks (alternating)</string>
     <string name="cat_preset_dinner">Dinner before 20h</string>
-    <string name="cat_preset_food">Eat regularly</string>
+    <string name="cat_preset_food">Meals</string>
+    <string name="cat_preset_sport">Sport</string>
 
     <!-- Category images & push notifications -->
     <string name="settings_category_image">Category image</string>
     <string name="icon_food">Food</string>
     <string name="icon_water">Water</string>
     <string name="icon_alcohol">Alcohol</string>
-    <string name="icon_fitness">Fitness</string>
+    <string name="icon_fitness">Sport</string>
     <string name="icon_home">Home</string>
     <string name="icon_mind">Me-Time</string>
     <string name="icon_detox">Digital Detox</string>
@@ -219,10 +250,10 @@
     <string name="relationship_title">Relationship Tracker</string>
     <string name="relationship_subtitle">How does your relationship feel today? Both partners rate with 1 to 5 stars.</string>
     <string name="relationship_score_couple">Shared Relationship Score</string>
-    <string name="relationship_score_you">Your rating: %1$s</string>
-    <string name="relationship_score_partner">Partner rating: %1$s</string>
-    <string name="relationship_partner_stars">Partner today: %1$s</string>
-    <string name="relationship_partner_not_rated">Partner: not rated today yet</string>
+    <string name="relationship_score_you">%1$s: %2$s</string>
+    <string name="relationship_score_partner">%1$s: %2$s</string>
+    <string name="relationship_partner_stars">%1$s today: %2$s</string>
+    <string name="relationship_partner_not_rated">%1$s: not rated today yet</string>
     <string name="relationship_history_title">Relationship – Last 7 Days</string>
     <string name="rel_mood_general">Mood independent of relationship</string>
     <string name="rel_mood_relationship">Mood within the relationship</string>

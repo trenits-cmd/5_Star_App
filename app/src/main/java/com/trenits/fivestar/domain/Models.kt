@@ -15,6 +15,25 @@ enum class CategoryKind {
     WATER,
     ROTATION,
     DINNER_TIME,
+    MEALS,
+}
+
+/**
+ * Bewertung einer Mahlzeit (Frühstück, Mittagessen, Abendessen):
+ * nichts (0), wenig (1), mittel (2), gesund (3).
+ * Wenn bei allen 3 Mahlzeiten "gesund" herauskommt (9/9 Punkte), gibt es 5 Sterne,
+ * ansonsten entsprechend weniger.
+ */
+enum class MealLevel(val points: Int) {
+    NONE(0),
+    LITTLE(1),
+    MEDIUM(2),
+    HEALTHY(3);
+
+    companion object {
+        fun fromPoints(points: Int): MealLevel =
+            entries.firstOrNull { it.points == points } ?: NONE
+    }
 }
 
 enum class CategoryIcon {
@@ -70,7 +89,7 @@ data class Category(
         CategoryIcon.entries.firstOrNull { it.name.equals(icon, ignoreCase = true) }?.let { return it }
         if (kind == CategoryKind.WATER) return CategoryIcon.WATER
         if (kind == CategoryKind.ALCOHOL) return CategoryIcon.ALCOHOL
-        if (kind == CategoryKind.DINNER_TIME) return CategoryIcon.FOOD
+        if (kind == CategoryKind.DINNER_TIME || kind == CategoryKind.MEALS) return CategoryIcon.FOOD
         if (kind == CategoryKind.ROTATION) return CategoryIcon.HOME
         val lower = name.lowercase()
         return when {
@@ -101,6 +120,9 @@ const val ROTATION_TASK_INDEX = "rotationTask"
 const val ROTATION_STARS = "rotationStars"
 const val DINNER_HOUR = "dinnerHour"
 const val DINNER_MINUTE = "dinnerMinute"
+const val MEAL_BREAKFAST = "mealBreakfast"
+const val MEAL_LUNCH = "mealLunch"
+const val MEAL_DINNER = "mealDinner"
 const val RELATIONSHIP_COUNTER_KEY = "_relationship"
 
 /**
@@ -224,6 +246,17 @@ fun dinnerStars(hour: Int, minute: Int = 0): Int {
 }
 
 /**
+ * Essen (Frühstück, Mittagessen, Abendessen):
+ * Jede Mahlzeit wird mit nichts (0), wenig (1), mittel (2) oder gesund (3) bewertet.
+ * Sind alle 3 gesund (9 Punkte), gibt es 5 Sterne, sonst entsprechend anteilig weniger.
+ */
+fun mealStars(breakfast: MealLevel, lunch: MealLevel, dinner: MealLevel): Int {
+    val total = breakfast.points + lunch.points + dinner.points
+    val maxTotal = MealLevel.HEALTHY.points * 3.0
+    return floor(MAX_STARS * total / maxTotal + EPSILON).toInt().coerceIn(0, MAX_STARS)
+}
+
+/**
  * Zählt für eine Wechsel-Kategorie [categoryId], wie oft jede [RotationTask]
  * in den übergebenen Tageseinträgen der Woche bereits erledigt wurde (Sterne > 0).
  */
@@ -339,6 +372,12 @@ fun counterStars(category: Category, values: Map<String, Double>): Int = when (c
         val hour = values[DINNER_HOUR]?.toInt() ?: -1
         val minute = values[DINNER_MINUTE]?.toInt() ?: 0
         if (hour < 0) 0 else dinnerStars(hour, minute)
+    }
+    CategoryKind.MEALS -> {
+        val b = MealLevel.fromPoints(values[MEAL_BREAKFAST]?.toInt() ?: 0)
+        val l = MealLevel.fromPoints(values[MEAL_LUNCH]?.toInt() ?: 0)
+        val d = MealLevel.fromPoints(values[MEAL_DINNER]?.toInt() ?: 0)
+        mealStars(b, l, d)
     }
 }
 

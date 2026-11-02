@@ -26,6 +26,7 @@ import com.trenits.fivestar.domain.DINNER_MINUTE
 import com.trenits.fivestar.domain.DayOutcome
 import com.trenits.fivestar.domain.DayRecord
 import com.trenits.fivestar.domain.MAX_STARS
+import com.trenits.fivestar.domain.MealLevel
 import com.trenits.fivestar.domain.RELATIONSHIP_COUNTER_KEY
 import com.trenits.fivestar.domain.ROTATION_STARS
 import com.trenits.fivestar.domain.ROTATION_TASK_INDEX
@@ -35,9 +36,6 @@ import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
-import com.trenits.fivestar.domain.WEIGHT_CRITICAL
-import com.trenits.fivestar.domain.WEIGHT_IMPORTANT
-import com.trenits.fivestar.domain.WEIGHT_VERY_HIGH
 import com.trenits.fivestar.domain.availablePoolOptions
 import com.trenits.fivestar.domain.buildDayRecord
 import com.trenits.fivestar.domain.consecutiveSuccessDays
@@ -70,10 +68,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         R.string.seed_reward_1 to TaskType.REWARD,
         R.string.seed_reward_2 to TaskType.REWARD,
         R.string.seed_reward_3 to TaskType.REWARD,
+        R.string.seed_reward_4 to TaskType.REWARD,
         R.string.seed_penalty_1 to TaskType.PENALTY,
         R.string.seed_penalty_2 to TaskType.PENALTY,
         R.string.seed_penalty_3 to TaskType.PENALTY,
-        R.string.seed_penalty_4 to TaskType.PENALTY,
     )
 
     val uid: String = Firebase.auth.currentUser?.uid.orEmpty()
@@ -113,8 +111,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         userRepository.nameOf(uid).share(null)
     }
 
+    val myPhoto: StateFlow<String?> = profile.map { it?.photoBase64 }.share(null)
+
     val partnerName: StateFlow<String?> = partnerUid
         .flatMapLatest { id -> if (id == null) flowOf(null) else userRepository.nameOf(id) }
+        .share(null)
+
+    val partnerPhoto: StateFlow<String?> = partnerUid
+        .flatMapLatest { id -> if (id == null) flowOf(null) else userRepository.photoOf(id) }
         .share(null)
 
     /** Katalogeinträge, die ich selbst angelegt habe. */
@@ -281,6 +285,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
     }
 
+    /** Speichert die Bewertung einer Mahlzeit (Frühstück, Mittagessen, Abendessen: nichts, wenig, mittel, gesund). */
+    fun setMealLevel(categoryId: String, mealKey: String, level: MealLevel) {
+        setCounter(categoryId, mealKey, level.points.toDouble())
+    }
+
     /** Speichert die heute ausgewählte Wechsel-Aufgabe und deren Sterne-Bewertung (0..5). */
     fun setRotation(categoryId: String, rotationTask: RotationTask, stars: Int) {
         val repo = repo() ?: return
@@ -350,86 +359,138 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Legt die abgestimmten Kategorien für Rosie (inkl. gemeinsames Abendessen vor 20h) an. */
+    /**
+     * Legt das Profil, die Kategorien (mit exakten Gewichtungen) sowie die Belohnungen & Strafen für Rosie an:
+     * - Wasser trinken (3-fache Wertung, mind. 2,5 L)
+     * - Alkohol-Grenze (2-fache Wertung, 0 L = 5 ★)
+     * - Weitere Aufgaben im Wechsel (1-fache Wertung: Wohnung, Müll, Geschirr, Kochen, Unterricht)
+     * - Abendessen vor 20h (3-fache Wertung)
+     * - Essen (3-fache Wertung: Frühstück, Mittagessen, Abendessen: nichts, wenig, mittel, gesund)
+     * - Belohnungen: Vinted Budget (10 € von Andi), Blumen, Massage für 30 Minuten, Essen gehen
+     * - Strafen: kein Orgasmus, keine Bar
+     */
     fun applyRosiePreset() {
         userRepository.setDisplayName("Rosie")
-        createPresetCategories(isAndi = false)
-    }
-
-    /** Legt die abgestimmten Kategorien für Andi (inkl. gemeinsames Abendessen vor 20h) an. */
-    fun applyAndiPreset() {
-        userRepository.setDisplayName("Andi")
-        createPresetCategories(isAndi = true)
-    }
-
-    private fun createPresetCategories(isAndi: Boolean) {
         val repo = repo() ?: return
-        val existing = categories.value.items.filter { !it.archived }
         val bothTargets = listOfNotNull(uid, partnerUid.value).distinct()
         val myTargets = listOf(uid)
 
-        // 1. Abendessen vor 20h (Gewicht 5 – Hauptpriorität, gilt für beide)
-        if (existing.none { it.kind == CategoryKind.DINNER_TIME }) {
-            repo.saveCategory(
-                ownerUid = uid,
-                name = text(R.string.cat_preset_dinner),
-                weight = WEIGHT_CRITICAL,
-                kind = CategoryKind.DINNER_TIME,
-                targets = bothTargets,
-                goal = 20.0,
-                icon = CategoryIcon.FOOD.name,
-                notifications = listOf("Abendessen vor 20:00 Uhr = 5 Sterne 🍽️"),
-                id = "preset_dinner_$uid",
-            )
-        }
+        repo.saveCategory(
+            ownerUid = uid,
+            name = text(R.string.cat_preset_food),
+            weight = 3,
+            kind = CategoryKind.MEALS,
+            targets = myTargets,
+            goal = 0.0,
+            icon = CategoryIcon.FOOD.name,
+            notifications = listOf("Frühstück, Mittagessen & Abendessen gesund eintragen 🥗"),
+            id = "preset_meals_$uid",
+        )
+        repo.saveCategory(
+            ownerUid = uid,
+            name = text(R.string.cat_preset_dinner),
+            weight = 3,
+            kind = CategoryKind.DINNER_TIME,
+            targets = bothTargets,
+            goal = 20.0,
+            icon = CategoryIcon.FOOD.name,
+            notifications = listOf("Abendessen vor 20:00 Uhr = 5 Sterne 🍽️"),
+            id = "preset_dinner_$uid",
+        )
+        repo.saveCategory(
+            ownerUid = uid,
+            name = text(R.string.cat_preset_water),
+            weight = 3,
+            kind = CategoryKind.WATER,
+            targets = myTargets,
+            goal = DEFAULT_WATER_GOAL,
+            icon = CategoryIcon.WATER.name,
+            notifications = listOf(
+                "Mindestens 2,5 Liter Wasser heute trinken 💧",
+                "Zwischenstand: Gläser oder Liter eintragen!",
+            ),
+            id = "preset_water_$uid",
+        )
+        repo.saveCategory(
+            ownerUid = uid,
+            name = text(R.string.cat_preset_alcohol),
+            weight = 2,
+            kind = CategoryKind.ALCOHOL,
+            targets = myTargets,
+            goal = DEFAULT_ALCOHOL_LIMIT,
+            icon = CategoryIcon.ALCOHOL.name,
+            notifications = listOf("0 Liter Alkohol = 5 Sterne ⭐"),
+            id = "preset_alcohol_$uid",
+        )
+        repo.saveCategory(
+            ownerUid = uid,
+            name = text(R.string.cat_preset_rotation),
+            weight = 1,
+            kind = CategoryKind.ROTATION,
+            targets = myTargets,
+            goal = 0.0,
+            icon = CategoryIcon.HOME.name,
+            notifications = listOf("Heutige Wechsel-Aufgabe auswählen (Unterricht / Haushalt) 🏠"),
+            id = "preset_rotation_$uid",
+        )
 
-        // 2. Alkohol-Grenze (Gewicht 4 – Sehr wichtig, 0 L = 5 Sterne)
-        if (existing.none { it.kind == CategoryKind.ALCOHOL && it.appliesTo(uid) }) {
-            repo.saveCategory(
-                ownerUid = uid,
-                name = text(R.string.cat_preset_alcohol),
-                weight = WEIGHT_VERY_HIGH,
-                kind = CategoryKind.ALCOHOL,
-                targets = myTargets,
-                goal = DEFAULT_ALCOHOL_LIMIT,
-                icon = CategoryIcon.ALCOHOL.name,
-                notifications = listOf("0 Liter Alkohol = 5 Sterne ⭐"),
-                id = "preset_alcohol_$uid",
-            )
+        // Rosie Belohnungen & Strafen
+        val rosieRewards = listOf(
+            text(R.string.seed_reward_1),
+            text(R.string.seed_reward_2),
+            text(R.string.seed_reward_3),
+            text(R.string.seed_reward_4),
+        )
+        rosieRewards.forEachIndexed { idx, title ->
+            repo.saveCatalogItem(CatalogItem("rosie_reward_${idx}_$uid", uid, TaskType.REWARD, title, myTargets))
         }
+        val rosiePenalties = listOf(
+            text(R.string.seed_penalty_1),
+            text(R.string.seed_penalty_2),
+        )
+        rosiePenalties.forEachIndexed { idx, title ->
+            repo.saveCatalogItem(CatalogItem("rosie_penalty_${idx}_$uid", uid, TaskType.PENALTY, title, myTargets))
+        }
+    }
 
-        // 3. Wasser trinken (Gewicht 3 – Wichtig, Ziel mind. 2,5 Liter)
-        if (existing.none { it.kind == CategoryKind.WATER && it.appliesTo(uid) }) {
-            repo.saveCategory(
-                ownerUid = uid,
-                name = text(R.string.cat_preset_water),
-                weight = WEIGHT_IMPORTANT,
-                kind = CategoryKind.WATER,
-                targets = myTargets,
-                goal = DEFAULT_WATER_GOAL,
-                icon = CategoryIcon.WATER.name,
-                notifications = listOf(
-                    "Denk an dein Wasserziel: mindestens 2,5 Liter heute 💧",
-                    "Zwischenstand prüfen: schon ein Glas Wasser getrunken?",
-                ),
-                id = "preset_water_$uid",
-            )
-        }
+    /**
+     * Legt das Profil, die Kategorien sowie Belohnungen & Strafen für Andi an:
+     * - Sport (3-fache Wertung)
+     * - Abendessen vor 20h (3-fache Wertung, Andi gibt die Uhrzeit ein)
+     * - Strafe: Cooking
+     */
+    fun applyAndiPreset() {
+        userRepository.setDisplayName("Andi")
+        val repo = repo() ?: return
+        val bothTargets = listOfNotNull(uid, partnerUid.value).distinct()
+        val myTargets = listOf(uid)
 
-        // 4. Wechsel-Aufgaben: Unterricht planen (3x), Wohnung, Müll, Kochen, Geschirr (je 1x)
-        if (existing.none { it.kind == CategoryKind.ROTATION && it.appliesTo(uid) }) {
-            repo.saveCategory(
-                ownerUid = uid,
-                name = text(R.string.cat_preset_rotation),
-                weight = WEIGHT_IMPORTANT,
-                kind = CategoryKind.ROTATION,
-                targets = if (isAndi) bothTargets else myTargets,
-                goal = 0.0,
-                icon = CategoryIcon.HOME.name,
-                notifications = listOf("Welche Wechsel-Aufgabe steht heute an? (Unterricht / Haushalt) 🏠"),
-                id = "preset_rotation_$uid",
-            )
-        }
+        repo.saveCategory(
+            ownerUid = uid,
+            name = text(R.string.cat_preset_sport),
+            weight = 3,
+            kind = CategoryKind.STARS,
+            targets = myTargets,
+            goal = 0.0,
+            icon = CategoryIcon.FITNESS.name,
+            notifications = listOf("Zeit für Sport heute 💪"),
+            id = "preset_sport_$uid",
+        )
+        repo.saveCategory(
+            ownerUid = uid,
+            name = text(R.string.cat_preset_dinner),
+            weight = 3,
+            kind = CategoryKind.DINNER_TIME,
+            targets = bothTargets,
+            goal = 20.0,
+            icon = CategoryIcon.FOOD.name,
+            notifications = listOf("Abendessen-Uhrzeit eintragen (vor 20h = 5 ★) 🍽️"),
+            id = "preset_dinner_$uid",
+        )
+
+        repo.saveCatalogItem(
+            CatalogItem("andi_penalty_0_$uid", uid, TaskType.PENALTY, text(R.string.seed_penalty_3), myTargets),
+        )
     }
 
     fun saveCategory(
@@ -457,6 +518,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveDisplayName(name: String) {
         userRepository.setDisplayName(name)
+    }
+
+    fun savePhoto(base64: String?) {
+        userRepository.setPhotoBase64(base64)
     }
 
     fun archiveCategory(id: String) {
@@ -487,6 +552,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun createInvite() = action {
         val coupleId = profile.value?.coupleId ?: userRepository.createCouple()
         inviteCode = userRepository.createInvite(coupleId)
+    }
+
+    fun invitePartnerByEmail(email: String, onCodeReady: (String) -> Unit) = action {
+        val coupleId = profile.value?.coupleId ?: userRepository.createCouple()
+        val code = inviteCode ?: userRepository.createInvite(coupleId, email)
+        inviteCode = code
+        onCodeReady(code)
+    }
+
+    fun removePartnerForTest() = action {
+        userRepository.removePartner(profile.value?.coupleId)
+        inviteCode = null
     }
 
     fun redeemInvite(code: String) = action { userRepository.redeemInvite(code) }

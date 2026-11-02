@@ -45,8 +45,15 @@ fun RelationshipScreen(vm: AppViewModel) {
     val myToday by vm.myToday.collectAsState()
     val partnerToday by vm.partnerToday.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
+    val myName by vm.myName.collectAsState()
+    val partnerName by vm.partnerName.collectAsState()
+    val myPhoto by vm.myPhoto.collectAsState()
+    val partnerPhoto by vm.partnerPhoto.collectAsState()
     val weekDays by vm.weekDays.collectAsState()
     val days by vm.days.collectAsState()
+
+    val myLabel = myName ?: stringResource(R.string.who_you)
+    val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 
     val myStars = relationshipStarsOf(myToday)
     val partnerStars = relationshipStarsOf(partnerToday)
@@ -110,18 +117,27 @@ fun RelationshipScreen(vm: AppViewModel) {
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            stringResource(R.string.relationship_score_you, formatPercent(myScore)),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                        if (partnerUid != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            UserAvatar(photoBase64 = myPhoto, name = myLabel, size = 24.dp)
+                            Spacer(Modifier.width(6.dp))
                             Text(
-                                stringResource(R.string.relationship_score_partner, formatPercent(partnerScore)),
+                                stringResource(R.string.relationship_score_you, myLabel, formatPercent(myScore)),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                             )
+                        }
+                        if (partnerUid != null) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                UserAvatar(photoBase64 = partnerPhoto, name = partnerLabel, size = 24.dp)
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    stringResource(R.string.relationship_score_partner, partnerLabel, formatPercent(partnerScore)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                )
+                            }
                         }
                     }
                 }
@@ -134,6 +150,7 @@ fun RelationshipScreen(vm: AppViewModel) {
                 aspect = aspect,
                 myValue = myStars[aspect] ?: 0,
                 partnerValue = partnerStars[aspect] ?: 0,
+                partnerLabel = partnerLabel,
                 showPartner = partnerUid != null,
                 onRate = { stars -> vm.setRelationshipStars(aspect, stars) },
             )
@@ -166,12 +183,12 @@ fun RelationshipScreen(vm: AppViewModel) {
                             Text(formatDay(dayKey), style = MaterialTheme.typography.bodyMedium)
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text(
-                                    stringResource(R.string.history_you, formatPercent(mScore)),
+                                    stringResource(R.string.history_you, myLabel, formatPercent(mScore)),
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                                 if (partnerUid != null) {
                                     Text(
-                                        stringResource(R.string.history_partner, formatPercent(pScore)),
+                                        stringResource(R.string.history_partner, partnerLabel, formatPercent(pScore)),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.primary,
                                     )
@@ -194,7 +211,9 @@ fun RelationshipTodaySection(vm: AppViewModel) {
     val myToday by vm.myToday.collectAsState()
     val partnerToday by vm.partnerToday.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
+    val partnerName by vm.partnerName.collectAsState()
 
+    val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
     val myStars = relationshipStarsOf(myToday)
     val partnerStars = relationshipStarsOf(partnerToday)
     val coupleScore = coupleRelationshipScorePercent(myStars, partnerStars)
@@ -253,10 +272,11 @@ fun RelationshipTodaySection(vm: AppViewModel) {
                                     if (pVal > 0) {
                                         stringResource(
                                             R.string.relationship_partner_stars,
+                                            partnerLabel,
                                             "★".repeat(pVal) + "☆".repeat(MAX_STARS - pVal),
                                         )
                                     } else {
-                                        stringResource(R.string.relationship_partner_not_rated)
+                                        stringResource(R.string.relationship_partner_not_rated, partnerLabel)
                                     },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -276,6 +296,7 @@ private fun RelationshipAspectCard(
     aspect: RelationshipAspect,
     myValue: Int,
     partnerValue: Int,
+    partnerLabel: String,
     showPartner: Boolean,
     onRate: (Int) -> Unit,
 ) {
@@ -301,10 +322,11 @@ private fun RelationshipAspectCard(
                         if (partnerValue > 0) {
                             stringResource(
                                 R.string.relationship_partner_stars,
+                                partnerLabel,
                                 "★".repeat(partnerValue) + "☆".repeat(MAX_STARS - partnerValue),
                             )
                         } else {
-                            stringResource(R.string.relationship_partner_not_rated)
+                            stringResource(R.string.relationship_partner_not_rated, partnerLabel)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = if (partnerValue > 0) Amber else MaterialTheme.colorScheme.onSurfaceVariant,

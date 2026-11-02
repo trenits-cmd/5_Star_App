@@ -86,6 +86,27 @@ class CounterTest {
         val dinner = Category("d", "andi", "Abendessen vor 20h", 5, kind = CategoryKind.DINNER_TIME)
         assertEquals(5, counterStars(dinner, mapOf(DINNER_HOUR to 19.0, DINNER_MINUTE to 15.0)))
         assertEquals(1, counterStars(dinner, mapOf(DINNER_HOUR to 20.0, DINNER_MINUTE to 30.0)))
+
+        val meals = Category("m", "rosie", "Essen", 3, kind = CategoryKind.MEALS)
+        assertEquals(
+            5,
+            counterStars(
+                meals,
+                mapOf(
+                    MEAL_BREAKFAST to MealLevel.HEALTHY.points.toDouble(),
+                    MEAL_LUNCH to MealLevel.HEALTHY.points.toDouble(),
+                    MEAL_DINNER to MealLevel.HEALTHY.points.toDouble(),
+                ),
+            ),
+        )
+        assertEquals(
+            3,
+            mealStars(MealLevel.MEDIUM, MealLevel.MEDIUM, MealLevel.MEDIUM),
+        )
+        assertEquals(
+            0,
+            mealStars(MealLevel.NONE, MealLevel.NONE, MealLevel.NONE),
+        )
     }
 
     @Test

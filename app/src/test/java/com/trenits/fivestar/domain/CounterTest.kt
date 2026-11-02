@@ -18,13 +18,15 @@ class CounterTest {
 
     @Test
     fun `Alkohol bei 0 Litern gibt 5 Sterne, darueber prozentual weniger`() {
-        assertEquals(5, alcoholStars(liters = 0.0, limit = 1.25))
-        // 1 Demi (0,25 L) bei Grenze 1,25 L -> 5 * (1 - 0,2) = 4 Sterne
-        assertEquals(4, alcoholStars(liters = 0.25, limit = 1.25))
-        // 1 Pinte (0,50 L) bei Grenze 1,25 L -> 5 * (1 - 0,4) = 3 Sterne
-        assertEquals(3, alcoholStars(liters = 0.50, limit = 1.25))
-        // Ab der Grenze -> 0 Sterne
-        assertEquals(0, alcoholStars(liters = 1.25, limit = 1.25))
+        assertEquals(5, alcoholStars(liters = 0.0, limit = 2.5))
+        // 1 Demi (0,25 L) bei Maßstab 2,5 L -> 5 * (1 - 0,1) = 4,5 -> 4 Sterne
+        assertEquals(4, alcoholStars(liters = 0.25, limit = 2.5))
+        // 1 Pinte (0,50 L) bei Maßstab 2,5 L -> 5 * (1 - 0,2) = 4 Sterne
+        assertEquals(4, alcoholStars(liters = 0.50, limit = 2.5))
+        // 1,25 L bei Maßstab 2,5 L -> 5 * 0,5 = 2,5 -> 2 Sterne
+        assertEquals(2, alcoholStars(liters = 1.25, limit = 2.5))
+        // Ab dem Maßstab -> 0 Sterne
+        assertEquals(0, alcoholStars(liters = 2.5, limit = 2.5))
         assertEquals(0, alcoholStars(liters = 0.25, limit = 0.0))
     }
 

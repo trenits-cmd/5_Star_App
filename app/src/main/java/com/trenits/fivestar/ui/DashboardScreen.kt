@@ -841,9 +841,18 @@ private fun RotationCategoryCard(
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f),
                 )
-                StarRating(stars) { newStars ->
-                    onSelectAndRate(selectedTask, newStars)
-                }
+                val answered = values.containsKey(ROTATION_STARS)
+                FilterChip(
+                    selected = answered && stars == MAX_STARS,
+                    onClick = { onSelectAndRate(selectedTask, MAX_STARS) },
+                    label = { Text(stringResource(R.string.rotation_yes)) },
+                )
+                Spacer(Modifier.width(6.dp))
+                FilterChip(
+                    selected = answered && stars == 0,
+                    onClick = { onSelectAndRate(selectedTask, 0) },
+                    label = { Text(stringResource(R.string.rotation_no)) },
+                )
             }
         }
     }

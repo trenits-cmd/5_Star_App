@@ -171,11 +171,15 @@
     <string name="seed_reward_5">Cuisine au choix : un plat que Rosie adore, préparé par Andi</string>
     <string name="seed_reward_andi_1">Câlins pendant 30 minutes</string>
     <string name="seed_reward_andi_2">Massage de 30 minutes</string>
+    <string name="seed_reward_andi_3">Edging</string>
+    <string name="seed_reward_andi_4">Blowjob</string>
+    <string name="seed_reward_andi_5">Handjob</string>
+    <string name="seed_reward_andi_6">Vidéo</string>
+    <string name="seed_reward_andi_7">Plat préféré : Rosie cuisine le plat préféré d\'Andi</string>
     <string name="seed_penalty_1">pas d\'orgasme : il y a du sexe, mais Rosie n\'a pas d\'orgasme</string>
     <string name="seed_penalty_2">pas de bar pendant deux jours</string>
-    <string name="seed_penalty_3">Plat préféré : un plat préféré préparé par Rosie</string>
-    <string name="seed_penalty_4">Remise du téléphone : donner le smartphone à Andi pendant 1 heure contre les distractions</string>
-    <string name="seed_penalty_andi_1">Cooking</string>
+    <string name="seed_penalty_3">Remise du téléphone : donner le smartphone à Andi pendant 1 heure contre les distractions</string>
+    <string name="seed_penalty_andi_1">Remise du téléphone : donner le smartphone à Rosie pendant 1 heure contre les distractions</string>
 
     <string name="reminder_channel">Notifications des catégories</string>
     <string name="reminder_text">Ton évaluation d\'aujourd\'hui manque encore.</string>
@@ -234,6 +238,8 @@
     <string name="rotation_task_trash">Sortir les poubelles (1×/semaine)</string>
     <string name="rotation_task_cook">Cuisiner (1×/semaine)</string>
     <string name="rotation_task_dishes">Faire la vaisselle (1×/semaine)</string>
+    <string name="rotation_yes">Oui (5 ★)</string>
+    <string name="rotation_no">Non (0 ★)</string>
 
     <!-- Dîner avant 20h -->
     <string name="dinner_rules_hint">Avant 20h00 = 5 ★ · Avant 21h00 = 1 ★ · Sinon = 0 ★</string>

@@ -183,7 +183,7 @@ const val PINT_LITERS = 0.5
 const val DEMI_LITERS = 0.25
 const val GLASS_LITERS = 0.25
 const val DEFAULT_WATER_GOAL = 2.5
-const val DEFAULT_ALCOHOL_LIMIT = 1.25
+const val DEFAULT_ALCOHOL_LIMIT = 2.5
 
 const val STREAK_DAYS_FOR_REWARD = 7
 

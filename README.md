@@ -1,72 +1,60 @@
 # 5 Star – Daily Synergy & Motivation
 
-Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a 5-star scale; the partner sees everything in real time.
+Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v0.7.0)
+## Features (v1.02112026_0949)
 
-- **Profile Photo Icon & Dynamic Name Variables:**
-  - Each user chooses their own name (e.g. *Rosie* or *Andi*), which is used dynamically as a variable across all screens, tabs, score cards, target chips, and tasks.
-  - Each user can upload a **photo of themselves** from the gallery (cropped & scaled to a 128×128 avatar icon, synced via Firestore) displayed in headers, partner cards, the Relationship Tracker, and the Partner tab icon.
+- **Profile & Names:**
+  - Each user chooses their own name (e.g. *Rosie* or *Andi*), used as a variable across all screens, tabs, score cards, target chips, and tasks.
+  - Each user can upload a **profile photo** from the gallery (cropped & scaled to a 128×128 avatar, synced via Firestore), shown as icon in headers, partner cards, and the Partner tab.
 - **Invite Partner via Email & Remove Partner for Testing:**
-  - Invite the partner directly via **email** (creates an invitation code and opens the email client with pre-filled invitation message).
-  - Disconnect/remove the partner at any time for testing purposes via Settings (*Remove partner / Unpair (Test)*).
-- **Separate Daily Status, Weekly Status & Relationship Mood Display in Dashboard:**
-  - **Daily Status Banner:** Shows today's weighted score vs. the 80% daily threshold (missing < 80% triggers a daily penalty).
-  - **Weekly Status Banner:** Shows the current **7-day consecutive streak** (`X / 7 days in a row ≥ 80%`) required to unlock a weekly reward.
-  - **Relationship Mood Banner:** Separately tracks and displays the daily relationship mood (0–5 stars across all 5 equally weighted relationship aspects) right on the Dashboard.
-- **Tailored Categories, Weights, Rewards & Penalties for Rosie & Andi (1-Click Presets in Settings):**
-  - **Rosie's Categories:**
-    1. **Meals / Essen (`CategoryKind.MEALS`, 3× weight):** Breakfast, Lunch, and Dinner are each rated as *nothing (nichts)*, *little (wenig)*, *medium (mittel)*, or *healthy (gesund)*. All 3 *healthy* = **5 stars**, otherwise proportionally fewer stars.
-    2. **Dinner before 20h (`CategoryKind.DINNER_TIME`, 3× weight):** **Before 20:00** = 5 stars · **Before 21:00** = 1 star · **Otherwise** = 0 stars. Time is entered by **Andi** and synced in **both apps**.
-    3. **Drink Water (`CategoryKind.WATER`, 3× weight, Goal ≥ 2.5 L):** Tracked throughout the day in **glasses (0.25 L each)** and/or **decimal liters** (`waterLiters`). At **2.5 L** = 5 stars, below = proportionally fewer stars rounded down.
-    4. **Alcohol Limit (`CategoryKind.ALCOHOL`, 2× weight):** Tracked via **Demi (0.25 L)**, **Pint (0.5 L)** counters, or **additional decimal liters** (`alcoholLiters`). At **0 L** = 5 stars, above = proportionally fewer stars.
-    5. **Alternating Tasks (`CategoryKind.ROTATION`, 1× weight):** *Plan lessons (Unterricht planen, 3×/week)* alternating with *Tidy up apartment*, *Take out trash*, *Cook meal*, and *Wash dishes* (1×/week each).
-  - **Andi's Categories:**
-    1. **Sport (`CategoryKind.STARS`, 3× weight)**
-    2. **Drink Water (`CategoryKind.WATER`, 2× weight, Goal ≥ 2.5 L):** Tracked in glasses and/or decimal liters.
-    3. **Reading / Lesen (`CategoryKind.READING`, 2× weight):** Page count input (`0–5 pages = 0 stars`, `> 50 pages = 5 stars`, `6–50 pages = 1–4 stars in proportion`).
-    4. **Dinner before 20h (`CategoryKind.DINNER_TIME`, 3× weight, shared)**
-  - **Rosie's Rewards (unlocked at 7-day streak):**
-    - *Vinted Budget: Rosie gets 10 € from Andi*
-    - *Flowers (Blumen)*
-    - *Massage for 30 minutes*
-    - *Eat out: choose the restaurant*
-    - *Cooking of choice: a dish Rosie loves, prepared by Andi*
-  - **Andi's Rewards:**
-    - *Cuddling for 30 minutes (Kuscheln für 30 Minuten)*
-    - *Massage for 30 minutes (Massage für 30 Minuten)*
-  - **Rosie's Penalties:**
-    - *no orgasm: sex happens, but Rosie has no orgasm*
-    - *no bar for two days*
-    - *Favourite dish: a favourite meal prepared by Rosie*
-    - *Phone handover: hand over smartphone to Andi for 1 hour to stop distraction*
-  - **Andi's Penalty:** *Cooking*
-- **Depleting Penalty & Reward Dropdown, Sunday Evening Pool Reset, 3h Push & 48h Auto-Confirm:**
-  - Chosen penalties disappear from the dropdown until all penalties in the pool have been used up, and the penalty pool **resets every Sunday evening after the weekly review** (`penaltyCycleStartDayKey`).
-  - Open tasks must be confirmed by the partner to move into the **Archive** (`Streak / Archive` tab), recording both the **date of the penalty/reward (`dayKey`)** and the **date of redemption (`redeemedDayKey`)**.
-  - **3-Hour Partner Push Reminder:** If an open task with a selected action is not confirmed within **3 hours**, the partner receives a push notification (*“Rosie wartet auf deine Bestätigung!”*).
-  - **48-Hour Auto-Confirm:** After **48 hours** without confirmation, the task is automatically confirmed (`AUTO_CONFIRMED`) into the Archive.
-- **Relationship Tracker (Beziehungstracker):**
-  - Both partners rate their relationship daily on a **0–5 star scale** (all 5 equally weighted) across:
-    1. **Mood independent of relationship** (*Stimmung unabhängig von Beziehung*)
-    2. **Mood within the relationship** (*Stimmung in der Beziehung*)
-    3. **Communication** (*Kommunikation*)
-    4. **Intimacy** (*Intimität*)
-    5. **Sex** (*Sex*)
-- **Category Images & Personalized Push Notifications (Switch, Interval & Quiet Hours):**
-  - Expressive vector illustrations (`FOOD`, `WATER`, `ALCOHOL`, `FITNESS`, `HOME`, `MIND`, `DETOX`, `STAR`, `cat_relationship`).
-  - **Toggle Switches (`Switch`):** Enable or disable push notifications globally as well as individually per category.
-  - **Daily Time or Multi-Hour Interval:** Configure either a fixed daily reminder time (e.g. `20:00`) or a repeating interval (**every 1, 2, 3, or 4 hours** – e.g. every 2 hours for drinking water).
-  - **Global Quiet Hours (Ruhepause, default `23:00 – 09:00`):** No push notifications are sent during the configurable quiet window (`isWithinQuietHours`).
-  - Multiple custom push notification messages per category (`notifications: List<String>`) + instant test button in Settings.
-- **Full i18n (DE / EN / FR) & App Version (`0.7.0`) at the very bottom of Settings.**
+  - Invite the partner by **email** (creates an invitation code and opens the mail app with a pre-filled message).
+  - Remove/unpair the partner at any time in Settings (*Remove partner / Unpair (Test)*).
+- **Daily Status, Weekly Status & Relationship Mood (Dashboard):**
+  - **Daily Status:** today's weighted score vs. the 80 % threshold (below 80 % triggers a daily penalty).
+  - **Weekly Status:** current **7-day streak** (`X / 7 days in a row ≥ 80 %`) required to unlock a weekly reward.
+  - **Relationship Mood:** the 5 relationship aspects are rated 0–5 stars, weighted equally, and the daily mood is shown separately on the Dashboard.
+- **Categories, Weights & Scoring:**
+  - Each category has a weight (1–5) that flows into the daily and weekly target. Food is weighted highest.
+  - **Rosie:**
+    1. **Meals / Essen (3×):** breakfast, lunch and dinner each rated *nothing / little / medium / healthy*. All three *healthy* = **5 ★**, otherwise proportionally fewer.
+    2. **Dinner before 20h (3×):** before 20:00 = **5 ★**, before 21:00 = **1 ★**, otherwise **0 ★**. The time is entered by **Andi** and synced in both apps.
+    3. **Drink water (3×):** glasses (0.25 L each) and/or decimal liters are summed over the day. **2.5 L = 5 ★**, less proportionally below, rounded down.
+    4. **Alcohol limit (2×):** counters for *Demi (0.25 L)* and *Pinte (0.5 L)* or decimal liters. **0 L = 5 ★**; above that, stars drop proportionally with **2.5 L as the benchmark** (`DEFAULT_ALCOHOL_LIMIT = 2.5`).
+    5. **Alternating tasks (1×):** *Plan lessons* (3×/week), *Tidy up apartment*, *Take out trash*, *Cook meal*, *Wash dishes* (1×/week each), rotated automatically. Each task is answered **Ja = 5 ★** or **Nein = 0 ★** (no individual star rating).
+  - **Andi:**
+    1. **Sport (3×)**
+    2. **Drink water (2×, ≥ 2.5 L)**
+    3. **Reading / Lesen (2×):** number of pages. 0–5 pages = 0 ★, more than 50 pages = 5 ★, in between proportional (1–4 ★).
+    4. **Dinner before 20h (3×, shared)**
+- **Rewards (unlocked by a 7-day streak, confirmed by the partner, archived):**
+  - **Rosie receives:** Vinted budget (10 € from Andi), flowers, 30-minute massage, eating out (restaurant of her choice), shared cooking of a dish she loves (prepared by Andi).
+  - **Andi receives:** cuddling for 30 minutes, 30-minute massage, edging, blowjob, handjob, video, and a favourite dish cooked by Rosie.
+- **Penalties (chosen from a dropdown by the person who has the penalty):**
+  - **Rosie:** *no orgasm: sex happens, but Rosie has no orgasm*; *no bar for two days*; *phone handover: smartphone to Andi for one hour*.
+  - **Andi:** *phone handover: smartphone to Rosie for one hour*.
+  - A chosen penalty disappears from the dropdown until the whole pool is used up. The pool **resets every Sunday evening after the weekly review**.
+- **Confirmation, Auto-Confirm & Archive:**
+  - Rewards and penalties must be confirmed by the partner and then move to the **Archive** (tab *Streak / Archive*), with the **date of the penalty (`dayKey`)** and the **date of redemption (`redeemedDayKey`)**.
+  - **3 hours** after a selected action, the partner gets the push *„Rosie wartet auf deine Bestätigung!“* (or the respective name).
+  - **48 hours** without confirmation → automatic confirmation into the archive.
+- **Relationship Tracker:**
+  - Both partners rate each of the five aspects with 0–5 stars: *mood independent of relationship*, *mood within the relationship*, *communication*, *intimacy*, *sex*. Each aspect has the same weight.
+- **Push Notifications:**
+  - Global and per-category switches (`Switch`).
+  - Either a fixed daily time or an interval of 1, 2, 3 or 4 hours (e.g. drinking water every 2 hours).
+  - **Quiet hours** (default 23:00 – 09:00) for all notifications, adjustable globally.
+  - Several personalised messages per category.
+- **Category images:** illustrated icons for food, water, alcohol, fitness, home, mind, detox, stars, relationship and reading.
+- **Full i18n (DE / EN / FR):** every text is translated. The language switch remains top right.
+- **App version** is shown as the last item in Settings and matches the release tag.
 
 ## Tech Stack
 
 - Android native, Kotlin, Jetpack Compose (Material 3).
 - Firebase Auth (Google + Email/Password) and Cloud Firestore with persistent cache.
-- WorkManager for personalized per-category push notifications, quiet hours, and confirmation reminders.
-- Pure Kotlin scoring, meals, reading pages, relationship mood index, 7-day streak, rotation, and depleting pool logic, tested with JUnit.
+- WorkManager for push notifications, quiet hours and confirmation reminders.
+- Pure Kotlin scoring (categories, meals, reading pages, alcohol/water, relationship mood, streak, rotation, pool logic), covered by JUnit tests.
 
 ## Build & Test
 
@@ -76,5 +64,5 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v0.7.0`** – Full Rosie & Andi edition: Reading category (page count), Water (2×) & Rewards for Andi, expanded Rewards & Penalties for Rosie, 3h partner confirmation push (*"Rosie wartet auf deine Bestätigung!"*) + 48h auto-confirm, Sunday evening penalty pool reset, separate daily Relationship Mood banner on Dashboard, push switches/intervals/quiet hours (23–9h), email invite & test unpair, profile photo avatar, full DE/EN/FR translations.
-- Previous: `v0.6.1`, `v0.6.0`, `v0.5.1`, `v0.5.0`, `v0.3.1`, `v0.3.0`, `v0.2.0`, `v0.1.0`.
+- **Latest: `v1.02112026_0949`** – Alcohol benchmark 2.5 L, alternating tasks Ja/Nein (5 ★ / 0 ★), Andi's expanded rewards (edging, blowjob, handjob, video, favourite dish), Rosie's rewards and penalties, Andi's penalty to Rosie, full DE/EN/FR translations.
+- Previous: `v0.7.0` (features as listed above, earlier revision), `v0.6.1`, `v0.6.0`, `v0.5.1`, `v0.5.0`, `v0.3.1`, `v0.3.0`, `v0.2.0`, `v0.1.0`.

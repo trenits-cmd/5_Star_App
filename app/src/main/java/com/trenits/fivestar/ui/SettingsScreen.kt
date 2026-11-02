@@ -1189,7 +1189,7 @@ private fun targetsForAudience(audience: Audience, uid: String, partnerUid: Stri
 
 private fun defaultGoal(kind: CategoryKind): String = when (kind) {
     CategoryKind.STARS -> ""
-    CategoryKind.ALCOHOL -> "1.25"
+    CategoryKind.ALCOHOL -> "2.5"
     CategoryKind.WATER -> "2.5"
     CategoryKind.ROTATION -> ""
     CategoryKind.DINNER_TIME -> "20"

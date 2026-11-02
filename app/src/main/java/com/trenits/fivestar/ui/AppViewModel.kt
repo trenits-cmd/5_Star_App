@@ -78,7 +78,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         R.string.seed_penalty_1 to TaskType.PENALTY,
         R.string.seed_penalty_2 to TaskType.PENALTY,
         R.string.seed_penalty_3 to TaskType.PENALTY,
-        R.string.seed_penalty_4 to TaskType.PENALTY,
+        R.string.seed_penalty_andi_1 to TaskType.PENALTY,
     )
 
     val uid: String = Firebase.auth.currentUser?.uid.orEmpty()
@@ -468,7 +468,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             text(R.string.seed_penalty_1),
             text(R.string.seed_penalty_2),
             text(R.string.seed_penalty_3),
-            text(R.string.seed_penalty_4),
         )
         rosiePenalties.forEachIndexed { idx, title ->
             repo.saveCatalogItem(CatalogItem("rosie_penalty_${idx}_$uid", uid, TaskType.PENALTY, title, myTargets))
@@ -543,6 +542,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val andiRewards = listOf(
             text(R.string.seed_reward_andi_1),
             text(R.string.seed_reward_andi_2),
+            text(R.string.seed_reward_andi_3),
+            text(R.string.seed_reward_andi_4),
+            text(R.string.seed_reward_andi_5),
+            text(R.string.seed_reward_andi_6),
+            text(R.string.seed_reward_andi_7),
         )
         andiRewards.forEachIndexed { idx, title ->
             repo.saveCatalogItem(CatalogItem("andi_reward_${idx}_$uid", uid, TaskType.REWARD, title, myTargets))

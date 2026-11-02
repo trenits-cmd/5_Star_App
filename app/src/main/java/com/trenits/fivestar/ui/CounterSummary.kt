@@ -63,7 +63,8 @@ fun CounterSummary(name: String, values: Map<String, Double>) {
     if (isRotation) {
         val task = RotationTask.fromIndex(values[ROTATION_TASK_INDEX]?.toInt() ?: 0)
         val stars = values[ROTATION_STARS]?.toInt() ?: 0
-        Text("${rotationTaskLabel(task)}: ${stars}/5 ★", style = MaterialTheme.typography.bodySmall)
+        val answer = if (stars > 0) stringResource(R.string.rotation_yes) else stringResource(R.string.rotation_no)
+        Text("${rotationTaskLabel(task)}: $answer", style = MaterialTheme.typography.bodySmall)
     }
     if (isDinner) {
         val hour = values[DINNER_HOUR]?.toInt() ?: -1

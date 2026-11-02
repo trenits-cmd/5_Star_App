@@ -54,7 +54,7 @@ class DayRecordTest {
 
     @Test
     fun `Zaehlerkategorien fliessen mit berechneten Sternen in den Score ein`() {
-        val alcohol = Category("alc", alice, "Alkohol", 1, kind = CategoryKind.ALCOHOL, goal = 1.25)
+        val alcohol = Category("alc", alice, "Alkohol", 1, kind = CategoryKind.ALCOHOL, goal = 2.5)
         // 1 Demi = 0,25 Liter bei Grenze 1,25 -> floor(5 * (1 - 0,25 / 1,25)) = 4 Sterne
         val counters = mapOf("alc" to mapOf(DEMI to 1.0))
         val record = buildDayRecord("2026-11-01", alice, listOf(sport, alcohol), mapOf("sport" to 5), counters)

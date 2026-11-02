@@ -1422,24 +1422,16 @@ fun PartnerTodayScreen(vm: AppViewModel) {
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 
     val pUid = partnerUid ?: vm.uid
-    val partnerIsAndi = partnerLabel.trim().contains("andi", ignoreCase = true) ||
-        myLabel.trim().contains("rosie", ignoreCase = true)
     val partnerIsRosie = partnerLabel.trim().contains("rosie", ignoreCase = true) ||
-        myLabel.trim().contains("andi", ignoreCase = true)
-    val allowedPartnerCatIds = when {
-        partnerIsAndi -> vm.andiCategoryIds(pUid)
-        partnerIsRosie -> vm.rosieCategoryIds(pUid)
-        else -> null
-    }
-    val partnerCategories = allCategories.items
-        .filter { cat ->
-            !cat.archived && if (allowedPartnerCatIds != null) {
-                cat.id in allowedPartnerCatIds
-            } else {
-                cat.appliesTo(pUid)
-            }
+        myLabel.trim().contains("andi", ignoreCase = true) ||
+        !partnerLabel.trim().contains("andi", ignoreCase = true)
+    val partnerCategories = remember(pUid, partnerIsRosie) {
+        if (partnerIsRosie) {
+            vm.canonicalRosieCategories(pUid)
+        } else {
+            vm.canonicalAndiCategories(pUid)
         }
-        .sortedByDescending { it.weight }
+    }
     val partnerOpenTasks = tasks.items.filter {
         it.status == TaskStatus.OPEN && (it.ownerUid == partnerUid || (partnerUid != null && it.appliesTo(partnerUid!!)))
     }

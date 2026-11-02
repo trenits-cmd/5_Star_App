@@ -148,43 +148,178 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val authEmail = Firebase.auth.currentUser?.email?.trim()?.lowercase().orEmpty()
         val authName = Firebase.auth.currentUser?.displayName?.trim()?.lowercase().orEmpty()
         return when {
-            myLower.contains("andi") || myLower.contains("andreas") -> "andi"
             myLower.contains("rosie") || myLower.contains("rosa") -> "rosie"
-            partnerLower.contains("rosie") || partnerLower.contains("rosa") -> "andi"
+            myLower.contains("andi") || myLower.contains("andreas") -> "andi"
             partnerLower.contains("andi") || partnerLower.contains("andreas") -> "rosie"
-            profLower.contains("andi") || profLower.contains("andreas") ||
-                authName.contains("andi") || authEmail.contains("andi") || authEmail.contains("trenits") -> "andi"
+            partnerLower.contains("rosie") || partnerLower.contains("rosa") -> "andi"
             profLower.contains("rosie") || profLower.contains("rosa") ||
                 authName.contains("rosie") || authEmail.contains("rosie") -> "rosie"
+            profLower.contains("andi") || profLower.contains("andreas") ||
+                authName.contains("andi") || authEmail.contains("andi") || authEmail.contains("trenits") -> "andi"
             cats.any { it.id == "preset_sport_$uid" && !it.archived } &&
                 cats.none { it.id == "preset_meals_$uid" && !it.archived } -> "andi"
             cats.any { it.id == "preset_meals_$uid" && !it.archived } &&
                 cats.none { it.id == "preset_sport_$uid" && !it.archived } -> "rosie"
-            else -> null
+            else -> "andi"
         }
     }
 
-    /** Kategorien, die für mich gelten (strikt nach Rolle Rosie vs. Andi gefiltert). */
+    fun canonicalAndiCategories(ownerUid: String = uid): List<Category> = listOf(
+        Category(
+            id = "preset_sport_$ownerUid",
+            ownerUid = ownerUid,
+            name = text(R.string.cat_preset_sport),
+            weight = 3,
+            kind = CategoryKind.SPORT,
+            targets = listOf(ownerUid),
+            goal = DEFAULT_SPORT_GOAL_MINUTES,
+            icon = CategoryIcon.FITNESS.name,
+            notifications = listOf("3× 45 min sport per week – log your minutes today 💪"),
+        ),
+        Category(
+            id = "preset_water_$ownerUid",
+            ownerUid = ownerUid,
+            name = text(R.string.cat_preset_water),
+            weight = 2,
+            kind = CategoryKind.WATER,
+            targets = listOf(ownerUid),
+            goal = DEFAULT_WATER_GOAL,
+            icon = CategoryIcon.WATER.name,
+            notifications = listOf(
+                "Drink at least 2.5 liters of water today 💧",
+                "Status: Enter glasses or liters!",
+            ),
+            pushEnabled = true,
+            pushIntervalHours = 2,
+        ),
+        Category(
+            id = "preset_reading_$ownerUid",
+            ownerUid = ownerUid,
+            name = text(R.string.cat_preset_reading),
+            weight = 2,
+            kind = CategoryKind.READING,
+            targets = listOf(ownerUid),
+            goal = 50.0,
+            icon = CategoryIcon.MIND.name,
+            notifications = listOf("Read a few more pages today 📖"),
+        ),
+    )
+
+    fun canonicalRosieCategories(ownerUid: String = uid): List<Category> = listOf(
+        Category(
+            id = "preset_water_$ownerUid",
+            ownerUid = ownerUid,
+            name = text(R.string.cat_preset_water),
+            weight = 3,
+            kind = CategoryKind.WATER,
+            targets = listOf(ownerUid),
+            goal = DEFAULT_WATER_GOAL,
+            icon = CategoryIcon.WATER.name,
+            notifications = listOf(
+                "Drink at least 2.5 liters of water today 💧",
+                "Status: Enter glasses or liters!",
+            ),
+            pushEnabled = true,
+            pushIntervalHours = 2,
+        ),
+        Category(
+            id = "preset_dinner_$ownerUid",
+            ownerUid = ownerUid,
+            name = text(R.string.cat_preset_dinner),
+            weight = 3,
+            kind = CategoryKind.DINNER_TIME,
+            targets = listOf(ownerUid),
+            goal = 20.0,
+            icon = CategoryIcon.FOOD.name,
+            notifications = listOf("Dinner before 20:00 = 5 stars 🍽️"),
+        ),
+        Category(
+            id = "preset_meals_$ownerUid",
+            ownerUid = ownerUid,
+            name = text(R.string.cat_preset_food),
+            weight = 3,
+            kind = CategoryKind.MEALS,
+            targets = listOf(ownerUid),
+            goal = 0.0,
+            icon = CategoryIcon.FOOD.name,
+            notifications = listOf("Log healthy breakfast, lunch & dinner 🥗"),
+        ),
+        Category(
+            id = "preset_alcohol_$ownerUid",
+            ownerUid = ownerUid,
+            name = text(R.string.cat_preset_alcohol),
+            weight = 2,
+            kind = CategoryKind.ALCOHOL,
+            targets = listOf(ownerUid),
+            goal = DEFAULT_ALCOHOL_LIMIT,
+            icon = CategoryIcon.ALCOHOL.name,
+            notifications = listOf("0 liters of alcohol = 5 stars ⭐"),
+        ),
+        Category(
+            id = "preset_rotation_$ownerUid",
+            ownerUid = ownerUid,
+            name = text(R.string.cat_preset_rotation),
+            weight = 1,
+            kind = CategoryKind.ROTATION,
+            targets = listOf(ownerUid),
+            goal = 0.0,
+            icon = CategoryIcon.HOME.name,
+            notifications = listOf("Select today's alternating task (lessons / household) 🏠"),
+        ),
+    )
+
+    private fun canonicalAndiCatalog(ownerUid: String = uid): List<CatalogItem> {
+        val myTargets = listOf(ownerUid)
+        val rewards = listOf(
+            text(R.string.seed_reward_andi_1),
+            text(R.string.seed_reward_andi_2),
+            text(R.string.seed_reward_andi_3),
+            text(R.string.seed_reward_andi_4),
+            text(R.string.seed_reward_andi_5),
+            text(R.string.seed_reward_andi_6),
+            text(R.string.seed_reward_andi_7),
+        ).mapIndexed { idx, title ->
+            CatalogItem("andi_reward_${idx}_$ownerUid", ownerUid, TaskType.REWARD, title, myTargets)
+        }
+        val penalties = listOf(
+            CatalogItem("andi_penalty_0_$ownerUid", ownerUid, TaskType.PENALTY, text(R.string.seed_penalty_andi_1), myTargets),
+        )
+        return rewards + penalties
+    }
+
+    private fun canonicalRosieCatalog(ownerUid: String = uid): List<CatalogItem> {
+        val myTargets = listOf(ownerUid)
+        val rewards = listOf(
+            text(R.string.seed_reward_1),
+            text(R.string.seed_reward_2),
+            text(R.string.seed_reward_3),
+            text(R.string.seed_reward_4),
+            text(R.string.seed_reward_5),
+        ).mapIndexed { idx, title ->
+            CatalogItem("rosie_reward_${idx}_$ownerUid", ownerUid, TaskType.REWARD, title, myTargets)
+        }
+        val penalties = listOf(
+            text(R.string.seed_penalty_1),
+            text(R.string.seed_penalty_2),
+            text(R.string.seed_penalty_3),
+        ).mapIndexed { idx, title ->
+            CatalogItem("rosie_penalty_${idx}_$ownerUid", ownerUid, TaskType.PENALTY, title, myTargets)
+        }
+        return rewards + penalties
+    }
+
+    /** Kategorien, die für mich gelten (strikt nach Rolle Rosie vs. Andi). */
     val targeted: StateFlow<List<Category>> = combine(categories, myName, partnerName, profile) { list, localName, pName, prof ->
         val role = resolveRole(localName, pName, prof?.displayName, list.items)
-        val allowedIds = when (role) {
-            "andi" -> andiCategoryIds(uid)
-            "rosie" -> rosieCategoryIds(uid)
-            else -> null
-        }
-        list.items.filter { cat ->
-            !cat.archived && if (allowedIds != null) {
-                cat.id in allowedIds
-            } else {
-                cat.appliesTo(uid)
-            }
+        if (role == "rosie") {
+            canonicalRosieCategories(uid)
+        } else {
+            canonicalAndiCategories(uid)
         }
     }.share(emptyList())
 
     /** Kategorien, die ich angelegt habe, unabhängig davon, für wen sie gelten. */
-    val created: StateFlow<List<Category>> = categories
-        .map { list -> list.items.filter { it.ownerUid == uid && !it.archived } }
-        .share(emptyList())
+    val created: StateFlow<List<Category>> = targeted
 
     /** Einladung, bei der ich als Partner um Beitritt gebeten habe (wartet auf Bestätigung). */
     val pendingInviteCode: StateFlow<String?> = profile.map { it?.pendingInviteCode }.distinctUntilChanged().share(null)
@@ -194,16 +329,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         .flatMapLatest { code -> if (code == null) flowOf(null) else userRepository.inviteFlow(code) }
         .share(null)
 
-    /** Katalogeinträge, die ich selbst angelegt habe (passend zu meiner Rolle). */
-    val myCatalog: StateFlow<List<CatalogItem>> = combine(catalog, myName) { list, localName ->
-        val isAndi = localName?.trim()?.equals("Andi", ignoreCase = true) == true
-        val isRosie = localName?.trim()?.equals("Rosie", ignoreCase = true) == true
-        list.items.filter { item ->
-            item.ownerUid == uid && when {
-                isAndi -> !item.id.startsWith("rosie_")
-                isRosie -> !item.id.startsWith("andi_")
-                else -> true
-            }
+    /** Katalogeinträge (Belohnungen & Strafen) strikt passend zu meiner Rolle (Rosie vs. Andi). */
+    val myCatalog: StateFlow<List<CatalogItem>> = combine(catalog, myName, partnerName, profile) { _, localName, pName, prof ->
+        val role = resolveRole(localName, pName, prof?.displayName, emptyList())
+        if (role == "rosie") {
+            canonicalRosieCatalog(uid)
+        } else {
+            canonicalAndiCatalog(uid)
         }
     }.share(emptyList())
 
@@ -386,32 +518,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * Für Strafen wird der Pool jeden Sonntagabend nach der Wochenbilanz zurückgesetzt.
      */
     fun availableChoicesFor(task: Task): Pair<List<String>, Int> {
-        val ownerIsAndi = when {
-            task.ownerUid == uid && myName.value?.trim()?.equals("Andi", ignoreCase = true) == true -> true
-            task.ownerUid != uid && partnerName.value?.trim()?.equals("Andi", ignoreCase = true) == true -> true
-            categories.value.items.any { it.id == "preset_sport_${task.ownerUid}" && !it.archived } -> true
-            else -> false
-        }
-        val expectedCatalogPrefix = if (ownerIsAndi) "andi_" else "rosie_"
-        val fallbackStarter = if (ownerIsAndi) andiStarterCatalog else rosieStarterCatalog
-
-        val poolFromCatalog = catalog.value.items
-            .filter {
-                it.type == task.type &&
-                    it.appliesTo(task.ownerUid) &&
-                    (it.id.startsWith(expectedCatalogPrefix) || (!it.id.startsWith("rosie_") && !it.id.startsWith("andi_")))
-            }
-            .map { translateCatalogTitle(getApplication(), it.title) }
-            .filter { it.isNotEmpty() }
-            .distinct()
-
-        val pool = if (poolFromCatalog.isNotEmpty() && catalog.value.items.any { it.id.startsWith(expectedCatalogPrefix) }) {
-            poolFromCatalog
+        val myRole = resolveRole(myName.value, partnerName.value, profile.value?.displayName, categories.value.items)
+        val ownerIsAndi = if (task.ownerUid == uid) {
+            myRole != "rosie"
         } else {
-            fallbackStarter
-                .filter { (_, t) -> t == task.type }
-                .map { (res, _) -> text(res) }
+            myRole == "rosie"
         }
+        val starter = if (ownerIsAndi) andiStarterCatalog else rosieStarterCatalog
+        val pool = starter
+            .filter { (_, t) -> t == task.type }
+            .map { (res, _) -> text(res) }
 
         val cycleStartKey = if (task.type == TaskType.PENALTY) {
             penaltyCycleStartDayKey(ZonedDateTime.now(zone))
@@ -822,8 +938,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         localProfileStore.saveDisplayName(trimmed)
         userRepository.setDisplayName(trimmed)
         when {
-            trimmed.equals("Rosie", ignoreCase = true) -> applyRosiePreset()
-            trimmed.equals("Andi", ignoreCase = true) -> applyAndiPreset()
+            trimmed.contains("rosie", ignoreCase = true) || trimmed.contains("rosa", ignoreCase = true) -> {
+                if (partnerName.value.isNullOrBlank() || partnerName.value?.contains("rosie", ignoreCase = true) == true) {
+                    localProfileStore.savePartnerDisplayName("Andi")
+                }
+                applyRosiePreset()
+            }
+            trimmed.contains("andi", ignoreCase = true) || trimmed.contains("andreas", ignoreCase = true) -> {
+                if (partnerName.value.isNullOrBlank() || partnerName.value?.contains("andi", ignoreCase = true) == true) {
+                    localProfileStore.savePartnerDisplayName("Rosie")
+                }
+                applyAndiPreset()
+            }
         }
         toastMessage.value = text(R.string.save_confirmation)
     }

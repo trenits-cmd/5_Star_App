@@ -21,6 +21,7 @@ import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryKind
+import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.dayKeyOf
 import com.trenits.fivestar.domain.isWithinQuietHours
 import kotlinx.coroutines.tasks.await
@@ -94,6 +95,13 @@ class ReminderPrefs(context: Context) {
     fun markNotifiedEpochHour(categoryId: String, epochHour: Long) {
         prefs.edit().putLong("last_notify_$categoryId", epochHour).apply()
     }
+
+    fun hasNotifiedConfirmForTask(taskId: String): Boolean =
+        prefs.getBoolean("confirm_notify_$taskId", false)
+
+    fun markNotifiedConfirmForTask(taskId: String) {
+        prefs.edit().putBoolean("confirm_notify_$taskId", true).apply()
+    }
 }
 
 object ReminderScheduler {
@@ -166,6 +174,34 @@ object ReminderScheduler {
                 seq++
             }
         }
+    }
+
+    /**
+     * Sendet nach 3 Stunden eine Push-Benachrichtigung an den Partner
+     * (z. B. „Rosie wartet auf deine Bestätigung!“), wenn eine gewählte Strafe/Belohnung noch offen ist.
+     */
+    @SuppressLint("MissingPermission")
+    fun sendConfirmationReminderNotification(
+        context: Context,
+        partnerDisplayName: String,
+        task: Task,
+    ) {
+        createChannel(context)
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!allowed) return
+
+        val title = context.getString(R.string.confirm_push_title, partnerDisplayName)
+        val body = context.getString(R.string.confirm_push_body, partnerDisplayName, task.title)
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(BASE_NOTIFICATION_ID + 500 + (task.id.hashCode() and 0xFF), notification)
     }
 }
 

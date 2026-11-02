@@ -1,7 +1,9 @@
 package com.trenits.fivestar.domain
 
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
+import java.time.ZonedDateTime
 
 enum class TaskType { REWARD, PENALTY }
 
@@ -26,9 +28,20 @@ data class Task(
         get() = status == TaskStatus.CONFIRMED || status == TaskStatus.AUTO_CONFIRMED
 }
 
+val CONFIRM_REMINDER_AFTER: Duration = Duration.ofHours(3)
 val AUTO_CONFIRM_AFTER: Duration = Duration.ofHours(48)
 
-/** Ohne Bestätigung gilt eine offene Aufgabe 48 Stunden nach Erstellung als bestätigt. */
+/**
+ * Prüft, ob eine offene Aufgabe mit gewählter Aktion seit mindestens 3 Stunden
+ * auf Bestätigung durch den Partner wartet (für die Push-Erinnerung „Rosie wartet auf deine Bestätigung!“).
+ */
+fun Task.needsPartnerConfirmationReminder(now: Instant): Boolean =
+    status == TaskStatus.OPEN &&
+        title.isNotBlank() &&
+        !now.isBefore(createdAt.plus(CONFIRM_REMINDER_AFTER)) &&
+        now.isBefore(createdAt.plus(AUTO_CONFIRM_AFTER))
+
+/** Ohne Bestätigung gilt eine offene Aufgabe 48 Stunden nach Erstellung automatisch als bestätigt. */
 fun Task.withAutoConfirmation(now: Instant): Task =
     if (status == TaskStatus.OPEN && !now.isBefore(createdAt.plus(AUTO_CONFIRM_AFTER))) {
         copy(status = TaskStatus.AUTO_CONFIRMED)
@@ -43,6 +56,19 @@ fun Task.confirmedByPartner(redeemedOn: String? = null): Task =
     } else {
         this
     }
+
+/**
+ * Start-Tagesschlüssel für den aktuellen Strafen-Pool-Durchlauf:
+ * Der Strafen-Pool wird jeden Sonntagabend (ab 20:00 Uhr, nach der Wochenbilanz) zurückgesetzt.
+ */
+fun penaltyCycleStartDayKey(now: ZonedDateTime): String {
+    val date = now.toLocalDate()
+    return if (date.dayOfWeek == DayOfWeek.SUNDAY && now.hour >= 20) {
+        date.toString()
+    } else {
+        date.with(DayOfWeek.MONDAY).toString()
+    }
+}
 
 /**
  * Berechnet die aktuell im Dropdown wählbaren Strafen/Belohnungen aus [pool].

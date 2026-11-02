@@ -41,7 +41,11 @@ import com.trenits.fivestar.domain.buildDayRecord
 import com.trenits.fivestar.domain.consecutiveSuccessDays
 import com.trenits.fivestar.domain.dayKeyOf
 import com.trenits.fivestar.domain.dayOutcomeFor
+import com.trenits.fivestar.domain.needsPartnerConfirmationReminder
+import com.trenits.fivestar.domain.penaltyCycleStartDayKey
 import com.trenits.fivestar.domain.weekKeyOf
+import com.trenits.fivestar.domain.withAutoConfirmation
+import com.trenits.fivestar.reminder.ReminderPrefs
 import com.trenits.fivestar.reminder.ReminderScheduler
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -61,6 +65,7 @@ import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -69,9 +74,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         R.string.seed_reward_2 to TaskType.REWARD,
         R.string.seed_reward_3 to TaskType.REWARD,
         R.string.seed_reward_4 to TaskType.REWARD,
+        R.string.seed_reward_5 to TaskType.REWARD,
         R.string.seed_penalty_1 to TaskType.PENALTY,
         R.string.seed_penalty_2 to TaskType.PENALTY,
         R.string.seed_penalty_3 to TaskType.PENALTY,
+        R.string.seed_penalty_4 to TaskType.PENALTY,
     )
 
     val uid: String = Firebase.auth.currentUser?.uid.orEmpty()
@@ -228,11 +235,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 syncSharedDinnerTimeForToday()
                 evaluateYesterday()
                 evaluateStreakReward()
+                checkConfirmationRemindersAndAutoConfirm()
             }
         }
         viewModelScope.launch {
             while (true) {
                 clock.value = Instant.now()
+                checkConfirmationRemindersAndAutoConfirm()
                 delay(60_000)
             }
         }
@@ -241,6 +250,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Liefert die für [task] aktuell noch wählbaren Optionen im Dropdown (ohne bereits verbrauchte
      * Strafen/Belohnungen im aktuellen Durchlauf) sowie die Gesamtgröße des Pools.
+     * Für Strafen wird der Pool jeden Sonntagabend nach der Wochenbilanz zurückgesetzt.
      */
     fun availableChoicesFor(task: Task): Pair<List<String>, Int> {
         val poolFromCatalog = catalog.value.items
@@ -255,12 +265,19 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 .map { (res, _) -> text(res) }
         }
 
+        val cycleStartKey = if (task.type == TaskType.PENALTY) {
+            penaltyCycleStartDayKey(ZonedDateTime.now(zone))
+        } else {
+            ""
+        }
+
         val usedChronological = tasks.value.items
             .filter {
                 it.ownerUid == task.ownerUid &&
                     it.type == task.type &&
                     it.id != task.id &&
-                    it.title.isNotBlank()
+                    it.title.isNotBlank() &&
+                    (cycleStartKey.isEmpty() || it.dayKey >= cycleStartKey)
             }
             .sortedWith(compareBy<Task> { it.dayKey }.thenBy { it.createdAt })
             .map { it.title }
@@ -442,6 +459,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             text(R.string.seed_reward_2),
             text(R.string.seed_reward_3),
             text(R.string.seed_reward_4),
+            text(R.string.seed_reward_5),
         )
         rosieRewards.forEachIndexed { idx, title ->
             repo.saveCatalogItem(CatalogItem("rosie_reward_${idx}_$uid", uid, TaskType.REWARD, title, myTargets))
@@ -449,6 +467,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val rosiePenalties = listOf(
             text(R.string.seed_penalty_1),
             text(R.string.seed_penalty_2),
+            text(R.string.seed_penalty_3),
+            text(R.string.seed_penalty_4),
         )
         rosiePenalties.forEachIndexed { idx, title ->
             repo.saveCatalogItem(CatalogItem("rosie_penalty_${idx}_$uid", uid, TaskType.PENALTY, title, myTargets))
@@ -458,7 +478,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Legt das Profil, die Kategorien sowie Belohnungen & Strafen für Andi an:
      * - Sport (3-fache Wertung)
+     * - Wasser trinken (2-fache Wertung, mind. 2,5 L)
+     * - Lesen (2-fache Wertung, Seitenanzahl: 0–5 = 0 ★, > 50 = 5 ★)
      * - Abendessen vor 20h (3-fache Wertung, Andi gibt die Uhrzeit ein)
+     * - Belohnungen: Kuscheln für 30 Minuten, Massage für 30 Minuten
      * - Strafe: Cooking
      */
     fun applyAndiPreset() {
@@ -480,6 +503,33 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         )
         repo.saveCategory(
             ownerUid = uid,
+            name = text(R.string.cat_preset_water),
+            weight = 2,
+            kind = CategoryKind.WATER,
+            targets = myTargets,
+            goal = DEFAULT_WATER_GOAL,
+            icon = CategoryIcon.WATER.name,
+            notifications = listOf(
+                "Mindestens 2,5 Liter Wasser heute trinken 💧",
+                "Zwischenstand: Gläser oder Liter eintragen!",
+            ),
+            pushEnabled = true,
+            pushIntervalHours = 2,
+            id = "preset_water_$uid",
+        )
+        repo.saveCategory(
+            ownerUid = uid,
+            name = text(R.string.cat_preset_reading),
+            weight = 2,
+            kind = CategoryKind.READING,
+            targets = myTargets,
+            goal = 50.0,
+            icon = CategoryIcon.MIND.name,
+            notifications = listOf("Heute noch ein paar Seiten lesen 📖"),
+            id = "preset_reading_$uid",
+        )
+        repo.saveCategory(
+            ownerUid = uid,
             name = text(R.string.cat_preset_dinner),
             weight = 3,
             kind = CategoryKind.DINNER_TIME,
@@ -490,8 +540,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             id = "preset_dinner_$uid",
         )
 
+        val andiRewards = listOf(
+            text(R.string.seed_reward_andi_1),
+            text(R.string.seed_reward_andi_2),
+        )
+        andiRewards.forEachIndexed { idx, title ->
+            repo.saveCatalogItem(CatalogItem("andi_reward_${idx}_$uid", uid, TaskType.REWARD, title, myTargets))
+        }
         repo.saveCatalogItem(
-            CatalogItem("andi_penalty_0_$uid", uid, TaskType.PENALTY, text(R.string.seed_penalty_3), myTargets),
+            CatalogItem("andi_penalty_0_$uid", uid, TaskType.PENALTY, text(R.string.seed_penalty_andi_1), myTargets),
         )
     }
 
@@ -657,6 +714,35 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         ),
                     )
                 }
+            }
+        }
+    }
+
+    /**
+     * Prüft offene Aufgaben:
+     * 1. Nach 3 Stunden erhält der Partner eine Push-Nachricht („Rosie wartet auf deine Bestätigung!“).
+     * 2. Nach 48 Stunden ohne Bestätigung erfolgt ein Auto-Confirm ins Archiv.
+     */
+    private fun checkConfirmationRemindersAndAutoConfirm() {
+        val repo = repo() ?: return
+        val now = Instant.now()
+        val prefs = ReminderPrefs(getApplication())
+        val partnerDisplay = partnerName.value ?: text(R.string.who_partner)
+
+        tasks.value.items.forEach { task ->
+            if (task.ownerUid != uid &&
+                task.needsPartnerConfirmationReminder(now) &&
+                !prefs.hasNotifiedConfirmForTask(task.id)
+            ) {
+                ReminderScheduler.sendConfirmationReminderNotification(
+                    context = getApplication(),
+                    partnerDisplayName = partnerDisplay,
+                    task = task,
+                )
+                prefs.markNotifiedConfirmForTask(task.id)
+            }
+            if (task.withAutoConfirmation(now).status != task.status) {
+                repo.autoConfirmTask(task.id)
             }
         }
     }

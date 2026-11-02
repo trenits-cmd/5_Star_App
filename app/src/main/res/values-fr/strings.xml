@@ -49,6 +49,11 @@
     <string name="status_daily_below">Sous 80 %% – en cas d\'échec, une pénalité quotidienne s\'applique</string>
     <string name="status_weekly_title">Bilan hebdo (Série de 7 jours)</string>
     <string name="status_weekly_progress">%1$d / %2$d jours consécutifs ≥ 80 %%</string>
+    <string name="status_relationship_title">Humeur de la relation aujourd\'hui</string>
+    <string name="status_relationship_summary">Moy. %1$.1f / 5 ★ (%2$s)</string>
+    <string name="penalty_pool_reset_hint">La liste des pénalités est réinitialisée chaque dimanche soir après le bilan hebdomadaire.</string>
+    <string name="confirm_push_title">%1$s attend ta confirmation !</string>
+    <string name="confirm_push_body">%1$s : « %2$s » – Merci de confirmer dans l\'application (auto-confirmation après 48h).</string>
 
     <string name="score_hint" formatted="false">En dessous de 80 %, une pénalité quotidienne ; 7 jours consécutifs à 80 %+ débloquent une récompense.</string>
     <string name="percent_value">%1$.0f %%</string>
@@ -104,7 +109,7 @@
     <string name="history_task_line">%1$s · %2$s : %3$s (%4$s)</string>
 
     <string name="settings_presets_title">Démarrage rapide : Modèles Rosie &amp; Andi</string>
-    <string name="settings_presets_hint">Rosie : Eau (3×), Alcool (2×), Tâches alternées (1×), Dîner avant 20h (3×), Repas (3×) + Récompenses &amp; Pénalités. Andi : Sport (3×), Dîner avant 20h (3×) + Pénalité Cooking.</string>
+    <string name="settings_presets_hint">Rosie : Eau (3×), Alcool (2×), Tâches alternées (1×), Dîner avant 20h (3×), Repas (3×) + 5 Récompenses &amp; 4 Pénalités. Andi : Sport (3×), Eau (2×), Lecture (2×), Dîner avant 20h (3×) + Récompenses &amp; Pénalité.</string>
     <string name="settings_preset_rosie">Charger le profil &amp; les catégories de Rosie</string>
     <string name="settings_preset_andi">Charger le profil &amp; les catégories d\'Andi</string>
 
@@ -163,10 +168,14 @@
     <string name="seed_reward_2">Fleurs</string>
     <string name="seed_reward_3">Massage de 30 minutes</string>
     <string name="seed_reward_4">Sortie au restaurant : choix du restaurant</string>
-    <string name="seed_penalty_1">pas d\'orgasme</string>
-    <string name="seed_penalty_2">pas de bar</string>
-    <string name="seed_penalty_3">Cooking (Cuisiner)</string>
-    <string name="seed_penalty_4">Service : café/maté au lit ou vaisselle</string>
+    <string name="seed_reward_5">Cuisine au choix : un plat que Rosie adore, préparé par Andi</string>
+    <string name="seed_reward_andi_1">Câlins pendant 30 minutes</string>
+    <string name="seed_reward_andi_2">Massage de 30 minutes</string>
+    <string name="seed_penalty_1">pas d\'orgasme : il y a du sexe, mais Rosie n\'a pas d\'orgasme</string>
+    <string name="seed_penalty_2">pas de bar pendant deux jours</string>
+    <string name="seed_penalty_3">Plat préféré : un plat préféré préparé par Rosie</string>
+    <string name="seed_penalty_4">Remise du téléphone : donner le smartphone à Andi pendant 1 heure contre les distractions</string>
+    <string name="seed_penalty_andi_1">Cooking</string>
 
     <string name="reminder_channel">Notifications des catégories</string>
     <string name="reminder_text">Ton évaluation d\'aujourd\'hui manque encore.</string>
@@ -179,6 +188,7 @@
     <string name="kind_rotation">Tâches alternées (rotation hebdo)</string>
     <string name="kind_dinner">Dîner avant 20h (heure)</string>
     <string name="kind_meals">Repas (petit-déj, déjeuner, dîner)</string>
+    <string name="kind_reading">Lecture (nombre de pages)</string>
 
     <string name="target_me">Pour %1$s</string>
     <string name="target_partner">Pour %1$s</string>
@@ -242,6 +252,10 @@
     <string name="cat_preset_dinner">Dîner avant 20h</string>
     <string name="cat_preset_food">Repas</string>
     <string name="cat_preset_sport">Sport</string>
+    <string name="cat_preset_reading">Lecture</string>
+    <string name="reading_rules_hint">0–5 pages = 0 ★ · &gt; 50 pages = 5 ★ · 6–50 pages proportionnel (1–4 ★)</string>
+    <string name="reading_pages_label">Pages lues aujourd\'hui</string>
+    <string name="reading_pages_summary">%1$d pages lues</string>
 
     <!-- Images & notifications push des catégories -->
     <string name="settings_category_image">Image de la catégorie</string>

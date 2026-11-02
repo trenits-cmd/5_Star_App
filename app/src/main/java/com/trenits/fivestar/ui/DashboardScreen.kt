@@ -66,9 +66,11 @@ import com.trenits.fivestar.domain.MEAL_BREAKFAST
 import com.trenits.fivestar.domain.MEAL_DINNER
 import com.trenits.fivestar.domain.MEAL_LUNCH
 import com.trenits.fivestar.domain.MealLevel
+import com.trenits.fivestar.domain.PAGES
 import com.trenits.fivestar.domain.PINT
 import com.trenits.fivestar.domain.ROTATION_STARS
 import com.trenits.fivestar.domain.ROTATION_TASK_INDEX
+import com.trenits.fivestar.domain.RelationshipAspect
 import com.trenits.fivestar.domain.RotationTask
 import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
 import com.trenits.fivestar.domain.THRESHOLD_PERCENT
@@ -79,6 +81,9 @@ import com.trenits.fivestar.domain.WeightedCategory
 import com.trenits.fivestar.domain.alcoholLiters
 import com.trenits.fivestar.domain.availableRotationTasks
 import com.trenits.fivestar.domain.counterStars
+import com.trenits.fivestar.domain.coupleRelationshipScorePercent
+import com.trenits.fivestar.domain.relationshipScorePercent
+import com.trenits.fivestar.domain.relationshipStarsOf
 import com.trenits.fivestar.domain.rotationCountsInWeek
 import com.trenits.fivestar.domain.suggestedRotationTask
 import com.trenits.fivestar.domain.waterLiters
@@ -168,6 +173,17 @@ fun DashboardScreen(vm: AppViewModel) {
             )
         }
 
+        // Gesonderte Anzeige 3: Separate Beziehungs-Stimmung pro Tag im Dashboard
+        item {
+            RelationshipMoodBanner(
+                myRecord = myToday,
+                partnerRecord = partnerToday,
+                myLabel = myLabel,
+                partnerLabel = partnerLabel,
+                hasPartner = partnerUid != null,
+            )
+        }
+
         item { SectionTitle(stringResource(R.string.section_categories, myLabel)) }
         if (sortedCategories.isEmpty()) {
             item { HintCard(stringResource(R.string.categories_empty)) }
@@ -230,6 +246,16 @@ fun DashboardScreen(vm: AppViewModel) {
                         values = values,
                         onMealLevelSelected = { mealKey, level ->
                             vm.setMealLevel(category.id, mealKey, level)
+                        },
+                    )
+                }
+                CategoryKind.READING -> {
+                    ReadingCategoryCard(
+                        category = category,
+                        sharePercent = sharePercent,
+                        values = values,
+                        onPagesChanged = { pages ->
+                            vm.setCounter(category.id, PAGES, pages.toDouble())
                         },
                     )
                 }
@@ -381,6 +407,72 @@ private fun WeeklyStatusBanner(streak: Int, rewardUnlocked: Boolean) {
     }
 }
 
+/**
+ * Gesonderte Anzeige der täglichen Beziehungs-Stimmung im Dashboard
+ * (alle 5 Punkte gleich gewichtet, 0–5 Sterne).
+ */
+@Composable
+private fun RelationshipMoodBanner(
+    myRecord: DayRecord?,
+    partnerRecord: DayRecord?,
+    myLabel: String,
+    partnerLabel: String,
+    hasPartner: Boolean,
+) {
+    val myStars = relationshipStarsOf(myRecord)
+    val partnerStars = relationshipStarsOf(partnerRecord)
+    val myScore = relationshipScorePercent(myStars)
+    val partnerScore = relationshipScorePercent(partnerStars)
+    val coupleScore = coupleRelationshipScorePercent(myStars, partnerStars)
+    val avgStars = (coupleScore ?: 0.0) * MAX_STARS / 100.0
+    val progress = ((coupleScore ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.status_relationship_title),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    stringResource(R.string.status_relationship_summary, avgStars, formatPercent(coupleScore)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small),
+                color = Amber,
+            )
+            Spacer(Modifier.height(6.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    stringResource(R.string.relationship_score_you, myLabel, formatPercent(myScore)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (hasPartner) {
+                    Text(
+                        stringResource(R.string.relationship_score_partner, partnerLabel, formatPercent(partnerScore)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun WaitingForPartnerCard(vm: AppViewModel) {
     val context = LocalContext.current
@@ -516,6 +608,75 @@ private fun MealsCategoryCard(
             }
 
             Spacer(Modifier.height(4.dp))
+            Text(
+                stringResource(
+                    R.string.counter_rating,
+                    "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
+                    stars,
+                ),
+                color = Amber,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+/**
+ * Karte für die Kategorie "Lesen" (Seitenanzahl):
+ * 0–5 Seiten = 0 ★, > 50 Seiten = 5 ★, 6–50 Seiten in Relation (1–4 ★).
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ReadingCategoryCard(
+    category: Category,
+    sharePercent: Int,
+    values: Map<String, Double>,
+    onPagesChanged: (Int) -> Unit,
+) {
+    val pages = (values[PAGES] ?: 0.0).toInt().coerceAtLeast(0)
+    val stars = counterStars(category, values)
+    var text by remember(category.id, pages) { mutableStateOf(if (pages == 0) "" else pages.toString()) }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CategoryImage(category = category, size = 42.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
+                    CategoryWeightSubtitle(category.weight, sharePercent)
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(R.string.reading_rules_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            CounterRow(
+                label = stringResource(R.string.reading_pages_summary, pages),
+                value = pages.toDouble(),
+                step = 5.0,
+            ) { newVal ->
+                onPagesChanged(newVal.toInt().coerceAtLeast(0))
+            }
+            OutlinedTextField(
+                value = text,
+                onValueChange = { input ->
+                    text = input
+                    if (input.isBlank()) {
+                        onPagesChanged(0)
+                    } else {
+                        input.trim().toIntOrNull()?.let { onPagesChanged(it.coerceAtLeast(0)) }
+                    }
+                },
+                label = { Text(stringResource(R.string.reading_pages_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(8.dp))
             Text(
                 stringResource(
                     R.string.counter_rating,
@@ -1041,6 +1202,13 @@ private fun TaskCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                         )
+                        if (task.type == TaskType.PENALTY) {
+                            Text(
+                                stringResource(R.string.penalty_pool_reset_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                         Spacer(Modifier.height(6.dp))
                         Box(Modifier.fillMaxWidth()) {
                             OutlinedButton(

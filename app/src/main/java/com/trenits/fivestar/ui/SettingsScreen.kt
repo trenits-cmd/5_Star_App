@@ -581,6 +581,11 @@ fun SettingsScreen(vm: AppViewModel) {
                                             categoryWeight = 3
                                             newCategoryIntervalHours = 0
                                         }
+                                        CategoryKind.READING -> {
+                                            categoryIcon = CategoryIcon.MIND
+                                            categoryWeight = 2
+                                            newCategoryIntervalHours = 0
+                                        }
                                         CategoryKind.STARS -> {}
                                     }
                                 },
@@ -1189,6 +1194,7 @@ private fun defaultGoal(kind: CategoryKind): String = when (kind) {
     CategoryKind.ROTATION -> ""
     CategoryKind.DINNER_TIME -> "20"
     CategoryKind.MEALS -> ""
+    CategoryKind.READING -> "50"
 }
 
 @Composable
@@ -1200,6 +1206,7 @@ private fun kindLabel(kind: CategoryKind): String = stringResource(
         CategoryKind.ROTATION -> R.string.kind_rotation
         CategoryKind.DINNER_TIME -> R.string.kind_dinner
         CategoryKind.MEALS -> R.string.kind_meals
+        CategoryKind.READING -> R.string.kind_reading
     },
 )
 

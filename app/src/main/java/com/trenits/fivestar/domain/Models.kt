@@ -17,6 +17,7 @@ enum class CategoryKind {
     ROTATION,
     DINNER_TIME,
     MEALS,
+    READING,
 }
 
 /**
@@ -96,6 +97,7 @@ data class Category(
         if (kind == CategoryKind.ALCOHOL) return CategoryIcon.ALCOHOL
         if (kind == CategoryKind.DINNER_TIME || kind == CategoryKind.MEALS) return CategoryIcon.FOOD
         if (kind == CategoryKind.ROTATION) return CategoryIcon.HOME
+        if (kind == CategoryKind.READING) return CategoryIcon.MIND
         val lower = name.lowercase()
         return when {
             listOf("essen", "abendessen", "dinner", "food", "mahlzeit", "kochen", "repas", "dîner", "meal").any { it in lower } ->
@@ -128,6 +130,7 @@ const val DINNER_MINUTE = "dinnerMinute"
 const val MEAL_BREAKFAST = "mealBreakfast"
 const val MEAL_LUNCH = "mealLunch"
 const val MEAL_DINNER = "mealDinner"
+const val PAGES = "pages"
 const val RELATIONSHIP_COUNTER_KEY = "_relationship"
 
 /**
@@ -280,6 +283,18 @@ fun mealStars(breakfast: MealLevel, lunch: MealLevel, dinner: MealLevel): Int {
 }
 
 /**
+ * Lesen (Seitenanzahl):
+ * - 0 bis 5 Seiten = 0 Sterne
+ * - Mehr als 50 Seiten = 5 Sterne
+ * - 6 bis 50 Seiten = 1 bis 4 Sterne in Relation
+ */
+fun readingStars(pages: Int): Int = when {
+    pages <= 5 -> 0
+    pages > 50 -> MAX_STARS
+    else -> (1 + ((pages - 6) * 4) / 45).coerceIn(1, 4)
+}
+
+/**
  * Zählt für eine Wechsel-Kategorie [categoryId], wie oft jede [RotationTask]
  * in den übergebenen Tageseinträgen der Woche bereits erledigt wurde (Sterne > 0).
  */
@@ -402,6 +417,7 @@ fun counterStars(category: Category, values: Map<String, Double>): Int = when (c
         val d = MealLevel.fromPoints(values[MEAL_DINNER]?.toInt() ?: 0)
         mealStars(b, l, d)
     }
+    CategoryKind.READING -> readingStars((values[PAGES] ?: 0.0).toInt())
 }
 
 /**

@@ -110,6 +110,18 @@ class CounterTest {
     }
 
     @Test
+    fun `Lesen berechnet Sterne nach Seitenanzahl (0 bis 5 ist 0, ueber 50 ist 5)`() {
+        assertEquals(0, readingStars(0))
+        assertEquals(0, readingStars(5))
+        assertEquals(1, readingStars(6))
+        assertEquals(2, readingStars(20))
+        assertEquals(3, readingStars(30))
+        assertEquals(4, readingStars(50))
+        assertEquals(5, readingStars(51))
+        assertEquals(5, readingStars(120))
+    }
+
+    @Test
     fun `Beziehungstracker berechnet Einzel- und Paar-Score ueber alle 5 Dimensionen`() {
         assertEquals(5, RelationshipAspect.entries.size)
         val record = DayRecord(

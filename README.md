@@ -10,9 +10,10 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 - **Invite Partner via Email & Remove Partner for Testing:**
   - Invite the partner directly via **email** (creates an invitation code and opens the email client with pre-filled invitation message).
   - Disconnect/remove the partner at any time for testing purposes via Settings (*Remove partner / Unpair (Test)*).
-- **Separate Daily Status & Weekly Status Display:**
+- **Separate Daily Status, Weekly Status & Relationship Mood Display in Dashboard:**
   - **Daily Status Banner:** Shows today's weighted score vs. the 80% daily threshold (missing < 80% triggers a daily penalty).
   - **Weekly Status Banner:** Shows the current **7-day consecutive streak** (`X / 7 days in a row ≥ 80%`) required to unlock a weekly reward.
+  - **Relationship Mood Banner:** Separately tracks and displays the daily relationship mood (0–5 stars across all 5 equally weighted relationship aspects) right on the Dashboard.
 - **Tailored Categories, Weights, Rewards & Penalties for Rosie & Andi (1-Click Presets in Settings):**
   - **Rosie's Categories:**
     1. **Meals / Essen (`CategoryKind.MEALS`, 3× weight):** Breakfast, Lunch, and Dinner are each rated as *nothing (nichts)*, *little (wenig)*, *medium (mittel)*, or *healthy (gesund)*. All 3 *healthy* = **5 stars**, otherwise proportionally fewer stars.
@@ -22,19 +23,31 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
     5. **Alternating Tasks (`CategoryKind.ROTATION`, 1× weight):** *Plan lessons (Unterricht planen, 3×/week)* alternating with *Tidy up apartment*, *Take out trash*, *Cook meal*, and *Wash dishes* (1×/week each).
   - **Andi's Categories:**
     1. **Sport (`CategoryKind.STARS`, 3× weight)**
-    2. **Dinner before 20h (`CategoryKind.DINNER_TIME`, 3× weight, shared)**
+    2. **Drink Water (`CategoryKind.WATER`, 2× weight, Goal ≥ 2.5 L):** Tracked in glasses and/or decimal liters.
+    3. **Reading / Lesen (`CategoryKind.READING`, 2× weight):** Page count input (`0–5 pages = 0 stars`, `> 50 pages = 5 stars`, `6–50 pages = 1–4 stars in proportion`).
+    4. **Dinner before 20h (`CategoryKind.DINNER_TIME`, 3× weight, shared)**
   - **Rosie's Rewards (unlocked at 7-day streak):**
     - *Vinted Budget: Rosie gets 10 € from Andi*
     - *Flowers (Blumen)*
     - *Massage for 30 minutes*
     - *Eat out: choose the restaurant*
-  - **Rosie's Penalties:** *no orgasm (kein Orgasmus)*, *no bar (keine Bar)*
+    - *Cooking of choice: a dish Rosie loves, prepared by Andi*
+  - **Andi's Rewards:**
+    - *Cuddling for 30 minutes (Kuscheln für 30 Minuten)*
+    - *Massage for 30 minutes (Massage für 30 Minuten)*
+  - **Rosie's Penalties:**
+    - *no orgasm: sex happens, but Rosie has no orgasm*
+    - *no bar for two days*
+    - *Favourite dish: a favourite meal prepared by Rosie*
+    - *Phone handover: hand over smartphone to Andi for 1 hour to stop distraction*
   - **Andi's Penalty:** *Cooking*
-- **Depleting Penalty & Reward Dropdown + Archive (Penalty Date + Redemption Date):**
-  - Chosen penalties disappear from the dropdown until all penalties in the pool have been used up.
-  - Open penalties/rewards must be confirmed by the partner to move into the **Archive** (`Streak / Archive` tab), recording both the **date of the penalty/reward (`dayKey`)** and the **date of redemption (`redeemedDayKey`)**.
+- **Depleting Penalty & Reward Dropdown, Sunday Evening Pool Reset, 3h Push & 48h Auto-Confirm:**
+  - Chosen penalties disappear from the dropdown until all penalties in the pool have been used up, and the penalty pool **resets every Sunday evening after the weekly review** (`penaltyCycleStartDayKey`).
+  - Open tasks must be confirmed by the partner to move into the **Archive** (`Streak / Archive` tab), recording both the **date of the penalty/reward (`dayKey`)** and the **date of redemption (`redeemedDayKey`)**.
+  - **3-Hour Partner Push Reminder:** If an open task with a selected action is not confirmed within **3 hours**, the partner receives a push notification (*“Rosie wartet auf deine Bestätigung!”*).
+  - **48-Hour Auto-Confirm:** After **48 hours** without confirmation, the task is automatically confirmed (`AUTO_CONFIRMED`) into the Archive.
 - **Relationship Tracker (Beziehungstracker):**
-  - Both partners rate their relationship daily on a 1–5 star scale across **5 dimensions**:
+  - Both partners rate their relationship daily on a **0–5 star scale** (all 5 equally weighted) across:
     1. **Mood independent of relationship** (*Stimmung unabhängig von Beziehung*)
     2. **Mood within the relationship** (*Stimmung in der Beziehung*)
     3. **Communication** (*Kommunikation*)
@@ -52,8 +65,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 - Android native, Kotlin, Jetpack Compose (Material 3).
 - Firebase Auth (Google + Email/Password) and Cloud Firestore with persistent cache.
-- WorkManager for personalized per-category push notifications.
-- Pure Kotlin scoring, meals, relationship index, 7-day streak, rotation, and depleting pool logic, tested with JUnit.
+- WorkManager for personalized per-category push notifications, quiet hours, and confirmation reminders.
+- Pure Kotlin scoring, meals, reading pages, relationship mood index, 7-day streak, rotation, and depleting pool logic, tested with JUnit.
 
 ## Build & Test
 
@@ -63,5 +76,5 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v0.7.0`** – Email partner invite & test unpair, profile photo avatar upload, dynamic user name variables, separate daily & weekly status cards, Meals category (breakfast/lunch/dinner: nothing, little, medium, healthy), Rosie & Andi categories/weights/rewards/penalties, Relationship Tracker (5 dimensions), 7-day streak reward, depleting penalty dropdown, archive with penalty & redemption dates, category images & multi-message push notifications, full DE/EN/FR translations.
+- **Latest: `v0.7.0`** – Full Rosie & Andi edition: Reading category (page count), Water (2×) & Rewards for Andi, expanded Rewards & Penalties for Rosie, 3h partner confirmation push (*"Rosie wartet auf deine Bestätigung!"*) + 48h auto-confirm, Sunday evening penalty pool reset, separate daily Relationship Mood banner on Dashboard, push switches/intervals/quiet hours (23–9h), email invite & test unpair, profile photo avatar, full DE/EN/FR translations.
 - Previous: `v0.6.1`, `v0.6.0`, `v0.5.1`, `v0.5.0`, `v0.3.1`, `v0.3.0`, `v0.2.0`, `v0.1.0`.

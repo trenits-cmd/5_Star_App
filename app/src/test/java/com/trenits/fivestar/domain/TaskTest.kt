@@ -5,6 +5,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class TaskTest {
 
@@ -73,5 +75,22 @@ class TaskTest {
             listOf("Abwasch", "Rücken kraulen"),
             availablePoolOptions(pool, listOf("Abwasch", "Outfit-Diktat", "Rücken kraulen", "Outfit-Diktat")),
         )
+    }
+
+    @Test
+    fun `Push-Erinnerung an Partner nach 3 Stunden und vor 48 Stunden`() {
+        val openTask = task()
+        assertFalse(openTask.needsPartnerConfirmationReminder(created.plusSeconds(3 * 3600 - 1)))
+        assertTrue(openTask.needsPartnerConfirmationReminder(created.plusSeconds(3 * 3600)))
+        assertFalse(openTask.needsPartnerConfirmationReminder(created.plusSeconds(48 * 3600)))
+    }
+
+    @Test
+    fun `Strafen-Pool-Reset am Sonntagabend ab 20 Uhr`() {
+        val zone = ZoneId.of("Europe/Berlin")
+        val sundayAfternoon = ZonedDateTime.of(2026, 11, 8, 18, 0, 0, 0, zone)
+        val sundayEvening = ZonedDateTime.of(2026, 11, 8, 20, 30, 0, 0, zone)
+        assertEquals("2026-11-02", penaltyCycleStartDayKey(sundayAfternoon))
+        assertEquals("2026-11-08", penaltyCycleStartDayKey(sundayEvening))
     }
 }

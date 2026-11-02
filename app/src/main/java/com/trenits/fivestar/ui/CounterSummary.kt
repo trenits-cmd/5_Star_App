@@ -18,6 +18,7 @@ import com.trenits.fivestar.domain.MEAL_BREAKFAST
 import com.trenits.fivestar.domain.MEAL_DINNER
 import com.trenits.fivestar.domain.MEAL_LUNCH
 import com.trenits.fivestar.domain.MealLevel
+import com.trenits.fivestar.domain.PAGES
 import com.trenits.fivestar.domain.PINT
 import com.trenits.fivestar.domain.ROTATION_STARS
 import com.trenits.fivestar.domain.ROTATION_TASK_INDEX
@@ -42,6 +43,7 @@ fun CounterSummary(name: String, values: Map<String, Double>) {
     val isRotation = values.containsKey(ROTATION_TASK_INDEX) || values.containsKey(ROTATION_STARS)
     val isDinner = values.containsKey(DINNER_HOUR)
     val isMeals = values.containsKey(MEAL_BREAKFAST) || values.containsKey(MEAL_LUNCH) || values.containsKey(MEAL_DINNER)
+    val isReading = values.containsKey(PAGES)
 
     if (isAlcohol) {
         Text(stringResource(R.string.counter_pint) + ": " + (values[PINT]?.toInt() ?: 0), style = MaterialTheme.typography.bodySmall)
@@ -79,6 +81,13 @@ fun CounterSummary(name: String, values: Map<String, Double>) {
         val d = mealLevelLabel(MealLevel.fromPoints(values[MEAL_DINNER]?.toInt() ?: 0))
         Text(
             "${stringResource(R.string.meal_breakfast)}: $b · ${stringResource(R.string.meal_lunch)}: $l · ${stringResource(R.string.meal_dinner)}: $d",
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+    if (isReading) {
+        val pages = (values[PAGES] ?: 0.0).toInt()
+        Text(
+            stringResource(R.string.reading_pages_summary, pages),
             style = MaterialTheme.typography.bodySmall,
         )
     }

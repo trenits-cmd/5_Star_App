@@ -33,7 +33,7 @@ class CoupleRepository(private val coupleId: String) {
     fun members(): Flow<Listed<String>> = callbackFlow {
         val registration = couple.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+                // Berechtigungsfehler: der letzte bekannte Stand bleibt erhalten, die App stürzt nicht ab.
                 return@addSnapshotListener
             }
             val members = (snapshot?.get("members") as? List<*>)?.filterIsInstance<String>().orEmpty()
@@ -238,7 +238,7 @@ class CoupleRepository(private val coupleId: String) {
     private fun <T> listen(query: Query, map: (DocumentSnapshot) -> T?): Flow<Listed<T>> = callbackFlow {
         val registration = query.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+                // Berechtigungsfehler: der letzte bekannte Stand bleibt erhalten, die App stürzt nicht ab.
                 return@addSnapshotListener
             }
             val items = snapshot?.documents?.mapNotNull(map).orEmpty()

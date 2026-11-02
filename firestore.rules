@@ -23,7 +23,8 @@ service cloud.firestore {
 
     // Einladungscodes: Einlösen durch Partner, Erstellen nur für Paar-Mitglieder.
     match /invites/{code} {
-      allow read: if isMember(resource.data.coupleId);
+      // Der Partner ist beim Einlösen noch kein Mitglied, daher reicht „angemeldet“.
+      allow read: if signedIn();
       allow create: if signedIn()
         && isMember(request.resource.data.coupleId)
         && request.resource.data.createdBy == request.auth.uid;

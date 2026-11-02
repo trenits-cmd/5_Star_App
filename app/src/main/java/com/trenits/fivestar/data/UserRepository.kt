@@ -27,7 +27,7 @@ class UserRepository(private val uid: String) {
     fun profile(): Flow<UserProfile> = callbackFlow {
         val registration = user.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+                // Berechtigungsfehler: der letzte bekannte Stand bleibt erhalten, die App stürzt nicht ab.
                 return@addSnapshotListener
             }
             trySend(
@@ -106,7 +106,7 @@ class UserRepository(private val uid: String) {
         val registration = Firebase.firestore.collection("users").document(otherUid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error)
+                    // Berechtigungsfehler: der letzte bekannte Stand bleibt erhalten, die App stürzt nicht ab.
                     return@addSnapshotListener
                 }
                 val name = snapshot?.getString("displayName")?.takeIf { it.isNotBlank() }
@@ -121,7 +121,7 @@ class UserRepository(private val uid: String) {
         val registration = Firebase.firestore.collection("users").document(otherUid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error)
+                    // Berechtigungsfehler: der letzte bekannte Stand bleibt erhalten, die App stürzt nicht ab.
                     return@addSnapshotListener
                 }
                 val photo = snapshot?.getString("photoBase64")?.takeIf { it.isNotBlank() }

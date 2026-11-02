@@ -122,6 +122,9 @@ fun DashboardScreen(vm: AppViewModel) {
     val weekRecordsBeforeToday by vm.isoWeekRecordsBeforeToday.collectAsState()
     val streak by vm.weekSuccessfulDays.collectAsState()
     val weekRewardUnlocked by vm.weekRewardUnlocked.collectAsState()
+    val canEditYesterday by vm.canEditYesterday.collectAsState()
+    val editingYesterday by vm.editingYesterday.collectAsState()
+    val activeDayKey by vm.activeDayKey.collectAsState()
 
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
@@ -148,7 +151,7 @@ fun DashboardScreen(vm: AppViewModel) {
                         style = MaterialTheme.typography.headlineMedium,
                     )
                     Text(
-                        dateHeader(LocalDate.now()),
+                        dateHeader(runCatching { LocalDate.parse(activeDayKey) }.getOrDefault(LocalDate.now())),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -159,6 +162,21 @@ fun DashboardScreen(vm: AppViewModel) {
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
+                }
+            }
+            if (canEditYesterday) {
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = !editingYesterday,
+                        onClick = { vm.setEditingYesterday(false) },
+                        label = { Text(stringResource(R.string.day_switch_today)) },
+                    )
+                    FilterChip(
+                        selected = editingYesterday,
+                        onClick = { vm.setEditingYesterday(true) },
+                        label = { Text(stringResource(R.string.day_switch_yesterday)) },
+                    )
                 }
             }
         }
@@ -280,6 +298,19 @@ fun DashboardScreen(vm: AppViewModel) {
         }
 
         item { SectionTitle(stringResource(R.string.section_open_tasks)) }
+        val hasPenaltyForActiveDay = tasks.items.any {
+            it.ownerUid == vm.uid && it.dayKey == activeDayKey && it.type == TaskType.PENALTY
+        }
+        if ((myToday?.scorePercent ?: 0.0) < THRESHOLD_PERCENT && !hasPenaltyForActiveDay) {
+            item {
+                OutlinedButton(
+                    onClick = { vm.ensurePenaltyTaskForDay(activeDayKey) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.penalty_trigger_now))
+                }
+            }
+        }
         if (openTasks.isEmpty()) {
             item { HintCard(stringResource(R.string.no_open_tasks)) }
         }
@@ -1432,9 +1463,9 @@ fun PartnerTodayScreen(vm: AppViewModel) {
             vm.canonicalAndiCategories(pUid)
         }
     }
-    val partnerOpenTasks = tasks.items.filter {
-        it.status == TaskStatus.OPEN && (it.ownerUid == partnerUid || (partnerUid != null && it.appliesTo(partnerUid!!)))
-    }
+    val partnerOpenTasks = tasks.items
+        .filter { it.status == TaskStatus.OPEN }
+        .sortedWith(compareByDescending<Task> { it.dayKey }.thenByDescending { it.createdAt })
     val partnerStored = partnerToday?.snapshots.orEmpty()
     val partnerCounters = partnerToday?.counters.orEmpty()
 
@@ -1502,7 +1533,7 @@ private fun HintCard(text: String) {
 }
 
 @Composable
-private fun TaskCard(
+internal fun TaskCard(
     vm: AppViewModel,
     task: Task,
     partnerUid: String?,
@@ -1512,8 +1543,14 @@ private fun TaskCard(
     val isMine = task.ownerUid == vm.uid
     val (availableOptions, totalPoolSize) = vm.availableChoicesFor(task)
     var dropdownExpanded by remember(task.id) { mutableStateOf(false) }
-    var selectedOption by remember(task.id, availableOptions) {
-        mutableStateOf(availableOptions.firstOrNull().orEmpty())
+    var selectedOption by remember(task.id, task.title, availableOptions) {
+        mutableStateOf(
+            if (task.title.isNotBlank()) {
+                task.title
+            } else {
+                availableOptions.firstOrNull().orEmpty()
+            },
+        )
     }
 
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -1549,80 +1586,98 @@ private fun TaskCard(
             )
             Spacer(Modifier.height(8.dp))
 
-            when {
-                isMine && task.title.isEmpty() -> {
+            if (task.title.isEmpty()) {
+                Text(
+                    stringResource(R.string.task_choose_action),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(Modifier.height(6.dp))
+                if (availableOptions.isEmpty()) {
+                    Text(stringResource(R.string.task_catalog_empty))
+                } else {
                     Text(
-                        stringResource(R.string.task_choose_action),
-                        style = MaterialTheme.typography.bodyMedium,
+                        stringResource(R.string.task_remaining_count, availableOptions.size, totalPoolSize),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
                     )
-                    Spacer(Modifier.height(6.dp))
-                    if (availableOptions.isEmpty()) {
-                        Text(stringResource(R.string.task_catalog_empty))
-                    } else {
+                    if (task.type == TaskType.PENALTY) {
                         Text(
-                            stringResource(R.string.task_remaining_count, availableOptions.size, totalPoolSize),
+                            stringResource(R.string.penalty_pool_reset_hint),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        if (task.type == TaskType.PENALTY) {
-                            Text(
-                                stringResource(R.string.penalty_pool_reset_hint),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        Box(Modifier.fillMaxWidth()) {
-                            OutlinedButton(
-                                onClick = { dropdownExpanded = true },
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Text(
-                                    selectedOption.ifEmpty { stringResource(R.string.task_select_placeholder) },
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
-                            }
-                            DropdownMenu(
-                                expanded = dropdownExpanded,
-                                onDismissRequest = { dropdownExpanded = false },
-                            ) {
-                                availableOptions.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = { Text(option) },
-                                        onClick = {
-                                            selectedOption = option
-                                            dropdownExpanded = false
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Button(
-                            onClick = {
-                                if (selectedOption.isNotBlank()) {
-                                    vm.chooseTaskTitle(task.id, selectedOption)
-                                }
-                            },
-                            enabled = selectedOption.isNotBlank(),
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Box(Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { dropdownExpanded = true },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text(stringResource(R.string.task_select_confirm))
+                            Text(
+                                selectedOption.ifEmpty { stringResource(R.string.task_select_placeholder) },
+                                modifier = Modifier.weight(1f),
+                            )
+                            Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
+                        }
+                        DropdownMenu(
+                            expanded = dropdownExpanded,
+                            onDismissRequest = { dropdownExpanded = false },
+                        ) {
+                            availableOptions.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        selectedOption = option
+                                        dropdownExpanded = false
+                                    },
+                                )
+                            }
                         }
                     }
-                }
-                isMine -> Text(stringResource(R.string.task_waiting_confirm, localizedCatalogTitle(task.title), partnerLabel))
-                task.title.isEmpty() -> Text(stringResource(R.string.task_partner_chooses, partnerLabel))
-                else -> {
-                    Text(
-                        stringResource(R.string.task_partner_label, localizedCatalogTitle(task.title)),
-                        fontWeight = FontWeight.Medium,
-                    )
                     Spacer(Modifier.height(8.dp))
-                    Button(onClick = { vm.confirmTask(task.id) }) {
+                    Button(
+                        onClick = {
+                            if (selectedOption.isNotBlank()) {
+                                vm.chooseTaskTitle(task.id, selectedOption)
+                            }
+                        },
+                        enabled = selectedOption.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.task_select_confirm))
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    OutlinedButton(
+                        onClick = {
+                            if (selectedOption.isNotBlank()) {
+                                vm.confirmTask(task.id, selectedOption)
+                            }
+                        },
+                        enabled = selectedOption.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
                         Text(stringResource(R.string.task_confirm))
                     }
+                }
+            } else {
+                Text(
+                    stringResource(R.string.task_partner_label, localizedCatalogTitle(task.title)),
+                    fontWeight = FontWeight.Medium,
+                )
+                if (isMine) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.task_waiting_confirm, localizedCatalogTitle(task.title), partnerLabel),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = { vm.confirmTask(task.id, task.title) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.task_confirm))
                 }
             }
         }

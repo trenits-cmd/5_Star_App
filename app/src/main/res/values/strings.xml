@@ -77,6 +77,9 @@
     <string name="offline_stale">Offline. Showing the last known state.</string>
     <string name="section_open_tasks">Open penalties &amp; rewards</string>
     <string name="no_open_tasks">No open tasks. Well done!</string>
+    <string name="penalty_trigger_now">Select daily penalty</string>
+    <string name="day_switch_today">Today</string>
+    <string name="day_switch_yesterday">Yesterday (until 06:00 AM)</string>
     <string name="waiting_partner">Waiting for your partner</string>
     <string name="invite_share">Share this code with your partner or send it directly via email.</string>
     <string name="invite_create">Create code</string>

@@ -120,6 +120,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     val todayKey: StateFlow<String> = clock.map { dayKeyOf(it, zone) }.share(dayKeyOf(clock.value, zone))
 
+    val yesterdayKey: StateFlow<String> = clock.map {
+        dayKeyOf(it.minus(Duration.ofDays(1)), zone)
+    }.share(dayKeyOf(clock.value.minus(Duration.ofDays(1)), zone))
+
+    /** Bis 06:00 Uhr morgens darf die Bewertung des Vortags noch eingegeben werden. */
+    val canEditYesterday: StateFlow<Boolean> = clock.map {
+        it.atZone(zone).toLocalTime().hour < 6
+    }.share(LocalTime.now(zone).hour < 6)
+
+    val editingYesterday = MutableStateFlow(false)
+
+    val activeDayKey: StateFlow<String> = combine(todayKey, yesterdayKey, canEditYesterday, editingYesterday) { today, yesterday, canYesterday, useYesterday ->
+        if (canYesterday && useYesterday) yesterday else today
+    }.share(todayKey.value)
+
     val partnerUid: StateFlow<String?> = members
         .map { list -> list.items.firstOrNull { it != uid } }
         .share(null)
@@ -339,11 +354,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }.share(emptyList())
 
-    val myToday: StateFlow<DayRecord?> = combine(days, todayKey) { list, key ->
+    val myToday: StateFlow<DayRecord?> = combine(days, activeDayKey) { list, key ->
         list.items.firstOrNull { it.ownerUid == uid && it.dayKey == key }
     }.share(null)
 
-    val partnerToday: StateFlow<DayRecord?> = combine(days, todayKey, partnerUid) { list, key, partner ->
+    val partnerToday: StateFlow<DayRecord?> = combine(days, activeDayKey, partnerUid) { list, key, partner ->
         list.items.firstOrNull { it.ownerUid == partner && it.dayKey == key }
     }.share(null)
 
@@ -549,28 +564,35 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         return availablePoolOptions(pool, usedChronological) to pool.size
     }
 
+    fun setEditingYesterday(useYesterday: Boolean) {
+        editingYesterday.value = useYesterday && canEditYesterday.value
+    }
+
     fun setStars(categoryId: String, stars: Int) {
         val repo = repo() ?: return
+        val dayKey = activeDayKey.value
         val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
         val counters = myToday.value?.counters.orEmpty()
         repo.saveDay(
-            buildDayRecord(todayKey.value, uid, targeted.value, stored + (categoryId to stars), counters),
+            buildDayRecord(dayKey, uid, targeted.value, stored + (categoryId to stars), counters),
         )
         toastMessage.value = text(R.string.save_confirmation)
     }
 
     fun setCounter(categoryId: String, key: String, value: Double) {
         val repo = repo() ?: return
+        val dayKey = activeDayKey.value
         val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
         val counters = myToday.value?.counters.orEmpty().toMutableMap()
         counters[categoryId] = counters[categoryId].orEmpty() + (key to value.coerceAtLeast(0.0))
-        repo.saveDay(buildDayRecord(todayKey.value, uid, targeted.value, stored, counters))
+        repo.saveDay(buildDayRecord(dayKey, uid, targeted.value, stored, counters))
         toastMessage.value = text(R.string.save_confirmation)
     }
 
     /** Speichert die heute eingetragene Sport-Dauer in Minuten (Andi: 3 Tage/Woche à 45 Min, tägliche Eingabe). */
     fun setSportMinutes(categoryId: String, minutes: Int) {
         val repo = repo() ?: return
+        val dayKey = activeDayKey.value
         val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
         val counters = myToday.value?.counters.orEmpty().toMutableMap()
         val doneDaysBeforeToday = sportDaysInWeek(categoryId, isoWeekRecordsBeforeToday.value)
@@ -580,7 +602,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             SPORT_MINUTES to minutes.coerceAtLeast(0).toDouble(),
             SPORT_REST_DAY_OK to restDayOk,
         )
-        repo.saveDay(buildDayRecord(todayKey.value, uid, targeted.value, stored, counters))
+        repo.saveDay(buildDayRecord(dayKey, uid, targeted.value, stored, counters))
         toastMessage.value = text(R.string.save_confirmation)
     }
 
@@ -592,26 +614,28 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     /** Speichert die heute ausgewählte Wechsel-Aufgabe und deren Sterne-Bewertung (0..5). */
     fun setRotation(categoryId: String, rotationTask: RotationTask, stars: Int) {
         val repo = repo() ?: return
+        val dayKey = activeDayKey.value
         val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
         val counters = myToday.value?.counters.orEmpty().toMutableMap()
         counters[categoryId] = counters[categoryId].orEmpty() + mapOf(
             ROTATION_TASK_INDEX to rotationTask.index.toDouble(),
             ROTATION_STARS to stars.coerceIn(0, MAX_STARS).toDouble(),
         )
-        repo.saveDay(buildDayRecord(todayKey.value, uid, targeted.value, stored, counters))
+        repo.saveDay(buildDayRecord(dayKey, uid, targeted.value, stored, counters))
         toastMessage.value = text(R.string.save_confirmation)
     }
 
     /** Speichert die Abendessen-Uhrzeit (wird von Andi eingegeben und in beiden Apps synchronisiert). */
     fun setDinnerTime(categoryId: String, hour: Int, minute: Int) {
         val repo = repo() ?: return
+        val dayKey = activeDayKey.value
         val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
         val counters = myToday.value?.counters.orEmpty().toMutableMap()
         counters[categoryId] = counters[categoryId].orEmpty() + mapOf(
             DINNER_HOUR to hour.coerceIn(0, 23).toDouble(),
             DINNER_MINUTE to minute.coerceIn(0, 59).toDouble(),
         )
-        repo.saveDay(buildDayRecord(todayKey.value, uid, targeted.value, stored, counters))
+        repo.saveDay(buildDayRecord(dayKey, uid, targeted.value, stored, counters))
         toastMessage.value = text(R.string.save_confirmation)
     }
 
@@ -620,29 +644,52 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun setRelationshipStars(aspect: RelationshipAspect, stars: Int) {
         val repo = repo() ?: return
+        val dayKey = activeDayKey.value
         val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
         val counters = myToday.value?.counters.orEmpty().toMutableMap()
         val currentRel = counters[RELATIONSHIP_COUNTER_KEY].orEmpty()
         counters[RELATIONSHIP_COUNTER_KEY] = currentRel + (aspect.key to stars.coerceIn(0, MAX_STARS).toDouble())
-        repo.saveDay(buildDayRecord(todayKey.value, uid, targeted.value, stored, counters))
+        repo.saveDay(buildDayRecord(dayKey, uid, targeted.value, stored, counters))
         toastMessage.value = text(R.string.save_confirmation)
     }
 
     /**
      * Speichert und synchronisiert die heutigen Werte. Der Tag gilt nur dann als bestätigt,
      * wenn alle Kategorien und alle Beziehungs-Dimensionen ausgefüllt sind.
-     * Weitere Werte können auch nach der Bestätigung noch ergänzt werden.
+     * Liegt das Tagesergebnis unter 80 %, wird außerdem direkt die tägliche Strafe angelegt.
      */
     fun confirmToday() {
         val repo = repo() ?: return
+        val dayKey = activeDayKey.value
         val record = myToday.value
         val stored = record?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
         val counters = record?.counters.orEmpty()
         val complete = missingCategoryIds(targeted.value, record).isEmpty() &&
             missingRelationshipAspects(record).isEmpty()
-        val base = buildDayRecord(todayKey.value, uid, targeted.value, stored, counters)
+        val base = buildDayRecord(dayKey, uid, targeted.value, stored, counters)
         repo.saveDay(base.copy(confirmedAt = if (complete) System.currentTimeMillis() else null))
+        if (dayOutcomeFor(base, targeted.value) == DayOutcome.PENALTY) {
+            ensurePenaltyTaskForDay(dayKey)
+        }
         toastMessage.value = text(R.string.save_confirmation)
+    }
+
+    /** Legt für [dayKey] eine offene Strafe für den aktuellen Nutzer an, falls noch keine existiert. */
+    fun ensurePenaltyTaskForDay(dayKey: String = activeDayKey.value) {
+        val repo = repo() ?: return
+        if (tasks.value.items.any { it.ownerUid == uid && it.dayKey == dayKey && it.type == TaskType.PENALTY }) return
+        repo.createTask(
+            Task(
+                id = "eval_${dayKey}_$uid",
+                ownerUid = uid,
+                type = TaskType.PENALTY,
+                title = "",
+                dayKey = dayKey,
+                status = TaskStatus.OPEN,
+                createdAt = Instant.now(),
+                targets = listOf(uid),
+            ),
+        )
     }
 
     /**
@@ -984,8 +1031,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** Partner bestätigt die Einlösung; hält das heutige Datum als Tag der Einlösung fest. */
-    fun confirmTask(taskId: String) {
-        repo()?.confirmTask(taskId, todayKey.value)
+    fun confirmTask(taskId: String, selectedTitle: String? = null) {
+        repo()?.confirmTask(taskId, todayKey.value, selectedTitle)
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     fun sendTestPushNotifications() {
@@ -1045,10 +1093,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun evaluateYesterday() {
         val repo = repo() ?: return
-        if (categories.value.fromCache || days.value.fromCache || tasks.value.fromCache) return
+        if (targeted.value.isEmpty()) return
+        val nowHour = LocalTime.now(zone).hour
         val yesterday = dayKeyOf(Instant.now().minus(Duration.ofDays(1)), zone)
         if (tasks.value.items.any { it.ownerUid == uid && it.dayKey == yesterday && it.type == TaskType.PENALTY }) return
         val record = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == yesterday }
+        if (record == null && nowHour < 6) return
         val outcome = dayOutcomeFor(record, targeted.value) ?: return
         if (outcome == DayOutcome.PENALTY) {
             repo.createTask(
@@ -1069,29 +1119,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Deadline-Mechanismus:
      * Wenn es nach 06:00 Uhr ist und der eigene Eintrag von gestern fehlt,
-     * wird ein Auto-Eintrag mit 0 Sternen für alle Beziehungs-Dimensionen erstellt.
-     * Das wird nur einmalig ausgeführt (beim App-Start).
+     * wird ein Auto-Eintrag mit 0 Sternen für alle Kategorien erstellt.
      */
     private fun fillDeadline() {
         val now = LocalTime.now(ZoneId.systemDefault())
         if (now.hour < 6) return
         val repo = repo() ?: return
-        if (categories.value.fromCache || days.value.fromCache) return
+        if (days.value.fromCache && days.value.items.isEmpty()) return
         val yesterday = LocalDate.now(zone).minusDays(1).toString()
         val myYesterday = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == yesterday }
         if (myYesterday != null) return
-        val emptyRecords = categories.value.items
-            .filter { it.appliesTo(uid) }
-            .associate { it.id to buildDayRecord(yesterday, uid, categories.value.items, emptyMap(), emptyMap()) }
-        val yesterdayRecord = buildDayRecord(yesterday, uid, categories.value.items, emptyMap(), emptyMap())
+        val yesterdayRecord = buildDayRecord(yesterday, uid, targeted.value, emptyMap(), emptyMap())
         repo.saveDay(yesterdayRecord)
-        if (partnerUid.value != null) {
-            val partnerYesterday = days.value.items.firstOrNull { it.ownerUid == partnerUid.value && it.dayKey == yesterday }
-            if (partnerYesterday == null) {
-                val pYesterdayRecord = buildDayRecord(yesterday, partnerUid.value!!, categories.value.items, emptyMap(), emptyMap())
-                repo.saveDay(pYesterdayRecord)
-            }
-        }
     }
 
     /**
@@ -1100,7 +1139,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun evaluateStreakReward() {
         val repo = repo() ?: return
-        if (categories.value.fromCache || days.value.fromCache || tasks.value.fromCache) return
+        if (targeted.value.isEmpty()) return
 
         val today = Instant.now().atZone(zone).toLocalDate()
         val byDay = days.value.items.filter { it.ownerUid == uid }.associateBy { it.dayKey }
@@ -1156,7 +1195,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 prefs.markNotifiedConfirmForTask(task.id)
             }
             if (task.withAutoConfirmation(now).status != task.status) {
-                repo.autoConfirmTask(task.id)
+                repo.autoConfirmTask(task.id, todayKey.value)
             }
         }
     }

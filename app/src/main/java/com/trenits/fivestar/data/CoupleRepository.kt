@@ -221,18 +221,31 @@ class CoupleRepository(private val coupleId: String) {
     }
 
     /** Partner bestätigt die Einlösung. Speichert Status CONFIRMED und den Tag der Einlösung. */
-    fun confirmTask(id: String, redeemedDayKey: String) {
-        couple.collection("tasks").document(id).update(
-            mapOf(
-                "status" to TaskStatus.CONFIRMED.name,
-                "redeemedDayKey" to redeemedDayKey,
-            ),
+    fun confirmTask(id: String, redeemedDayKey: String, title: String? = null) {
+        val docRef = couple.collection("tasks").document(id)
+        val updates = mutableMapOf<String, Any>(
+            "status" to TaskStatus.CONFIRMED.name,
+            "redeemedDayKey" to redeemedDayKey,
         )
+        if (!title.isNullOrBlank()) {
+            updates["title"] = title
+        }
+        docRef.update(updates).addOnFailureListener {
+            docRef.update("status", TaskStatus.CONFIRMED.name)
+        }
     }
 
-    /** Nach 48 Stunden. Die Regeln prüfen die Frist serverseitig. */
-    fun autoConfirmTask(id: String) {
-        couple.collection("tasks").document(id).update("status", TaskStatus.AUTO_CONFIRMED.name)
+    /** Nach 48 Stunden automatische Bestätigung ins Archiv. */
+    fun autoConfirmTask(id: String, redeemedDayKey: String = "") {
+        val docRef = couple.collection("tasks").document(id)
+        val updates = if (redeemedDayKey.isNotBlank()) {
+            mapOf("status" to TaskStatus.AUTO_CONFIRMED.name, "redeemedDayKey" to redeemedDayKey)
+        } else {
+            mapOf("status" to TaskStatus.AUTO_CONFIRMED.name)
+        }
+        docRef.update(updates).addOnFailureListener {
+            docRef.update("status", TaskStatus.AUTO_CONFIRMED.name)
+        }
     }
 
     private fun <T> listen(query: Query, map: (DocumentSnapshot) -> T?): Flow<Listed<T>> = callbackFlow {

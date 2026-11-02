@@ -6,19 +6,25 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -56,6 +62,7 @@ private enum class Tab(val labelRes: Int, val icon: ImageVector) {
     SETTINGS(R.string.tab_settings, Icons.Filled.Settings),
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainTabs(viewModel: AppViewModel) {
     var tab by rememberSaveable { mutableStateOf(Tab.TODAY) }
@@ -82,6 +89,16 @@ private fun MainTabs(viewModel: AppViewModel) {
     }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "5 Star", style = MaterialTheme.typography.titleMedium) },
+                actions = {
+                    IconButton(onClick = { viewModel.signOut() }) {
+                        Icon(Icons.Filled.ExitToApp, contentDescription = stringResource(R.string.settings_sign_out))
+                    }
+                },
+            )
+        },
         bottomBar = {
             NavigationBar {
                 visibleTabs.forEach { item ->

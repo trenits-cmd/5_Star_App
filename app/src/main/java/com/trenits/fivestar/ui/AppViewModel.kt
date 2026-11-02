@@ -431,7 +431,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             targets = bothTargets,
             goal = 20.0,
             icon = CategoryIcon.FOOD.name,
-            notifications = listOf("Abendessen vor 20:00 Uhr = 5 Sterne 🍽️"),
+            notifications = listOf("Dinner before 20:00 = 5 stars 🍽️"),
             id = "preset_dinner_$uid",
         )
         repo.saveCategory(
@@ -443,8 +443,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             goal = DEFAULT_WATER_GOAL,
             icon = CategoryIcon.WATER.name,
             notifications = listOf(
-                "Mindestens 2,5 Liter Wasser heute trinken 💧",
-                "Zwischenstand: Gläser oder Liter eintragen!",
+                "Drink at least 2.5 liters of water today 💧",
+                "Status: Enter glasses or liters!",
             ),
             pushEnabled = true,
             pushIntervalHours = 2,
@@ -458,7 +458,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             targets = myTargets,
             goal = DEFAULT_ALCOHOL_LIMIT,
             icon = CategoryIcon.ALCOHOL.name,
-            notifications = listOf("0 Liter Alkohol = 5 Sterne ⭐"),
+            notifications = listOf("0 Liter alcohol = 5 stars ⭐"),
             id = "preset_alcohol_$uid",
         )
         repo.saveCategory(
@@ -518,7 +518,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             targets = myTargets,
             goal = 0.0,
             icon = CategoryIcon.FITNESS.name,
-            notifications = listOf("Zeit für Sport heute 💪"),
+            notifications = listOf("Time for sport today 💪"),
             id = "preset_sport_$uid",
         )
         repo.saveCategory(
@@ -530,8 +530,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             goal = DEFAULT_WATER_GOAL,
             icon = CategoryIcon.WATER.name,
             notifications = listOf(
-                "Mindestens 2,5 Liter Wasser heute trinken 💧",
-                "Zwischenstand: Gläser oder Liter eintragen!",
+                "Drink at least 2.5 liters of water today 💧",
+                "Status: Enter glasses or liters!",
             ),
             pushEnabled = true,
             pushIntervalHours = 2,
@@ -556,7 +556,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             targets = bothTargets,
             goal = 20.0,
             icon = CategoryIcon.FOOD.name,
-            notifications = listOf("Abendessen-Uhrzeit eintragen (vor 20h = 5 ★) 🍽️"),
+            notifications = listOf("Enter dinner time (before 20h = 5 ★) 🍽️"),
             id = "preset_dinner_$uid",
         )
 

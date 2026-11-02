@@ -640,6 +640,7 @@ private fun defaultGoal(kind: CategoryKind): String = when (kind) {
     CategoryKind.DINNER_TIME -> "20"
     CategoryKind.MEALS -> ""
     CategoryKind.READING -> "50"
+    CategoryKind.SPORT -> "45"
 }
 
 @Composable
@@ -652,6 +653,7 @@ private fun kindLabel(kind: CategoryKind): String = stringResource(
         CategoryKind.DINNER_TIME -> R.string.kind_dinner
         CategoryKind.MEALS -> R.string.kind_meals
         CategoryKind.READING -> R.string.kind_reading
+        CategoryKind.SPORT -> R.string.kind_sport
     },
 )
 

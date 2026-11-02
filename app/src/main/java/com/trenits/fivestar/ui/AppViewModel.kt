@@ -22,6 +22,7 @@ import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryIcon
 import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.DEFAULT_ALCOHOL_LIMIT
+import com.trenits.fivestar.domain.DEFAULT_SPORT_GOAL_MINUTES
 import com.trenits.fivestar.domain.DEFAULT_WATER_GOAL
 import com.trenits.fivestar.domain.DINNER_HOUR
 import com.trenits.fivestar.domain.DINNER_MINUTE
@@ -34,6 +35,9 @@ import com.trenits.fivestar.domain.ROTATION_STARS
 import com.trenits.fivestar.domain.ROTATION_TASK_INDEX
 import com.trenits.fivestar.domain.RelationshipAspect
 import com.trenits.fivestar.domain.RotationTask
+import com.trenits.fivestar.domain.SPORT_MINUTES
+import com.trenits.fivestar.domain.SPORT_REST_DAY_OK
+import com.trenits.fivestar.domain.SPORT_WEEKLY_DAYS_GOAL
 import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
@@ -47,6 +51,7 @@ import com.trenits.fivestar.domain.missingCategoryIds
 import com.trenits.fivestar.domain.missingRelationshipAspects
 import com.trenits.fivestar.domain.needsPartnerConfirmationReminder
 import com.trenits.fivestar.domain.penaltyCycleStartDayKey
+import com.trenits.fivestar.domain.sportDaysInWeek
 import com.trenits.fivestar.domain.weekKeyOf
 import com.trenits.fivestar.domain.withAutoConfirmation
 import com.trenits.fivestar.reminder.ReminderPrefs
@@ -119,16 +124,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         .map { list -> list.items.firstOrNull { it != uid } }
         .share(null)
 
-    /** Kategorien, die für mich gelten. */
-    val targeted: StateFlow<List<Category>> = categories
-        .map { list -> list.items.filter { it.appliesTo(uid) } }
-        .share(emptyList())
-
-    /** Kategorien, die ich angelegt habe, unabhängig davon, für wen sie gelten. */
-    val created: StateFlow<List<Category>> = categories
-        .map { list -> list.items.filter { it.ownerUid == uid && !it.archived } }
-        .share(emptyList())
-
     val myName: StateFlow<String?> = if (uid.isEmpty()) {
         flowOf(null).share(null)
     } else {
@@ -140,6 +135,56 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val partnerName: StateFlow<String?> = localProfileStore.partnerDisplayName.share(null)
 
     val partnerPhoto: StateFlow<String?> = localProfileStore.partnerPhotoBase64.share(null)
+
+    private fun resolveRole(
+        localName: String?,
+        partnerLocalName: String?,
+        profileName: String?,
+        cats: List<Category>,
+    ): String? {
+        val myLower = localName?.trim()?.lowercase().orEmpty()
+        val partnerLower = partnerLocalName?.trim()?.lowercase().orEmpty()
+        val profLower = profileName?.trim()?.lowercase().orEmpty()
+        val authEmail = Firebase.auth.currentUser?.email?.trim()?.lowercase().orEmpty()
+        val authName = Firebase.auth.currentUser?.displayName?.trim()?.lowercase().orEmpty()
+        return when {
+            myLower.contains("andi") || myLower.contains("andreas") -> "andi"
+            myLower.contains("rosie") || myLower.contains("rosa") -> "rosie"
+            partnerLower.contains("rosie") || partnerLower.contains("rosa") -> "andi"
+            partnerLower.contains("andi") || partnerLower.contains("andreas") -> "rosie"
+            profLower.contains("andi") || profLower.contains("andreas") ||
+                authName.contains("andi") || authEmail.contains("andi") || authEmail.contains("trenits") -> "andi"
+            profLower.contains("rosie") || profLower.contains("rosa") ||
+                authName.contains("rosie") || authEmail.contains("rosie") -> "rosie"
+            cats.any { it.id == "preset_sport_$uid" && !it.archived } &&
+                cats.none { it.id == "preset_meals_$uid" && !it.archived } -> "andi"
+            cats.any { it.id == "preset_meals_$uid" && !it.archived } &&
+                cats.none { it.id == "preset_sport_$uid" && !it.archived } -> "rosie"
+            else -> null
+        }
+    }
+
+    /** Kategorien, die für mich gelten (strikt nach Rolle Rosie vs. Andi gefiltert). */
+    val targeted: StateFlow<List<Category>> = combine(categories, myName, partnerName, profile) { list, localName, pName, prof ->
+        val role = resolveRole(localName, pName, prof?.displayName, list.items)
+        val allowedIds = when (role) {
+            "andi" -> andiCategoryIds(uid)
+            "rosie" -> rosieCategoryIds(uid)
+            else -> null
+        }
+        list.items.filter { cat ->
+            !cat.archived && if (allowedIds != null) {
+                cat.id in allowedIds
+            } else {
+                cat.appliesTo(uid)
+            }
+        }
+    }.share(emptyList())
+
+    /** Kategorien, die ich angelegt habe, unabhängig davon, für wen sie gelten. */
+    val created: StateFlow<List<Category>> = categories
+        .map { list -> list.items.filter { it.ownerUid == uid && !it.archived } }
+        .share(emptyList())
 
     /** Einladung, bei der ich als Partner um Beitritt gebeten habe (wartet auf Bestätigung). */
     val pendingInviteCode: StateFlow<String?> = profile.map { it?.pendingInviteCode }.distinctUntilChanged().share(null)
@@ -251,29 +296,31 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             var lastSyncedRole: String? = null
-            combine(profile, myName, categories, catalog) { p, localName, cats, catItems ->
-                Triple(p, localName, cats to catItems)
-            }.collect { (p, localName, pair) ->
-                val coupleId = p?.coupleId ?: return@collect
-                val (cats, catItems) = pair
-                val effectiveName = localName?.trim()?.takeIf { it.isNotEmpty() }
-                    ?: p.displayName?.trim()?.takeIf { it.isNotEmpty() }
-                val role = when {
-                    effectiveName?.equals("Rosie", ignoreCase = true) == true -> "rosie"
-                    effectiveName?.equals("Andi", ignoreCase = true) == true -> "andi"
-                    cats.items.any { it.id == "preset_meals_$uid" && !it.archived } -> "rosie"
-                    cats.items.any { it.id == "preset_sport_$uid" && !it.archived } -> "andi"
-                    else -> null
-                } ?: return@collect
+            combine(profile, myName, partnerName, categories, catalog) { p, localName, pName, cats, catItems ->
+                listOf(p, localName, pName, cats, catItems)
+            }.collect { args ->
+                val p = args[0] as? UserProfile
+                val localName = args[1] as? String
+                val pName = args[2] as? String
+                @Suppress("UNCHECKED_CAST")
+                val cats = args[3] as Listed<Category>
+                @Suppress("UNCHECKED_CAST")
+                val catItems = args[4] as Listed<CatalogItem>
 
-                val expectedCatIds = if (role == "rosie") rosieCategoryIds() else andiCategoryIds()
+                val coupleId = p?.coupleId ?: return@collect
+                val role = resolveRole(localName, pName, p.displayName, cats.items) ?: return@collect
+
+                val expectedCatIds = if (role == "rosie") rosieCategoryIds(uid) else andiCategoryIds(uid)
                 val expectedCatalogIds = if (role == "rosie") rosieCatalogIds() else andiCatalogIds()
                 val hasForeignCats = cats.items.any {
-                    (it.ownerUid == uid && !it.archived && it.id !in expectedCatIds) ||
+                    ((it.ownerUid == uid || uid in it.targets) && !it.archived && it.id !in expectedCatIds) ||
                         (it.ownerUid == uid && it.targets != listOf(uid))
                 }
                 val hasMissingCats = expectedCatIds.any { expectedId ->
                     cats.items.none { it.id == expectedId && !it.archived }
+                }
+                val hasOutdatedSportCat = role == "andi" && cats.items.any {
+                    it.id == "preset_sport_$uid" && (it.kind != CategoryKind.SPORT || it.goal != DEFAULT_SPORT_GOAL_MINUTES)
                 }
                 val hasForeignCatalog = catItems.items.any {
                     it.ownerUid == uid && it.id !in expectedCatalogIds
@@ -282,7 +329,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     catItems.items.none { it.id == expectedId }
                 }
 
-                if (lastSyncedRole != role || hasForeignCats || hasMissingCats || hasForeignCatalog || hasMissingCatalog) {
+                if (lastSyncedRole != role || hasForeignCats || hasMissingCats || hasOutdatedSportCat || hasForeignCatalog || hasMissingCatalog) {
                     lastSyncedRole = role
                     if (role == "rosie") {
                         applyRosiePreset()
@@ -391,7 +438,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
         val counters = myToday.value?.counters.orEmpty()
         repo.saveDay(
-            buildDayRecord(todayKey.value, uid, categories.value.items, stored + (categoryId to stars), counters),
+            buildDayRecord(todayKey.value, uid, targeted.value, stored + (categoryId to stars), counters),
         )
         toastMessage.value = text(R.string.save_confirmation)
     }
@@ -401,7 +448,23 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
         val counters = myToday.value?.counters.orEmpty().toMutableMap()
         counters[categoryId] = counters[categoryId].orEmpty() + (key to value.coerceAtLeast(0.0))
-        repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+        repo.saveDay(buildDayRecord(todayKey.value, uid, targeted.value, stored, counters))
+        toastMessage.value = text(R.string.save_confirmation)
+    }
+
+    /** Speichert die heute eingetragene Sport-Dauer in Minuten (Andi: 3 Tage/Woche à 45 Min, tägliche Eingabe). */
+    fun setSportMinutes(categoryId: String, minutes: Int) {
+        val repo = repo() ?: return
+        val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = myToday.value?.counters.orEmpty().toMutableMap()
+        val doneDaysBeforeToday = sportDaysInWeek(categoryId, isoWeekRecordsBeforeToday.value)
+        val remainingDaysAfterToday = (7 - LocalDate.now(zone).dayOfWeek.value).coerceAtLeast(0)
+        val restDayOk = if (doneDaysBeforeToday + remainingDaysAfterToday >= SPORT_WEEKLY_DAYS_GOAL) 1.0 else 0.0
+        counters[categoryId] = counters[categoryId].orEmpty() + mapOf(
+            SPORT_MINUTES to minutes.coerceAtLeast(0).toDouble(),
+            SPORT_REST_DAY_OK to restDayOk,
+        )
+        repo.saveDay(buildDayRecord(todayKey.value, uid, targeted.value, stored, counters))
         toastMessage.value = text(R.string.save_confirmation)
     }
 
@@ -419,7 +482,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             ROTATION_TASK_INDEX to rotationTask.index.toDouble(),
             ROTATION_STARS to stars.coerceIn(0, MAX_STARS).toDouble(),
         )
-        repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+        repo.saveDay(buildDayRecord(todayKey.value, uid, targeted.value, stored, counters))
         toastMessage.value = text(R.string.save_confirmation)
     }
 
@@ -432,7 +495,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             DINNER_HOUR to hour.coerceIn(0, 23).toDouble(),
             DINNER_MINUTE to minute.coerceIn(0, 59).toDouble(),
         )
-        repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+        repo.saveDay(buildDayRecord(todayKey.value, uid, targeted.value, stored, counters))
         toastMessage.value = text(R.string.save_confirmation)
     }
 
@@ -445,7 +508,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val counters = myToday.value?.counters.orEmpty().toMutableMap()
         val currentRel = counters[RELATIONSHIP_COUNTER_KEY].orEmpty()
         counters[RELATIONSHIP_COUNTER_KEY] = currentRel + (aspect.key to stars.coerceIn(0, MAX_STARS).toDouble())
-        repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+        repo.saveDay(buildDayRecord(todayKey.value, uid, targeted.value, stored, counters))
         toastMessage.value = text(R.string.save_confirmation)
     }
 
@@ -461,7 +524,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val counters = record?.counters.orEmpty()
         val complete = missingCategoryIds(targeted.value, record).isEmpty() &&
             missingRelationshipAspects(record).isEmpty()
-        val base = buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters)
+        val base = buildDayRecord(todayKey.value, uid, targeted.value, stored, counters)
         repo.saveDay(base.copy(confirmedAt = if (complete) System.currentTimeMillis() else null))
         toastMessage.value = text(R.string.save_confirmation)
     }
@@ -509,19 +572,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * - Belohnungen: Vinted Budget (10 € von Andi), Blumen, Massage für 30 Minuten, Essen gehen
      * - Strafen: kein Orgasmus, keine Bar
      */
-    private fun rosieCategoryIds(): Set<String> = setOf(
-        "preset_meals_$uid",
-        "preset_dinner_$uid",
-        "preset_water_$uid",
-        "preset_alcohol_$uid",
-        "preset_rotation_$uid",
+    fun rosieCategoryIds(ownerUid: String = uid): Set<String> = setOf(
+        "preset_meals_$ownerUid",
+        "preset_dinner_$ownerUid",
+        "preset_water_$ownerUid",
+        "preset_alcohol_$ownerUid",
+        "preset_rotation_$ownerUid",
     )
 
-    private fun andiCategoryIds(): Set<String> = setOf(
-        "preset_sport_$uid",
-        "preset_water_$uid",
-        "preset_reading_$uid",
-        "preset_dinner_$uid",
+    fun andiCategoryIds(ownerUid: String = uid): Set<String> = setOf(
+        "preset_sport_$ownerUid",
+        "preset_water_$ownerUid",
+        "preset_reading_$ownerUid",
     )
 
     private fun rosieCatalogIds(): Set<String> =
@@ -542,11 +604,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
         val repo = repo() ?: return
         val myTargets = listOf(uid)
-        val allowedCategories = rosieCategoryIds()
+        val allowedCategories = rosieCategoryIds(uid)
         val allowedCatalog = rosieCatalogIds()
 
         categories.value.items
-            .filter { it.ownerUid == uid && !it.archived && it.id !in allowedCategories }
+            .filter { (it.ownerUid == uid || uid in it.targets) && !it.archived && it.id !in allowedCategories }
             .forEach { repo.archiveCategory(it.id) }
 
         repo.saveCategory(
@@ -636,10 +698,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Legt das Profil, die Kategorien sowie Belohnungen & Strafen für Andi an:
-     * - Sport (3-fache Wertung)
+     * - Sport (3-fache Wertung, 3 Tage/Woche à 45 Min, tägliche Zeiteingabe)
      * - Wasser trinken (2-fache Wertung, mind. 2,5 L)
      * - Lesen (2-fache Wertung, Seitenanzahl: 0–5 = 0 ★, > 50 = 5 ★)
-     * - Abendessen vor 20h (3-fache Wertung, Andi gibt die Uhrzeit ein)
      * - Belohnungen: Kuscheln, Massage, Edging, Blowjob, Handjob, Video, Lieblingsgericht
      * - Strafe: Handy-Abgabe an Rosie
      */
@@ -653,22 +714,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
         val repo = repo() ?: return
         val myTargets = listOf(uid)
-        val allowedCategories = andiCategoryIds()
+        val allowedCategories = andiCategoryIds(uid)
         val allowedCatalog = andiCatalogIds()
 
         categories.value.items
-            .filter { it.ownerUid == uid && !it.archived && it.id !in allowedCategories }
+            .filter { (it.ownerUid == uid || uid in it.targets) && !it.archived && it.id !in allowedCategories }
             .forEach { repo.archiveCategory(it.id) }
 
         repo.saveCategory(
             ownerUid = uid,
             name = text(R.string.cat_preset_sport),
             weight = 3,
-            kind = CategoryKind.STARS,
+            kind = CategoryKind.SPORT,
             targets = myTargets,
-            goal = 0.0,
+            goal = DEFAULT_SPORT_GOAL_MINUTES,
             icon = CategoryIcon.FITNESS.name,
-            notifications = listOf("Time for sport today 💪"),
+            notifications = listOf("3× 45 min sport per week – log your minutes today 💪"),
             id = "preset_sport_$uid",
         )
         repo.saveCategory(
@@ -697,17 +758,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             icon = CategoryIcon.MIND.name,
             notifications = listOf("Read a few more pages today 📖"),
             id = "preset_reading_$uid",
-        )
-        repo.saveCategory(
-            ownerUid = uid,
-            name = text(R.string.cat_preset_dinner),
-            weight = 3,
-            kind = CategoryKind.DINNER_TIME,
-            targets = myTargets,
-            goal = 20.0,
-            icon = CategoryIcon.FOOD.name,
-            notifications = listOf("Enter dinner time (before 20h = 5 ★) 🍽️"),
-            id = "preset_dinner_$uid",
         )
 
         val andiRewards = listOf(

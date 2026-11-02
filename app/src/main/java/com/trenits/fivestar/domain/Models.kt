@@ -18,6 +18,7 @@ enum class CategoryKind {
     DINNER_TIME,
     MEALS,
     READING,
+    SPORT,
 }
 
 /**
@@ -99,6 +100,7 @@ data class Category(
         if (kind == CategoryKind.DINNER_TIME || kind == CategoryKind.MEALS) return CategoryIcon.FOOD
         if (kind == CategoryKind.ROTATION) return CategoryIcon.HOME
         if (kind == CategoryKind.READING) return CategoryIcon.MIND
+        if (kind == CategoryKind.SPORT) return CategoryIcon.FITNESS
         val lower = name.lowercase()
         return when {
             listOf("essen", "abendessen", "dinner", "food", "mahlzeit", "kochen", "repas", "dîner", "meal").any { it in lower } ->
@@ -132,6 +134,9 @@ const val MEAL_BREAKFAST = "mealBreakfast"
 const val MEAL_LUNCH = "mealLunch"
 const val MEAL_DINNER = "mealDinner"
 const val PAGES = "pages"
+const val SPORT_MINUTES = "sportMinutes"
+const val SPORT_REST_DAY_OK = "sportRestDayOk"
+const val SHARED_DINNER_KEY = "_dinner"
 const val RELATIONSHIP_COUNTER_KEY = "_relationship"
 
 /**
@@ -196,6 +201,7 @@ fun missingCategoryIds(categories: List<Category>, record: DayRecord?): List<Str
             CategoryKind.MEALS -> counters.containsKey(MEAL_BREAKFAST) &&
                 counters.containsKey(MEAL_LUNCH) && counters.containsKey(MEAL_DINNER)
             CategoryKind.READING -> counters.containsKey(PAGES)
+            CategoryKind.SPORT -> counters.containsKey(SPORT_MINUTES)
         }
         !answered
     }.map { it.id }
@@ -211,6 +217,8 @@ const val DEMI_LITERS = 0.25
 const val GLASS_LITERS = 0.25
 const val DEFAULT_WATER_GOAL = 2.5
 const val DEFAULT_ALCOHOL_LIMIT = 2.5
+const val DEFAULT_SPORT_GOAL_MINUTES = 45.0
+const val SPORT_WEEKLY_DAYS_GOAL = 3
 
 const val STREAK_DAYS_FOR_REWARD = 7
 
@@ -319,6 +327,30 @@ fun readingStars(pages: Int): Int = when {
     pages <= 5 -> 0
     pages > 50 -> MAX_STARS
     else -> (1 + ((pages - 6) * 4) / 45).coerceIn(1, 4)
+}
+
+/**
+ * Sport (Andi):
+ * Ziel: An 3 Tagen der Woche je mindestens 45 Minuten Sport machen, Zeit wird täglich eingetragen.
+ * - Ab [goalMinutes] (Standard 45 Min) = 5 Sterne
+ * - Darunter (1..44 Min) anteilig mit Abrunden auf ganze Sterne
+ */
+fun sportStars(minutes: Int, goalMinutes: Int = DEFAULT_SPORT_GOAL_MINUTES.toInt()): Int {
+    if (minutes <= 0) return 0
+    if (goalMinutes <= 0 || minutes >= goalMinutes) return MAX_STARS
+    return floor(MAX_STARS * minutes.toDouble() / goalMinutes + EPSILON).toInt().coerceIn(0, MAX_STARS)
+}
+
+/**
+ * Zählt, an wie vielen Tagen der Woche in [weekRecords] bereits mindestens [goalMinutes] Sport eingetragen wurden.
+ */
+fun sportDaysInWeek(
+    categoryId: String,
+    weekRecords: List<DayRecord>,
+    goalMinutes: Int = DEFAULT_SPORT_GOAL_MINUTES.toInt(),
+): Int = weekRecords.count { record ->
+    val mins = (record.counters[categoryId]?.get(SPORT_MINUTES) ?: 0.0).toInt()
+    mins >= goalMinutes
 }
 
 /**
@@ -445,6 +477,19 @@ fun counterStars(category: Category, values: Map<String, Double>): Int = when (c
         mealStars(b, l, d)
     }
     CategoryKind.READING -> readingStars((values[PAGES] ?: 0.0).toInt())
+    CategoryKind.SPORT -> {
+        if (!values.containsKey(SPORT_MINUTES)) {
+            0
+        } else {
+            val minutes = (values[SPORT_MINUTES] ?: 0.0).toInt()
+            val goal = if (category.goal > 0.0) category.goal.toInt() else DEFAULT_SPORT_GOAL_MINUTES.toInt()
+            if (minutes == 0 && (values[SPORT_REST_DAY_OK] ?: 0.0) > 0.0) {
+                MAX_STARS
+            } else {
+                sportStars(minutes, goal)
+            }
+        }
+    }
 }
 
 /**

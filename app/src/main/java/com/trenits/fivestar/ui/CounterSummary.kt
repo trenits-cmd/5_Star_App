@@ -23,6 +23,7 @@ import com.trenits.fivestar.domain.PINT
 import com.trenits.fivestar.domain.ROTATION_STARS
 import com.trenits.fivestar.domain.ROTATION_TASK_INDEX
 import com.trenits.fivestar.domain.RotationTask
+import com.trenits.fivestar.domain.SPORT_MINUTES
 import com.trenits.fivestar.domain.alcoholLiters
 import com.trenits.fivestar.domain.waterLiters
 
@@ -44,6 +45,7 @@ fun CounterSummary(name: String, values: Map<String, Double>) {
     val isDinner = values.containsKey(DINNER_HOUR)
     val isMeals = values.containsKey(MEAL_BREAKFAST) || values.containsKey(MEAL_LUNCH) || values.containsKey(MEAL_DINNER)
     val isReading = values.containsKey(PAGES)
+    val isSport = values.containsKey(SPORT_MINUTES)
 
     if (isAlcohol) {
         Text(stringResource(R.string.counter_pint) + ": " + (values[PINT]?.toInt() ?: 0), style = MaterialTheme.typography.bodySmall)
@@ -89,6 +91,13 @@ fun CounterSummary(name: String, values: Map<String, Double>) {
         val pages = (values[PAGES] ?: 0.0).toInt()
         Text(
             stringResource(R.string.reading_pages_summary, pages),
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+    if (isSport) {
+        val mins = (values[SPORT_MINUTES] ?: 0.0).toInt()
+        Text(
+            stringResource(R.string.sport_minutes_summary, mins),
             style = MaterialTheme.typography.bodySmall,
         )
     }

@@ -202,6 +202,7 @@
     <string name="kind_dinner">Dinner before 20h (time)</string>
     <string name="kind_meals">Meals (breakfast, lunch, dinner)</string>
     <string name="kind_reading">Reading (page count)</string>
+    <string name="kind_sport">Sport (3×/week 45 min, daily time)</string>
 
     <string name="target_me">For %1$s</string>
     <string name="target_partner">For %1$s</string>
@@ -280,6 +281,14 @@
     <string name="reading_rules_hint">0–5 pages = 0 ★ · &gt; 50 pages = 5 ★ · 6–50 pages proportional (1–4 ★)</string>
     <string name="reading_pages_label">Pages read today</string>
     <string name="reading_pages_summary">%1$d pages read</string>
+    <string name="sport_rules_hint">3 days/week at least 45 min each · Enter your sport duration in minutes every day</string>
+    <string name="sport_weekly_progress">This week: %1$d / %2$d days with ≥ 45 min</string>
+    <string name="sport_minutes_label">Sport duration today (minutes)</string>
+    <string name="sport_minutes_summary">%1$d min today</string>
+    <string name="sport_quick_0">0 min (Rest)</string>
+    <string name="sport_quick_30">30 min</string>
+    <string name="sport_quick_45">45 min ✓</string>
+    <string name="sport_quick_60">60 min ✓</string>
 
     <!-- Category images & push notifications -->
     <string name="settings_category_image">Category image</string>

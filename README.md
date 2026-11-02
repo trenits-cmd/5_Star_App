@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.02112026_2240)
+## Features (v1.03112026_0020)
 
 - **Confirm today:**
   - A button at the end of the *Today* tab saves and syncs all of today's values.
@@ -34,7 +34,7 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 - **Categories, Weights & Scoring:**
   - Each category has a weight (1–5) that flows into the daily and weekly target.
   - **Rosie:** Drink water (3×, min. 2.5 L in glasses or decimal liters), Alcohol limit (2×, 0 L = 5 ★, 2.5 L benchmark, Demi 0.25 L / Pint 0.5 L + decimal L), Other tasks / alternating (1×: Tidy up apartment, Take out trash, Wash dishes, Cook meal, Plan lessons – Yes = 5 ★, No = 0 ★), Dinner before 20h (3×: <20h = 5 ★, <21h = 1 ★, else 0 ★; entered by Andi & tracked in both apps), Meals (3×: breakfast, lunch, dinner – nothing/little/medium/healthy; all healthy = 5 ★).
-  - **Andi:** Sport (3×), Drink water (2×, min. 2.5 L), Reading (2×: 0–5 pages = 0 ★, >50 pages = 5 ★, 6–50 proportional), Dinner before 20h (3×, time entered by Andi).
+  - **Andi (3 categories only):** Sport (3×: 3 days/week at least 45 min each, sport time in minutes entered daily), Drink water (2×: min. 2.5 L in glasses or decimal liters, 2.5 L = 5 ★, proportionally rounded down below), Reading (2×: pages read entered daily, 0–5 pages = 0 ★, >50 pages = 5 ★, 6–50 proportional).
   - **Dinner before 20h:** time options are shown without brackets (e.g. "Before 20h", "Before 21h", "21h+").
   - Each category has a meaningful illustrated icon (food, water, alcohol, fitness, home, mind, detox, stars, relationship, reading).
 
@@ -83,7 +83,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.02112026_2240`** – Quick Start preset buttons removed from Settings; automatic role-based sync & cleanup of categories, rewards, and penalties for Rosie & Andi (fixing cross-assigned tasks/rewards/penalties and duplicate dinner category); all remaining German push notifications and legacy catalog/snapshot titles translated to English; confirmation toast shown on every Save button click across all tabs; partner invite via code email & in-app button confirmation by inviter.
+- **Latest: `v1.03112026_0020`** – Andi's categories strictly assigned to Sport (3×, 3 days/week × 45 min with daily minutes input), Drink water (2×, min. 2.5 L in glasses or decimal liters), and Reading (2×, pages read: 0–5 = 0 ★, >50 = 5 ★, 6–50 proportional); automatic archival of any foreign/legacy categories.
+- `v1.02112026_2240` – Quick Start preset buttons removed from Settings; automatic role-based sync & cleanup of categories, rewards, and penalties for Rosie & Andi; all remaining German push notifications and legacy catalog/snapshot titles translated to English; confirmation toast shown on every Save button click across all tabs; partner invite via code email & in-app button confirmation by inviter.
 - `v1.02112026_1600` – Partner name chooseable by user & shown as variable; 0 stars for missing day; entries until 6:00 AM; daily reminder push at configurable time (default 22:00) with category name; "No entry available" in archive; expandable archive days; save confirmation toast; dinner time options without brackets; Settings: read-only rewards/penalties overview, no category CRUD, only push time changeable; app version as last Settings item matching release.
 - `v1.02112026_1500` – English only, 2 partner-named tabs ([Rosie] [Andi] [Woche] [Einstellungen]), relationship tracker in partner tab (read-only + 7-day history), Settings restricted (no category CRUD, no rewards/penalties), reminder default 22:00, deadline 06:00 (skipped = 0 stars).
 - `v1.02112026_1013` – "Heute bestätigen" button at the end of the Today tab with a list of still-missing entries, confirmation time stored per day and synced; further values can still be added.

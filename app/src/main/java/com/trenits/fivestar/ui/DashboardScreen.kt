@@ -75,6 +75,8 @@ import com.trenits.fivestar.domain.ROTATION_STARS
 import com.trenits.fivestar.domain.ROTATION_TASK_INDEX
 import com.trenits.fivestar.domain.RelationshipAspect
 import com.trenits.fivestar.domain.RotationTask
+import com.trenits.fivestar.domain.SPORT_MINUTES
+import com.trenits.fivestar.domain.SPORT_WEEKLY_DAYS_GOAL
 import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
 import com.trenits.fivestar.domain.THRESHOLD_PERCENT
 import com.trenits.fivestar.domain.Task
@@ -88,6 +90,7 @@ import com.trenits.fivestar.domain.coupleRelationshipScorePercent
 import com.trenits.fivestar.domain.relationshipScorePercent
 import com.trenits.fivestar.domain.relationshipStarsOf
 import com.trenits.fivestar.domain.rotationCountsInWeek
+import com.trenits.fivestar.domain.sportDaysInWeek
 import com.trenits.fivestar.domain.suggestedRotationTask
 import com.trenits.fivestar.domain.waterLiters
 import com.trenits.fivestar.domain.weightSharePercent
@@ -262,6 +265,17 @@ fun DashboardScreen(vm: AppViewModel) {
                         },
                     )
                 }
+                CategoryKind.SPORT -> {
+                    SportCategoryCard(
+                        category = category,
+                        sharePercent = sharePercent,
+                        values = values,
+                        weekRecordsBeforeToday = weekRecordsBeforeToday,
+                        onMinutesChanged = { minutes ->
+                            vm.setSportMinutes(category.id, minutes)
+                        },
+                    )
+                }
             }
         }
 
@@ -421,6 +435,21 @@ private fun PartnerCategorySummaryCard(
                     if (pages > 0) {
                         Text(
                             stringResource(R.string.reading_pages_summary, pages),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.dinner_time_not_set),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                CategoryKind.SPORT -> {
+                    if (counters.containsKey(SPORT_MINUTES)) {
+                        val mins = counters[SPORT_MINUTES]?.toInt() ?: 0
+                        Text(
+                            stringResource(R.string.sport_minutes_summary, mins),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     } else {
@@ -899,6 +928,110 @@ private fun ReadingCategoryCard(
     }
 }
 
+/**
+ * Karte für die Kategorie "Sport" (Andi: 3×/Woche je mindestens 45 Minuten, tägliche Zeiteingabe).
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SportCategoryCard(
+    category: Category,
+    sharePercent: Int,
+    values: Map<String, Double>,
+    weekRecordsBeforeToday: List<DayRecord>,
+    onMinutesChanged: (Int) -> Unit,
+) {
+    val hasEntry = values.containsKey(SPORT_MINUTES)
+    val minutes = (values[SPORT_MINUTES] ?: 0.0).toInt().coerceAtLeast(0)
+    val stars = counterStars(category, values)
+    val doneBeforeToday = remember(category.id, weekRecordsBeforeToday) {
+        sportDaysInWeek(category.id, weekRecordsBeforeToday)
+    }
+    val doneThisWeek = doneBeforeToday + if (minutes >= 45) 1 else 0
+    var text by remember(category.id, minutes, hasEntry) {
+        mutableStateOf(if (!hasEntry) "" else minutes.toString())
+    }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CategoryImage(category = category, size = 42.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
+                    CategoryWeightSubtitle(category.weight, sharePercent)
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(R.string.sport_rules_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                stringResource(R.string.sport_weekly_progress, doneThisWeek, SPORT_WEEKLY_DAYS_GOAL),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(Modifier.height(8.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(
+                    selected = hasEntry && minutes == 0,
+                    onClick = { onMinutesChanged(0) },
+                    label = { Text(stringResource(R.string.sport_quick_0)) },
+                )
+                FilterChip(
+                    selected = hasEntry && minutes == 30,
+                    onClick = { onMinutesChanged(30) },
+                    label = { Text(stringResource(R.string.sport_quick_30)) },
+                )
+                FilterChip(
+                    selected = hasEntry && minutes == 45,
+                    onClick = { onMinutesChanged(45) },
+                    label = { Text(stringResource(R.string.sport_quick_45)) },
+                )
+                FilterChip(
+                    selected = hasEntry && minutes == 60,
+                    onClick = { onMinutesChanged(60) },
+                    label = { Text(stringResource(R.string.sport_quick_60)) },
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            CounterRow(
+                label = stringResource(R.string.sport_minutes_summary, minutes),
+                value = minutes.toDouble(),
+                step = 15.0,
+            ) { newVal ->
+                onMinutesChanged(newVal.toInt().coerceAtLeast(0))
+            }
+            OutlinedTextField(
+                value = text,
+                onValueChange = { input ->
+                    text = input
+                    if (input.isNotBlank()) {
+                        input.trim().toIntOrNull()?.let { onMinutesChanged(it.coerceAtLeast(0)) }
+                    }
+                },
+                label = { Text(stringResource(R.string.sport_minutes_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(
+                    R.string.counter_rating,
+                    "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
+                    stars,
+                ),
+                color = Amber,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
 @Composable
 private fun CounterCard(
     category: Category,
@@ -1288,8 +1421,24 @@ fun PartnerTodayScreen(vm: AppViewModel) {
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 
+    val pUid = partnerUid ?: vm.uid
+    val partnerIsAndi = partnerLabel.trim().contains("andi", ignoreCase = true) ||
+        myLabel.trim().contains("rosie", ignoreCase = true)
+    val partnerIsRosie = partnerLabel.trim().contains("rosie", ignoreCase = true) ||
+        myLabel.trim().contains("andi", ignoreCase = true)
+    val allowedPartnerCatIds = when {
+        partnerIsAndi -> vm.andiCategoryIds(pUid)
+        partnerIsRosie -> vm.rosieCategoryIds(pUid)
+        else -> null
+    }
     val partnerCategories = allCategories.items
-        .filter { it.appliesTo(partnerUid ?: vm.uid) }
+        .filter { cat ->
+            !cat.archived && if (allowedPartnerCatIds != null) {
+                cat.id in allowedPartnerCatIds
+            } else {
+                cat.appliesTo(pUid)
+            }
+        }
         .sortedByDescending { it.weight }
     val partnerOpenTasks = tasks.items.filter {
         it.status == TaskStatus.OPEN && (it.ownerUid == partnerUid || (partnerUid != null && it.appliesTo(partnerUid!!)))

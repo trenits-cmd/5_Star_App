@@ -141,7 +141,8 @@ fun localizedCategoryName(category: Category): String {
         trimmed in setOf("Essen", "Regelmäßig essen", "Meals", "Eat regularly", "Repas", "Manger régulièrement") ||
             category.kind == CategoryKind.MEALS ->
             stringResource(R.string.cat_preset_food)
-        trimmed in setOf("Sport", "Fitness") ->
+        trimmed in setOf("Sport", "Fitness") ||
+            category.kind == CategoryKind.SPORT ->
             stringResource(R.string.cat_preset_sport)
         trimmed in setOf("Lesen", "Reading", "Lecture") ||
             category.kind == CategoryKind.READING ->

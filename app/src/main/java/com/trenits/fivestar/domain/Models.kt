@@ -101,6 +101,53 @@ const val ROTATION_TASK_INDEX = "rotationTask"
 const val ROTATION_STARS = "rotationStars"
 const val DINNER_HOUR = "dinnerHour"
 const val DINNER_MINUTE = "dinnerMinute"
+const val RELATIONSHIP_COUNTER_KEY = "_relationship"
+
+/**
+ * Die 5 Dimensionen des Beziehungstrackers, die beide Partner täglich mit 1–5 Sternen bewerten.
+ */
+enum class RelationshipAspect(val key: String) {
+    MOOD_GENERAL("mood_general"),
+    MOOD_RELATIONSHIP("mood_relationship"),
+    COMMUNICATION("communication"),
+    INTIMACY("intimacy"),
+    SEX("sex"),
+}
+
+/** Liest die abgegebenen Beziehungs-Sterne (0..5) einer Person für einen Tag aus. */
+fun relationshipStarsOf(record: DayRecord?): Map<RelationshipAspect, Int> {
+    val map = record?.counters?.get(RELATIONSHIP_COUNTER_KEY).orEmpty()
+    return RelationshipAspect.entries.associateWith { aspect ->
+        (map[aspect.key]?.toInt() ?: 0).coerceIn(0, MAX_STARS)
+    }
+}
+
+/**
+ * Berechnet den Beziehungs-Score (0..100 %) einer Person aus den 5 Dimensionen.
+ * Liefert null, wenn heute noch keine Dimension (> 0 Sterne) bewertet wurde.
+ */
+fun relationshipScorePercent(stars: Map<RelationshipAspect, Int>): Double? {
+    val rated = RelationshipAspect.entries.map { (stars[it] ?: 0).coerceIn(0, MAX_STARS) }
+    if (rated.all { it == 0 }) return null
+    val totalEarned = rated.sum()
+    val totalPossible = RelationshipAspect.entries.size * MAX_STARS
+    return totalEarned * 100.0 / totalPossible
+}
+
+/**
+ * Berechnet den gemeinsamen Beziehungs-Score beider Partner (Mittelwert der vorliegenden Bewertungen).
+ */
+fun coupleRelationshipScorePercent(
+    myStars: Map<RelationshipAspect, Int>,
+    partnerStars: Map<RelationshipAspect, Int>,
+): Double? {
+    val scores = listOfNotNull(
+        relationshipScorePercent(myStars),
+        relationshipScorePercent(partnerStars),
+    )
+    if (scores.isEmpty()) return null
+    return scores.average()
+}
 
 const val PINT_LITERS = 0.5
 const val DEMI_LITERS = 0.25

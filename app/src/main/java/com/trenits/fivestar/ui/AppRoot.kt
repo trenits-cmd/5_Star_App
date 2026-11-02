@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -50,6 +51,7 @@ fun AppRoot(viewModel: AppViewModel) {
 
 private enum class Tab(val labelRes: Int, val icon: ImageVector) {
     TODAY(R.string.tab_today, Icons.Filled.Home),
+    RELATIONSHIP(R.string.tab_relationship, Icons.Filled.Favorite),
     WEEK(R.string.tab_week, Icons.Filled.DateRange),
     PARTNER(R.string.tab_partner, Icons.Filled.Person),
     SETTINGS(R.string.tab_settings, Icons.Filled.Settings),
@@ -71,9 +73,9 @@ private fun MainTabs(viewModel: AppViewModel) {
     }
 
     val visibleTabs = if (partnerUid == null) {
-        listOf(Tab.TODAY, Tab.WEEK, Tab.SETTINGS)
+        listOf(Tab.TODAY, Tab.RELATIONSHIP, Tab.WEEK, Tab.SETTINGS)
     } else {
-        listOf(Tab.TODAY, Tab.WEEK, Tab.PARTNER, Tab.SETTINGS)
+        listOf(Tab.TODAY, Tab.RELATIONSHIP, Tab.WEEK, Tab.PARTNER, Tab.SETTINGS)
     }
 
     Scaffold(
@@ -94,6 +96,7 @@ private fun MainTabs(viewModel: AppViewModel) {
         Box(Modifier.padding(padding)) {
             when (tab) {
                 Tab.TODAY -> DashboardScreen(viewModel)
+                Tab.RELATIONSHIP -> RelationshipScreen(viewModel)
                 Tab.WEEK -> WeeklyScreen(viewModel)
                 Tab.PARTNER -> PartnerTodayScreen(viewModel)
                 Tab.SETTINGS -> SettingsScreen(viewModel)

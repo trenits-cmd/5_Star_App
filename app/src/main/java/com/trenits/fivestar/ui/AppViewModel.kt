@@ -26,8 +26,10 @@ import com.trenits.fivestar.domain.DINNER_MINUTE
 import com.trenits.fivestar.domain.DayOutcome
 import com.trenits.fivestar.domain.DayRecord
 import com.trenits.fivestar.domain.MAX_STARS
+import com.trenits.fivestar.domain.RELATIONSHIP_COUNTER_KEY
 import com.trenits.fivestar.domain.ROTATION_STARS
 import com.trenits.fivestar.domain.ROTATION_TASK_INDEX
+import com.trenits.fivestar.domain.RelationshipAspect
 import com.trenits.fivestar.domain.RotationTask
 import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
 import com.trenits.fivestar.domain.Task
@@ -291,9 +293,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
     }
 
-    /**
-     * Speichert die Abendessen-Uhrzeit (wird von Andi eingegeben und in beiden Apps synchronisiert).
-     */
+    /** Speichert die Abendessen-Uhrzeit (wird von Andi eingegeben und in beiden Apps synchronisiert). */
     fun setDinnerTime(categoryId: String, hour: Int, minute: Int) {
         val repo = repo() ?: return
         val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
@@ -302,6 +302,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             DINNER_HOUR to hour.coerceIn(0, 23).toDouble(),
             DINNER_MINUTE to minute.coerceIn(0, 59).toDouble(),
         )
+        repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+    }
+
+    /**
+     * Speichert die Sterne-Bewertung (0..5) für eine der 5 Dimensionen des Beziehungstrackers.
+     */
+    fun setRelationshipStars(aspect: RelationshipAspect, stars: Int) {
+        val repo = repo() ?: return
+        val stored = myToday.value?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = myToday.value?.counters.orEmpty().toMutableMap()
+        val currentRel = counters[RELATIONSHIP_COUNTER_KEY].orEmpty()
+        counters[RELATIONSHIP_COUNTER_KEY] = currentRel + (aspect.key to stars.coerceIn(0, MAX_STARS).toDouble())
         repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
     }
 

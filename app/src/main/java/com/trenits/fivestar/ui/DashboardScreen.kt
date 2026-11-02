@@ -193,6 +193,9 @@ fun DashboardScreen(vm: AppViewModel) {
             }
         }
 
+        item { SectionTitle(stringResource(R.string.relationship_title)) }
+        item { RelationshipTodaySection(vm) }
+
         item { SectionTitle(stringResource(R.string.section_partner)) }
         item {
             PartnerCard(

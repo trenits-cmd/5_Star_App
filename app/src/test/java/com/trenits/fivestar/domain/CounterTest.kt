@@ -87,4 +87,35 @@ class CounterTest {
         assertEquals(5, counterStars(dinner, mapOf(DINNER_HOUR to 19.0, DINNER_MINUTE to 15.0)))
         assertEquals(1, counterStars(dinner, mapOf(DINNER_HOUR to 20.0, DINNER_MINUTE to 30.0)))
     }
+
+    @Test
+    fun `Beziehungstracker berechnet Einzel- und Paar-Score ueber alle 5 Dimensionen`() {
+        assertEquals(5, RelationshipAspect.entries.size)
+        val record = DayRecord(
+            dayKey = "2026-11-02",
+            ownerUid = "rosie",
+            snapshots = emptyList(),
+            counters = mapOf(
+                RELATIONSHIP_COUNTER_KEY to mapOf(
+                    RelationshipAspect.MOOD_GENERAL.key to 4.0,
+                    RelationshipAspect.MOOD_RELATIONSHIP.key to 5.0,
+                    RelationshipAspect.COMMUNICATION.key to 4.0,
+                    RelationshipAspect.INTIMACY.key to 5.0,
+                    RelationshipAspect.SEX.key to 2.0,
+                ),
+            ),
+        )
+        val stars = relationshipStarsOf(record)
+        assertEquals(4, stars[RelationshipAspect.MOOD_GENERAL])
+        assertEquals(5, stars[RelationshipAspect.MOOD_RELATIONSHIP])
+        assertEquals(4, stars[RelationshipAspect.COMMUNICATION])
+        assertEquals(5, stars[RelationshipAspect.INTIMACY])
+        assertEquals(2, stars[RelationshipAspect.SEX])
+        // Summe = 20 von 25 möglichen Sternen -> 80 %
+        assertEquals(80.0, relationshipScorePercent(stars) ?: 0.0, 0.0001)
+
+        val partnerStars = RelationshipAspect.entries.associateWith { 5 }
+        // (80 % + 100 %) / 2 = 90 %
+        assertEquals(90.0, coupleRelationshipScorePercent(stars, partnerStars) ?: 0.0, 0.0001)
+    }
 }

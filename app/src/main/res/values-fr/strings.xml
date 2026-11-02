@@ -26,6 +26,7 @@
     <string name="pairing_join">Rejoindre</string>
 
     <string name="tab_today">Aujourd\'hui</string>
+    <string name="tab_relationship">Couple</string>
     <string name="tab_week">Série / Archives</string>
     <string name="tab_history">Historique</string>
     <string name="tab_settings">Réglages</string>
@@ -213,4 +214,19 @@
     <string name="settings_new_notification">Nouveau message push…</string>
     <string name="settings_add_notification">Ajouter message</string>
     <string name="settings_notifications_count">%1$d message(s) push</string>
+
+    <!-- Suivi de la relation -->
+    <string name="relationship_title">Suivi de la relation</string>
+    <string name="relationship_subtitle">Comment vivez-vous votre relation aujourd\'hui ? Les deux partenaires évaluent de 1 à 5 étoiles.</string>
+    <string name="relationship_score_couple">Score de relation commun</string>
+    <string name="relationship_score_you">Ton évaluation : %1$s</string>
+    <string name="relationship_score_partner">Évaluation du partenaire : %1$s</string>
+    <string name="relationship_partner_stars">Partenaire aujourd\'hui : %1$s</string>
+    <string name="relationship_partner_not_rated">Partenaire : pas encore évalué aujourd\'hui</string>
+    <string name="relationship_history_title">Relation – 7 derniers jours</string>
+    <string name="rel_mood_general">Humeur indépendante de la relation</string>
+    <string name="rel_mood_relationship">Humeur dans la relation</string>
+    <string name="rel_communication">Communication</string>
+    <string name="rel_intimacy">Intimité</string>
+    <string name="rel_sex">Sexe</string>
 </resources>

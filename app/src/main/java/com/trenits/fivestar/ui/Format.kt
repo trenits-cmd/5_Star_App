@@ -13,6 +13,7 @@ import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryIcon
 import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.Period
+import com.trenits.fivestar.domain.RelationshipAspect
 import com.trenits.fivestar.domain.RotationTask
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
@@ -68,6 +69,17 @@ fun rotationTaskLabel(task: RotationTask): String = stringResource(
         RotationTask.TAKE_OUT_TRASH -> R.string.rotation_task_trash
         RotationTask.COOKING -> R.string.rotation_task_cook
         RotationTask.WASH_DISHES -> R.string.rotation_task_dishes
+    },
+)
+
+@Composable
+fun relationshipAspectLabel(aspect: RelationshipAspect): String = stringResource(
+    when (aspect) {
+        RelationshipAspect.MOOD_GENERAL -> R.string.rel_mood_general
+        RelationshipAspect.MOOD_RELATIONSHIP -> R.string.rel_mood_relationship
+        RelationshipAspect.COMMUNICATION -> R.string.rel_communication
+        RelationshipAspect.INTIMACY -> R.string.rel_intimacy
+        RelationshipAspect.SEX -> R.string.rel_sex
     },
 )
 

@@ -26,6 +26,7 @@
     <string name="pairing_join">Beitreten</string>
 
     <string name="tab_today">Heute</string>
+    <string name="tab_relationship">Beziehung</string>
     <string name="tab_week">Woche / Archiv</string>
     <string name="tab_history">Verlauf</string>
     <string name="tab_settings">Einstellungen</string>
@@ -213,4 +214,19 @@
     <string name="settings_new_notification">Neue Push-Nachricht…</string>
     <string name="settings_add_notification">Nachricht +</string>
     <string name="settings_notifications_count">%1$d Push-Nachricht(en)</string>
+
+    <!-- Beziehungstracker -->
+    <string name="relationship_title">Beziehungstracker</string>
+    <string name="relationship_subtitle">Wie fühlt sich eure Beziehung heute an? Beide Partner bewerten mit 1 bis 5 Sternen.</string>
+    <string name="relationship_score_couple">Gemeinsamer Beziehungs-Score</string>
+    <string name="relationship_score_you">Deine Bewertung: %1$s</string>
+    <string name="relationship_score_partner">Partner-Bewertung: %1$s</string>
+    <string name="relationship_partner_stars">Partner heute: %1$s</string>
+    <string name="relationship_partner_not_rated">Partner: heute noch nicht bewertet</string>
+    <string name="relationship_history_title">Beziehung der letzten 7 Tage</string>
+    <string name="rel_mood_general">Stimmung unabhängig von Beziehung</string>
+    <string name="rel_mood_relationship">Stimmung in der Beziehung</string>
+    <string name="rel_communication">Kommunikation</string>
+    <string name="rel_intimacy">Intimität</string>
+    <string name="rel_sex">Sex</string>
 </resources>

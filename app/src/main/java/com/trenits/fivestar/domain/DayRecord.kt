@@ -16,6 +16,8 @@ data class DayRecord(
     val ownerUid: String,
     val snapshots: List<CategorySnapshot>,
     val counters: Counters = emptyMap(),
+    /** Zeitpunkt (Epoch-Millisekunden), zu dem der Tag vollständig bestätigt wurde. Null = noch nicht bestätigt. */
+    val confirmedAt: Long? = null,
 ) {
     val scorePercent: Double
         get() = dayScorePercent(

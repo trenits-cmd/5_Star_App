@@ -2,7 +2,13 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.02112026_1000)
+## Features (v1.02112026_1013)
+
+- **Confirm today (Heute bestätigen):**
+  - A button at the end of the *Today* tab saves and syncs all of today's values.
+  - If something is still missing, the app lists exactly which categories or relationship aspects still need an entry (e.g. *Wasser trinken*, *Sport*, *Sex*).
+  - The day is only marked as confirmed (with time) once everything is filled in.
+  - More values (e.g. another glass of water) can still be added after confirming. Each change is saved and synced immediately; press *Erneut bestätigen* to update the confirmation time.
 
 - **Profile & Names:**
   - Each user chooses their own name (e.g. *Rosie* or *Andi*), used as a variable across all screens, tabs, score cards, target chips, and tasks.
@@ -66,6 +72,7 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.02112026_1000`** – Partner avatar next to partner ratings (Dashboard and Relationship tab), signed-in account shown in Settings to make account mix-ups visible, Rosie's flower reward text updated, full DE/EN/FR translations.
+- **Latest: `v1.02112026_1013`** – "Heute bestätigen" button at the end of the Today tab with a list of still-missing entries, confirmation time stored per day and synced; further values can still be added.
+- `v1.02112026_1000` – Partner avatar next to partner ratings (Dashboard and Relationship tab), signed-in account shown in Settings, Rosie's flower reward text updated.
 - `v1.02112026_0949` – Alcohol benchmark 2.5 L, alternating tasks Ja/Nein (5 ★ / 0 ★), Andi's expanded rewards, Rosie's rewards and penalties, Andi's penalty to Rosie.
 - Previous: `v0.7.0`, `v0.6.1`, `v0.6.0`, `v0.5.1`, `v0.5.0`, `v0.3.1`, `v0.3.0`, `v0.2.0`, `v0.1.0`.

@@ -294,4 +294,11 @@
     <string name="rel_sex">Sexe</string>
     <string name="account_signed_in_as">Connecté en tant que : %1$s</string>
     <string name="relationship_partner_avatar_hint">Retour de %1$s</string>
+    <string name="confirm_today_title">Terminer la journée</string>
+    <string name="confirm_today_button">Confirmer aujourd\'hui</string>
+    <string name="confirm_today_button_again">Confirmer à nouveau</string>
+    <string name="confirm_today_saved">Enregistré et synchronisé.</string>
+    <string name="confirm_today_done">Confirmé à %1$s. Tu peux encore ajouter des valeurs à tout moment.</string>
+    <string name="confirm_today_missing_title">Pas encore renseigné :</string>
+    <string name="confirm_today_missing_hint">Merci de renseigner ces points pour pouvoir confirmer la journée.</string>
 </resources>

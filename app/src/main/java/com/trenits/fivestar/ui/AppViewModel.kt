@@ -41,6 +41,8 @@ import com.trenits.fivestar.domain.buildDayRecord
 import com.trenits.fivestar.domain.consecutiveSuccessDays
 import com.trenits.fivestar.domain.dayKeyOf
 import com.trenits.fivestar.domain.dayOutcomeFor
+import com.trenits.fivestar.domain.missingCategoryIds
+import com.trenits.fivestar.domain.missingRelationshipAspects
 import com.trenits.fivestar.domain.needsPartnerConfirmationReminder
 import com.trenits.fivestar.domain.penaltyCycleStartDayKey
 import com.trenits.fivestar.domain.weekKeyOf
@@ -341,6 +343,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val currentRel = counters[RELATIONSHIP_COUNTER_KEY].orEmpty()
         counters[RELATIONSHIP_COUNTER_KEY] = currentRel + (aspect.key to stars.coerceIn(0, MAX_STARS).toDouble())
         repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters))
+    }
+
+    /**
+     * Speichert und synchronisiert die heutigen Werte. Der Tag gilt nur dann als bestätigt,
+     * wenn alle Kategorien und alle Beziehungs-Dimensionen ausgefüllt sind.
+     * Weitere Werte können auch nach der Bestätigung noch ergänzt werden.
+     */
+    fun confirmToday() {
+        val repo = repo() ?: return
+        val record = myToday.value
+        val stored = record?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = record?.counters.orEmpty()
+        val complete = missingCategoryIds(targeted.value, record).isEmpty() &&
+            missingRelationshipAspects(record).isEmpty()
+        val base = buildDayRecord(todayKey.value, uid, categories.value.items, stored, counters)
+        repo.saveDay(base.copy(confirmedAt = if (complete) System.currentTimeMillis() else null))
     }
 
     /**

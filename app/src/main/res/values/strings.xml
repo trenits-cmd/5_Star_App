@@ -294,4 +294,11 @@
     <string name="rel_sex">Sex</string>
     <string name="account_signed_in_as">Angemeldet als: %1$s</string>
     <string name="relationship_partner_avatar_hint">Rückmeldung von %1$s</string>
+    <string name="confirm_today_title">Heute abschließen</string>
+    <string name="confirm_today_button">Heute bestätigen</string>
+    <string name="confirm_today_button_again">Erneut bestätigen</string>
+    <string name="confirm_today_saved">Gespeichert und synchronisiert.</string>
+    <string name="confirm_today_done">Bestätigt um %1$s Uhr. Du kannst weitere Werte jederzeit ergänzen.</string>
+    <string name="confirm_today_missing_title">Noch nicht ausgefüllt:</string>
+    <string name="confirm_today_missing_hint">Bitte fülle diese Punkte aus, damit der Tag bestätigt werden kann.</string>
 </resources>

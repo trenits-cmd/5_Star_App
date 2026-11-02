@@ -179,6 +179,32 @@ fun coupleRelationshipScorePercent(
     return scores.average()
 }
 
+/**
+ * IDs der Kategorien, für die heute noch kein Wert eingetragen wurde.
+ * Sterne zählen erst ab 1 Stern, Zähler und Auswahlen gelten als eingetragen, sobald ein Wert gespeichert ist.
+ */
+fun missingCategoryIds(categories: List<Category>, record: DayRecord?): List<String> =
+    categories.filter { !it.archived && it.weight > 0 }.filter { cat ->
+        val counters = record?.counters?.get(cat.id).orEmpty()
+        val answered = when (cat.kind) {
+            CategoryKind.STARS -> (record?.snapshots?.firstOrNull { it.categoryId == cat.id }?.stars ?: 0) > 0
+            CategoryKind.ALCOHOL -> counters.containsKey(PINT) || counters.containsKey(DEMI) || counters.containsKey(LITERS)
+            CategoryKind.WATER -> counters.containsKey(GLASSES) || counters.containsKey(LITERS)
+            CategoryKind.ROTATION -> counters.containsKey(ROTATION_STARS)
+            CategoryKind.DINNER_TIME -> counters.containsKey(DINNER_HOUR)
+            CategoryKind.MEALS -> counters.containsKey(MEAL_BREAKFAST) &&
+                counters.containsKey(MEAL_LUNCH) && counters.containsKey(MEAL_DINNER)
+            CategoryKind.READING -> counters.containsKey(PAGES)
+        }
+        !answered
+    }.map { it.id }
+
+/** Beziehungs-Dimensionen, die heute noch nicht bewertet wurden. */
+fun missingRelationshipAspects(record: DayRecord?): List<RelationshipAspect> {
+    val saved = record?.counters?.get(RELATIONSHIP_COUNTER_KEY).orEmpty()
+    return RelationshipAspect.entries.filter { !saved.containsKey(it.key) }
+}
+
 const val PINT_LITERS = 0.5
 const val DEMI_LITERS = 0.25
 const val GLASS_LITERS = 0.25

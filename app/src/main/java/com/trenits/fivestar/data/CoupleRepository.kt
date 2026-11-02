@@ -155,25 +155,31 @@ class CoupleRepository(private val coupleId: String) {
             ownerUid = doc.getString("ownerUid") ?: return@listen null,
             snapshots = snapshots,
             counters = counters,
+            confirmedAt = doc.getLong("confirmedAt"),
         )
     }
 
+    /**
+     * Speichert den Tageseintrag und synchronisiert ihn (Firestore sendet ihn sofort bzw. nach Verbindung).
+     * Mit merge bleibt eine bereits gesetzte Bestätigung erhalten, wenn später weitere Werte ergänzt werden.
+     */
     fun saveDay(record: DayRecord) {
-        couple.collection("days").document("${record.dayKey}_${record.ownerUid}").set(
-            mapOf(
-                "dayKey" to record.dayKey,
-                "ownerUid" to record.ownerUid,
-                "snapshots" to record.snapshots.map {
-                    mapOf(
-                        "categoryId" to it.categoryId,
-                        "name" to it.name,
-                        "weight" to it.weight,
-                        "stars" to it.stars,
-                    )
-                },
-                "counters" to record.counters,
-            ),
+        val data = mutableMapOf<String, Any>(
+            "dayKey" to record.dayKey,
+            "ownerUid" to record.ownerUid,
+            "snapshots" to record.snapshots.map {
+                mapOf(
+                    "categoryId" to it.categoryId,
+                    "name" to it.name,
+                    "weight" to it.weight,
+                    "stars" to it.stars,
+                )
+            },
+            "counters" to record.counters,
         )
+        record.confirmedAt?.let { data["confirmedAt"] = it }
+        couple.collection("days").document("${record.dayKey}_${record.ownerUid}")
+            .set(data, com.google.firebase.firestore.SetOptions.merge())
     }
 
     fun tasks(): Flow<Listed<Task>> = listen(couple.collection("tasks")) { doc ->

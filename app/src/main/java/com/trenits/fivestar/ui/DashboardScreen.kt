@@ -89,7 +89,10 @@ import com.trenits.fivestar.domain.suggestedRotationTask
 import com.trenits.fivestar.domain.waterLiters
 import com.trenits.fivestar.domain.weightSharePercent
 import com.trenits.fivestar.ui.theme.Amber
+import java.time.Instant
 import java.time.LocalDate
+import com.trenits.fivestar.domain.missingCategoryIds
+import com.trenits.fivestar.domain.missingRelationshipAspects
 
 @Composable
 fun DashboardScreen(vm: AppViewModel) {
@@ -293,6 +296,80 @@ fun DashboardScreen(vm: AppViewModel) {
                 myLabel = myLabel,
                 partnerLabel = partnerLabel,
             )
+        }
+
+        item {
+            ConfirmTodayCard(
+                vm = vm,
+                targeted = sortedCategories,
+                myToday = myToday,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConfirmTodayCard(
+    vm: AppViewModel,
+    targeted: List<Category>,
+    myToday: DayRecord?,
+) {
+    val missingCategoryNames = missingCategoryIds(targeted, myToday).mapNotNull { id ->
+        targeted.firstOrNull { it.id == id }?.let { localizedCategoryName(it) }
+    }
+    val missingAspects = missingRelationshipAspects(myToday).map { relationshipAspectLabel(it) }
+    val missing = missingCategoryNames + missingAspects
+    val confirmedAt = myToday?.confirmedAt
+    var justSaved by remember { mutableStateOf(false) }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.confirm_today_title), style = MaterialTheme.typography.titleMedium)
+            if (missing.isEmpty()) {
+                if (confirmedAt != null) {
+                    Text(
+                        stringResource(R.string.confirm_today_done, formatTime(Instant.ofEpochMilli(confirmedAt))),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            } else {
+                Text(
+                    stringResource(R.string.confirm_today_missing_title),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                missing.forEach { name ->
+                    Text("• $name", style = MaterialTheme.typography.bodySmall)
+                }
+                Text(
+                    stringResource(R.string.confirm_today_missing_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (justSaved) {
+                Text(
+                    stringResource(R.string.confirm_today_saved),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Button(
+                onClick = {
+                    vm.confirmToday()
+                    justSaved = true
+                },
+                enabled = !vm.busy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    stringResource(
+                        if (confirmedAt != null) R.string.confirm_today_button_again else R.string.confirm_today_button,
+                    ),
+                )
+            }
         }
     }
 }

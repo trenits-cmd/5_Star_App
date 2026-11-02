@@ -294,4 +294,11 @@
     <string name="rel_sex">Sex</string>
     <string name="account_signed_in_as">Signed in as: %1$s</string>
     <string name="relationship_partner_avatar_hint">Feedback from %1$s</string>
+    <string name="confirm_today_title">Finish today</string>
+    <string name="confirm_today_button">Confirm today</string>
+    <string name="confirm_today_button_again">Confirm again</string>
+    <string name="confirm_today_saved">Saved and synced.</string>
+    <string name="confirm_today_done">Confirmed at %1$s. You can still add more values at any time.</string>
+    <string name="confirm_today_missing_title">Still missing:</string>
+    <string name="confirm_today_missing_hint">Please fill in these items so the day can be confirmed.</string>
 </resources>

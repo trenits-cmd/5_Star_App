@@ -467,7 +467,7 @@ fun SettingsScreen(vm: AppViewModel) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    val myRewards = catalog.value.items.filter { it.type == TaskType.REWARD && it.appliesTo(uid) }
+                    val myRewards = catalog.filter { it.type == TaskType.REWARD && it.appliesTo(vm.uid) }
                     if (myRewards.isEmpty()) {
                         Text(stringResource(R.string.catalog_item_empty_rewards), style = MaterialTheme.typography.bodySmall)
                     } else {
@@ -480,7 +480,7 @@ fun SettingsScreen(vm: AppViewModel) {
                                 Text(item.title, style = MaterialTheme.typography.bodySmall)
                                 Spacer(Modifier.weight(1f))
                                 Text(
-                                    targetLabel(item.targets, uid, partnerUid, myLabel, partnerLabel),
+                                    targetLabel(item.targets, vm.uid, partnerUid, myLabel, partnerLabel),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -494,7 +494,7 @@ fun SettingsScreen(vm: AppViewModel) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    val myPenalties = catalog.value.items.filter { it.type == TaskType.PENALTY && it.appliesTo(uid) }
+                    val myPenalties = catalog.filter { it.type == TaskType.PENALTY && it.appliesTo(vm.uid) }
                     if (myPenalties.isEmpty()) {
                         Text(stringResource(R.string.catalog_item_empty_penalties), style = MaterialTheme.typography.bodySmall)
                     } else {
@@ -507,7 +507,7 @@ fun SettingsScreen(vm: AppViewModel) {
                                 Text(item.title, style = MaterialTheme.typography.bodySmall)
                                 Spacer(Modifier.weight(1f))
                                 Text(
-                                    targetLabel(item.targets, uid, partnerUid, myLabel, partnerLabel),
+                                    targetLabel(item.targets, vm.uid, partnerUid, myLabel, partnerLabel),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

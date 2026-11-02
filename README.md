@@ -1,9 +1,17 @@
 # 5 Star – Daily Synergy & Motivation
 
-Two people (e.g. **Rosie & Andi**) track their daily goals together. Each person rates their own categories on a 5-star scale; the partner sees everything in real time.
+Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a 5-star scale; the partner sees everything in real time.
 
 ## Features (v0.7.0)
 
+- **Relationship Tracker (Beziehungstracker):**
+  - Both partners rate their relationship daily on a 1–5 star scale across **5 dimensions**:
+    1. **Mood independent of relationship** (*Stimmung unabhängig von Beziehung*)
+    2. **Mood within the relationship** (*Stimmung in der Beziehung*)
+    3. **Communication** (*Kommunikation*)
+    4. **Intimacy** (*Intimität*)
+    5. **Sex** (*Sex*)
+  - Available both in its own dedicated **Relationship** tab (with shared couple score, side-by-side partner stars, and 7-day relationship history) and directly on the **Today** tab.
 - **Priority & Weight Concept (1–5):**
   - Categories are sorted by priority and display both their priority tier and their exact **percentage share of the daily score** (`weightSharePercent`):
     - **Weight 5 – Top Priority / Food (`WEIGHT_CRITICAL`):** Eating regularly / Dinner before 20h has the strongest impact on the score.
@@ -39,12 +47,16 @@ Two people (e.g. **Rosie & Andi**) track their daily goals together. Each person
   - Open penalties remain active until the partner explicitly confirms their redemption.
   - Upon confirmation, the task moves to the **Archive** (`Streak / Archive` tab), tracking both the **date of the penalty (`dayKey`)** and the **date of redemption (`redeemedDayKey`)**.
 - **Category Images & Personalized Push Notifications:**
-  - 8 expressive vector illustrations (`FOOD`, `WATER`, `ALCOHOL`, `FITNESS`, `HOME`, `MIND`, `DETOX`, `STAR`).
+  - Expressive vector illustrations (`FOOD`, `WATER`, `ALCOHOL`, `FITNESS`, `HOME`, `MIND`, `DETOX`, `STAR`, plus `cat_relationship`).
   - Each category supports **one or multiple custom push notification messages** (`notifications: List<String>`), sent daily via `WorkManager` (plus an instant test button in Settings).
+- **Dedicated Tabs:**
+  - **Today:** Daily score, own categories with images, counters (Alcohol/Water/Rotation/Dinner time), Relationship Tracker card, partner summary, and open penalties/rewards.
+  - **Relationship:** Dedicated Relationship Tracker tab with shared couple score, 5-star input for all 5 relationship dimensions, live partner comparison, and 7-day trend.
+  - **Streak / Archive:** Current 7-day streak progress, last 7 days overview, and the Archive of confirmed penalties/rewards with penalty date and redemption date.
+  - **Partner:** Dedicated tab for the partner's live overview and open tasks (visible once paired).
+  - **Settings:** Display name, 1-click presets for Rosie & Andi, category management (weight, image, push messages, target person), rewards/penalties catalog, reminder time & push test, sync status, sign out, and the **app version (`0.7.0`) at the very bottom** matching the release.
 - **Full i18n (DE / EN / FR):**
-  - All UI texts, category presets, alternating tasks, and priority tiers are translated into German, English, and French; standard category names translate automatically when switching languages.
-- **App Version in Settings:**
-  - `versionName = "0.7.0"` is displayed as the very last item at the bottom of Settings, matching the GitHub release.
+  - All UI texts, relationship dimensions, category presets, alternating tasks, and priority tiers are translated into German, English, and French; standard category names translate automatically when switching languages.
 
 ## Tech Stack
 
@@ -52,7 +64,7 @@ Two people (e.g. **Rosie & Andi**) track their daily goals together. Each person
 - Firebase Auth (Google + Email/Password) and Cloud Firestore with persistent cache.
 - Firestore security rules (pair membership, partner confirmation with redemption date).
 - WorkManager for personalized per-category push notifications.
-- Pure Kotlin scoring, 7-day streak, rotation, and depleting pool logic, tested with JUnit.
+- Pure Kotlin scoring, relationship index, 7-day streak, rotation, and depleting pool logic, tested with JUnit.
 
 ## Build & Test
 
@@ -62,5 +74,5 @@ Two people (e.g. **Rosie & Andi**) track their daily goals together. Each person
 
 ## Releases
 
-- **Latest: `v0.7.0`** – Priority weight concept (Food = 5), Rosie & Andi categories (Water 2.5 L in glasses + decimal liters, Alcohol 0 L = 5★ with pint/demi/decimal liters, Alternating weekly tasks with Lesson planning 3×/week & household 1×/week, Dinner before 20h entered by Andi & synced to both apps), 7-day streak reward, depleting penalty dropdown, archive with penalty & redemption dates, category images & multi-message push notifications, full DE/EN/FR translations.
+- **Latest: `v0.7.0`** – Relationship Tracker (5 dimensions rated with stars by both partners), Priority weight concept (Food = 5), Rosie & Andi categories (Water 2.5 L, Alcohol 0 L = 5★, Alternating weekly tasks, Dinner before 20h entered by Andi & synced to both apps), 7-day streak reward, depleting penalty dropdown, archive with penalty & redemption dates, category images & multi-message push notifications, full DE/EN/FR translations.
 - Previous: `v0.6.1`, `v0.6.0`, `v0.5.1`, `v0.5.0`, `v0.3.1`, `v0.3.0`, `v0.2.0`, `v0.1.0`.

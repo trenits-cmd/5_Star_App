@@ -1,5 +1,6 @@
 package com.trenits.fivestar.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.Elevation
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,8 +23,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.Category
@@ -98,57 +102,123 @@ private fun DayCard(
     categories: List<Category>,
     showPartner: Boolean,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    var expanded by remember { mutableStateOf(false) }
+
+    val mySnapshots = myScore?.snapshots?.filter { it.weight > 0 } ?: emptyList()
+    val partnerSnapshots = partnerScore?.snapshots?.filter { it.weight > 0 } ?: emptyList()
+    val hasAnyData = mySnapshots.isNotEmpty() || partnerSnapshots.isNotEmpty() || myScore?.counters?.isNotEmpty() == true || partnerScore?.counters?.isNotEmpty() == true || dayTasks.isNotEmpty()
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
+        elevation = if (expanded) Elevation(4.dp) else Elevation(1.dp),
+    ) {
         Column(Modifier.padding(16.dp)) {
-            Text(formatDay(dayKey), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.history_you, myLabel, formatPercent(myScore?.scorePercent)))
-            if (showPartner) {
-                Text(stringResource(R.string.history_partner, partnerLabel, formatPercent(partnerScore?.scorePercent)))
-            }
-            myScore?.snapshots?.takeIf { it.isNotEmpty() }?.let {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    formatDay(dayKey),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.weight(1f))
                 Text(
                     stringResource(
-                        R.string.history_your_categories,
-                        it.joinToString(" · ") { s -> "${s.name} ${s.stars}★" },
+                        if (expanded) R.string.archive_tap_details else R.string.archive_tap_details,
                     ),
                     style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
-            partnerScore?.snapshots?.takeIf { it.isNotEmpty() }?.let {
+
+            if (!expanded) {
+                // Kompakte Übersicht
                 Text(
-                    stringResource(
-                        R.string.history_partner_categories,
-                        it.joinToString(" · ") { s -> "${s.name} ${s.stars}★" },
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
+                    stringResource(R.string.history_you, myLabel, formatPercent(myScore?.scorePercent)),
+                    style = MaterialTheme.typography.bodyMedium,
                 )
-            }
-            myScore?.counters?.forEach { (categoryId, values) ->
-                val category = categories.firstOrNull { it.id == categoryId && it.appliesTo(myUid) }
-                if (category != null) {
-                    CounterSummary(category.name, values)
+                if (showPartner) {
+                    Text(
+                        stringResource(R.string.history_partner, partnerLabel, formatPercent(partnerScore?.scorePercent)),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
-            }
-            partnerScore?.counters?.forEach { (categoryId, values) ->
-                val partner = partnerUid ?: return@forEach
-                val category = categories.firstOrNull { it.id == categoryId && it.appliesTo(partner) }
-                if (category != null) {
-                    CounterSummary(category.name, values)
+                if (!hasAnyData) {
+                    Text(
+                        stringResource(R.string.archive_no_entry),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
-            }
-            dayTasks.forEach { task ->
-                Spacer(Modifier.height(8.dp))
-                val who = stringResource(if (task.ownerUid == myUid) R.string.who_you else R.string.who_partner)
-                val action = task.title.ifEmpty { stringResource(R.string.no_action_chosen) }
+            } else {
+                // Ausgeklappt: alle Details
                 Text(
-                    stringResource(
-                        R.string.history_task_line,
-                        who,
-                        typeLabel(task.type),
-                        action,
-                        statusLabel(task.status),
-                    ),
+                    stringResource(R.string.history_you, myLabel, formatPercent(myScore?.scorePercent)),
+                    style = MaterialTheme.typography.bodyMedium,
                 )
+                if (showPartner) {
+                    Text(
+                        stringResource(R.string.history_partner, partnerLabel, formatPercent(partnerScore?.scorePercent)),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+                if (!hasAnyData) {
+                    Text(
+                        stringResource(R.string.archive_no_entry),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Spacer(Modifier.height(8.dp))
+                    mySnapshots.takeIf { it.isNotEmpty() }?.let { list ->
+                        Text(
+                            stringResource(
+                                R.string.history_your_categories,
+                                list.joinToString(" · ") { s -> "${s.name} ${s.stars}★" },
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    partnerSnapshots.takeIf { it.isNotEmpty() }?.let { list ->
+                        Text(
+                            stringResource(
+                                R.string.history_partner_categories,
+                                list.joinToString(" · ") { s -> "${s.name} ${s.stars}★" },
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    myScore?.counters?.forEach { (categoryId, values) ->
+                        val category = categories.firstOrNull { it.id == categoryId && it.appliesTo(myUid) }
+                        if (category != null) {
+                            CounterSummary(category.name, values)
+                        }
+                    }
+                    partnerScore?.counters?.forEach { (categoryId, values) ->
+                        val partner = partnerUid ?: return@forEach
+                        val category = categories.firstOrNull { it.id == categoryId && it.appliesTo(partner) }
+                        if (category != null) {
+                            CounterSummary(category.name, values)
+                        }
+                    }
+                    dayTasks.forEach { task ->
+                        Spacer(Modifier.height(8.dp))
+                        val who = stringResource(if (task.ownerUid == myUid) R.string.who_you else R.string.who_partner)
+                        val action = task.title.ifEmpty { stringResource(R.string.no_action_chosen) }
+                        Text(
+                            stringResource(
+                                R.string.history_task_line,
+                                who,
+                                typeLabel(task.type),
+                                action,
+                                statusLabel(task.status),
+                            ),
+                        )
+                    }
+                }
             }
         }
     }

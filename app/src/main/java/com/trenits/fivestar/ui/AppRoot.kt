@@ -64,6 +64,8 @@ private fun MainTabs(viewModel: AppViewModel) {
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val partnerUid by viewModel.partnerUid.collectAsState()
+    val myName by viewModel.myName.collectAsState()
+    val myPhoto by viewModel.myPhoto.collectAsState()
     val partnerName by viewModel.partnerName.collectAsState()
     val partnerPhoto by viewModel.partnerPhoto.collectAsState()
 
@@ -85,19 +87,27 @@ private fun MainTabs(viewModel: AppViewModel) {
         bottomBar = {
             NavigationBar {
                 visibleTabs.forEach { item ->
-                    val label = if (item == Tab.PARTNER) {
-                        partnerName ?: stringResource(item.labelRes)
-                    } else {
-                        stringResource(item.labelRes)
+                    val label = when (item) {
+                        Tab.TODAY -> myName ?: stringResource(item.labelRes)
+                        Tab.PARTNER -> partnerName ?: stringResource(item.labelRes)
+                        else -> stringResource(item.labelRes)
                     }
                     NavigationBarItem(
                         selected = tab == item,
                         onClick = { tab = item },
                         icon = {
-                            if (item == Tab.PARTNER && !partnerPhoto.isNullOrBlank()) {
-                                UserAvatar(photoBase64 = partnerPhoto, name = partnerName, size = 24.dp)
-                            } else {
-                                Icon(item.icon, contentDescription = label)
+                            when (item) {
+                                Tab.TODAY -> if (!myPhoto.isNullOrBlank()) {
+                                    UserAvatar(photoBase64 = myPhoto, name = myName, size = 24.dp)
+                                } else {
+                                    Icon(item.icon, contentDescription = label)
+                                }
+                                Tab.PARTNER -> if (!partnerPhoto.isNullOrBlank()) {
+                                    UserAvatar(photoBase64 = partnerPhoto, name = partnerName, size = 24.dp)
+                                } else {
+                                    Icon(item.icon, contentDescription = label)
+                                }
+                                else -> Icon(item.icon, contentDescription = label)
                             }
                         },
                         label = { Text(label) },

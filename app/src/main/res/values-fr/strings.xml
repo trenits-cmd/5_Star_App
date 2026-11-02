@@ -41,6 +41,7 @@
     <string name="tab_history">Historique</string>
     <string name="tab_settings">Réglages</string>
     <string name="tab_partner">Partenaire</string>
+    <string name="tab_me">Moi</string>
 
     <string name="score_yours">Ton score</string>
     <string name="score_for_name">Bilan du jour (%1$s)</string>
@@ -240,6 +241,7 @@
     <string name="rotation_task_dishes">Faire la vaisselle (1×/semaine)</string>
     <string name="rotation_yes">Oui (5 ★)</string>
     <string name="rotation_no">Non (0 ★)</string>
+    <string name="rotation_not_set">Aucune tâche alternée choisie</string>
 
     <!-- Dîner avant 20h -->
     <string name="dinner_rules_hint">Avant 20h00 = 5 ★ · Avant 21h00 = 1 ★ · Sinon = 0 ★</string>
@@ -247,9 +249,9 @@
     <string name="dinner_time_not_set">Aucune heure de dîner enregistrée aujourd\'hui</string>
     <string name="dinner_pick_time">Saisir l\'heure (Andi)</string>
     <string name="dinner_tracked_by_andi">L\'heure est saisie par Andi et suivie dans les deux applications.</string>
-    <string name="dinner_quick_before_20">Avant 20h (19:30)</string>
-    <string name="dinner_quick_before_21">Avant 21h (20:30)</string>
-    <string name="dinner_quick_after_21">Dès 21h (21:15)</string>
+    <string name="dinner_quick_before_20">Avant 20h</string>
+    <string name="dinner_quick_before_21">Avant 21h</string>
+    <string name="dinner_quick_after_21">Dès 21h</string>
 
     <!-- Noms des catégories modèles traduisibles -->
     <string name="cat_preset_water">Boire de l\'eau</string>

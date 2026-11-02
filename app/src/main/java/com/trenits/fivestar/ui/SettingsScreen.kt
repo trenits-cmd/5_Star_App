@@ -49,6 +49,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import com.trenits.fivestar.BuildConfig
 import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.CatalogItem
@@ -135,6 +137,15 @@ fun SettingsScreen(vm: AppViewModel) {
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(stringResource(R.string.profile_photo_title), style = MaterialTheme.typography.titleMedium)
+                    val account = Firebase.auth.currentUser
+                    Text(
+                        stringResource(
+                            R.string.account_signed_in_as,
+                            account?.email ?: account?.uid?.take(8).orEmpty(),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     Row(
                         Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,

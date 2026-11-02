@@ -180,6 +180,7 @@ fun DashboardScreen(vm: AppViewModel) {
                 partnerRecord = partnerToday,
                 myLabel = myLabel,
                 partnerLabel = partnerLabel,
+                partnerPhoto = partnerPhoto,
                 hasPartner = partnerUid != null,
             )
         }
@@ -417,6 +418,7 @@ private fun RelationshipMoodBanner(
     partnerRecord: DayRecord?,
     myLabel: String,
     partnerLabel: String,
+    partnerPhoto: String?,
     hasPartner: Boolean,
 ) {
     val myStars = relationshipStarsOf(myRecord)
@@ -462,11 +464,15 @@ private fun RelationshipMoodBanner(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (hasPartner) {
-                    Text(
-                        stringResource(R.string.relationship_score_partner, partnerLabel, formatPercent(partnerScore)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        UserAvatar(photoBase64 = partnerPhoto, name = partnerLabel, size = 20.dp)
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            stringResource(R.string.relationship_score_partner, partnerLabel, formatPercent(partnerScore)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }

@@ -165,7 +165,7 @@
 
     <!-- Rosie & Andi Rewards and Penalties -->
     <string name="seed_reward_1">Vinted Budget: Rosie gets 10 € from Andi</string>
-    <string name="seed_reward_2">Flowers</string>
+    <string name="seed_reward_2">Flowers: Rosie receives flowers from Andi</string>
     <string name="seed_reward_3">Massage for 30 minutes</string>
     <string name="seed_reward_4">Eat out: choose the restaurant</string>
     <string name="seed_reward_5">Cooking of choice: a dish Rosie loves, prepared by Andi</string>
@@ -292,4 +292,6 @@
     <string name="rel_communication">Communication</string>
     <string name="rel_intimacy">Intimacy</string>
     <string name="rel_sex">Sex</string>
+    <string name="account_signed_in_as">Signed in as: %1$s</string>
+    <string name="relationship_partner_avatar_hint">Feedback from %1$s</string>
 </resources>

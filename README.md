@@ -2,11 +2,12 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.02112026_0949)
+## Features (v1.02112026_1000)
 
 - **Profile & Names:**
   - Each user chooses their own name (e.g. *Rosie* or *Andi*), used as a variable across all screens, tabs, score cards, target chips, and tasks.
   - Each user can upload a **profile photo** from the gallery (cropped & scaled to a 128×128 avatar, synced via Firestore), shown as icon in headers, partner cards, and the Partner tab.
+  - Each person must use **their own account**. Settings shows the signed-in account (*Angemeldet als …*) so that two phones signed in with the same account can be spotted.
 - **Invite Partner via Email & Remove Partner for Testing:**
   - Invite the partner by **email** (creates an invitation code and opens the mail app with a pre-filled message).
   - Remove/unpair the partner at any time in Settings (*Remove partner / Unpair (Test)*).
@@ -39,6 +40,7 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
   - **3 hours** after a selected action, the partner gets the push *„Rosie wartet auf deine Bestätigung!“* (or the respective name).
   - **48 hours** without confirmation → automatic confirmation into the archive.
 - **Relationship Tracker:**
+  - The partner's rating is shown next to their profile photo on the Dashboard and the Relationship tab.
   - Both partners rate each of the five aspects with 0–5 stars: *mood independent of relationship*, *mood within the relationship*, *communication*, *intimacy*, *sex*. Each aspect has the same weight.
 - **Push Notifications:**
   - Global and per-category switches (`Switch`).
@@ -64,5 +66,6 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.02112026_0949`** – Alcohol benchmark 2.5 L, alternating tasks Ja/Nein (5 ★ / 0 ★), Andi's expanded rewards (edging, blowjob, handjob, video, favourite dish), Rosie's rewards and penalties, Andi's penalty to Rosie, full DE/EN/FR translations.
-- Previous: `v0.7.0` (features as listed above, earlier revision), `v0.6.1`, `v0.6.0`, `v0.5.1`, `v0.5.0`, `v0.3.1`, `v0.3.0`, `v0.2.0`, `v0.1.0`.
+- **Latest: `v1.02112026_1000`** – Partner avatar next to partner ratings (Dashboard and Relationship tab), signed-in account shown in Settings to make account mix-ups visible, Rosie's flower reward text updated, full DE/EN/FR translations.
+- `v1.02112026_0949` – Alcohol benchmark 2.5 L, alternating tasks Ja/Nein (5 ★ / 0 ★), Andi's expanded rewards, Rosie's rewards and penalties, Andi's penalty to Rosie.
+- Previous: `v0.7.0`, `v0.6.1`, `v0.6.0`, `v0.5.1`, `v0.5.0`, `v0.3.1`, `v0.3.0`, `v0.2.0`, `v0.1.0`.

@@ -151,6 +151,7 @@ fun RelationshipScreen(vm: AppViewModel) {
                 myValue = myStars[aspect] ?: 0,
                 partnerValue = partnerStars[aspect] ?: 0,
                 partnerLabel = partnerLabel,
+                partnerPhoto = partnerPhoto,
                 showPartner = partnerUid != null,
                 onRate = { stars -> vm.setRelationshipStars(aspect, stars) },
             )
@@ -212,6 +213,7 @@ fun RelationshipTodaySection(vm: AppViewModel) {
     val partnerToday by vm.partnerToday.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
     val partnerName by vm.partnerName.collectAsState()
+    val partnerPhoto by vm.partnerPhoto.collectAsState()
 
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
     val myStars = relationshipStarsOf(myToday)
@@ -268,19 +270,23 @@ fun RelationshipTodaySection(vm: AppViewModel) {
                                 fontWeight = FontWeight.Medium,
                             )
                             if (partnerUid != null) {
-                                Text(
-                                    if (pVal > 0) {
-                                        stringResource(
-                                            R.string.relationship_partner_stars,
-                                            partnerLabel,
-                                            "★".repeat(pVal) + "☆".repeat(MAX_STARS - pVal),
-                                        )
-                                    } else {
-                                        stringResource(R.string.relationship_partner_not_rated, partnerLabel)
-                                    },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    UserAvatar(photoBase64 = partnerPhoto, name = partnerLabel, size = 20.dp)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        if (pVal > 0) {
+                                            stringResource(
+                                                R.string.relationship_partner_stars,
+                                                partnerLabel,
+                                                "★".repeat(pVal) + "☆".repeat(MAX_STARS - pVal),
+                                            )
+                                        } else {
+                                            stringResource(R.string.relationship_partner_not_rated, partnerLabel)
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                         RelationshipStarRow(value = myVal) { vm.setRelationshipStars(aspect, it) }
@@ -297,6 +303,7 @@ private fun RelationshipAspectCard(
     myValue: Int,
     partnerValue: Int,
     partnerLabel: String,
+    partnerPhoto: String?,
     showPartner: Boolean,
     onRate: (Int) -> Unit,
 ) {
@@ -318,19 +325,23 @@ private fun RelationshipAspectCard(
                     style = MaterialTheme.typography.titleMedium,
                 )
                 if (showPartner) {
-                    Text(
-                        if (partnerValue > 0) {
-                            stringResource(
-                                R.string.relationship_partner_stars,
-                                partnerLabel,
-                                "★".repeat(partnerValue) + "☆".repeat(MAX_STARS - partnerValue),
-                            )
-                        } else {
-                            stringResource(R.string.relationship_partner_not_rated, partnerLabel)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (partnerValue > 0) Amber else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        UserAvatar(photoBase64 = partnerPhoto, name = partnerLabel, size = 20.dp)
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            if (partnerValue > 0) {
+                                stringResource(
+                                    R.string.relationship_partner_stars,
+                                    partnerLabel,
+                                    "★".repeat(partnerValue) + "☆".repeat(MAX_STARS - partnerValue),
+                                )
+                            } else {
+                                stringResource(R.string.relationship_partner_not_rated, partnerLabel)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (partnerValue > 0) Amber else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
             RelationshipStarRow(value = myValue, onChange = onRate)

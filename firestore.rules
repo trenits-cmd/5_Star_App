@@ -21,15 +21,33 @@ service cloud.firestore {
       allow write: if signedIn() && request.auth.uid == uid;
     }
 
-    // Einladungscodes: Einlösen durch Partner, Erstellen nur für Paar-Mitglieder.
+    // Einladungen: open -> requested (Partner fordert an) -> confirmed | declined (Einlader entscheidet).
     match /invites/{code} {
-      // Der Partner ist beim Einlösen noch kein Mitglied, daher reicht „angemeldet“.
       allow read: if signedIn();
       allow create: if signedIn()
         && isMember(request.resource.data.coupleId)
-        && request.resource.data.createdBy == request.auth.uid;
-      allow delete: if isMember(resource.data.coupleId);
-      allow update: if false;
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'open';
+
+      // Partner fordert an. Ist eine E-Mail hinterlegt, muss sie mit der angemeldeten übereinstimmen.
+      allow update: if signedIn()
+        && (
+          (resource.data.status == 'open'
+            && request.resource.data.status == 'requested'
+            && request.resource.data.requestedBy == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'requestedBy', 'requestedEmail'])
+            && (resource.data.get('invitedEmail', '') == ''
+              || resource.data.invitedEmail.lower() == request.auth.token.email.lower()))
+          ||
+          (isMember(resource.data.coupleId)
+            && resource.data.status == 'requested'
+            && request.resource.data.status in ['confirmed', 'declined']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+        );
+
+      // Einlader räumt auf, oder der Partner zieht seine Anfrage zurück bzw. schließt sie nach Bestätigung ab.
+      allow delete: if isMember(resource.data.coupleId)
+        || resource.data.get('requestedBy', '') == request.auth.uid;
     }
 
     match /couples/{coupleId} {

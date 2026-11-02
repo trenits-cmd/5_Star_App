@@ -11,6 +11,7 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.R
 import com.trenits.fivestar.data.CoupleRepository
+import com.trenits.fivestar.data.InviteState
 import com.trenits.fivestar.data.InvalidInviteException
 import com.trenits.fivestar.data.Listed
 import com.trenits.fivestar.data.LocalProfileStore
@@ -130,6 +131,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     val partnerPhoto: StateFlow<String?> = localProfileStore.partnerPhotoBase64.share(null)
 
+    /** Einladung, bei der ich als Partner um Beitritt gebeten habe (wartet auf Bestätigung). */
+    val pendingInviteCode: StateFlow<String?> = profile.map { it?.pendingInviteCode }.distinctUntilChanged().share(null)
+
+    /** Anfrage eines Partners zu meiner aktiven Einladung; null, wenn keine offen ist. */
+    val incomingRequest: StateFlow<InviteState?> = profile.map { it?.activeInviteCode }.distinctUntilChanged()
+        .flatMapLatest { code -> if (code == null) flowOf(null) else userRepository.inviteFlow(code) }
+        .share(null)
+
     /** Katalogeinträge, die ich selbst angelegt habe. */
     val myCatalog: StateFlow<List<CatalogItem>> = catalog
         .map { list -> list.items.filter { it.ownerUid == uid } }
@@ -238,6 +247,26 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 evaluateYesterday()
                 evaluateStreakReward()
                 checkConfirmationRemindersAndAutoConfirm()
+            }
+        }
+        viewModelScope.launch {
+            pendingInviteCode.flatMapLatest { code ->
+                if (code == null) flowOf(null) else userRepository.inviteFlow(code).map { code to it }
+            }.collect { pair ->
+                val (code, invite) = pair ?: return@collect
+                try {
+                    when {
+                        invite?.status == "confirmed" -> userRepository.finishJoin(invite)
+                        invite == null || invite.status == "declined" -> {
+                            if (invite != null) error = text(R.string.invite_declined)
+                            userRepository.cancelJoin(code)
+                        }
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    error = text(R.string.error_generic)
+                }
             }
         }
         viewModelScope.launch {
@@ -652,7 +681,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun invitePartnerByEmail(email: String, onCodeReady: (String) -> Unit) = action {
         val coupleId = profile.value?.coupleId ?: userRepository.createCouple()
-        val code = inviteCode ?: userRepository.createInvite(coupleId, email)
+        val code = userRepository.createInvite(coupleId, email)
         inviteCode = code
         onCodeReady(code)
     }
@@ -662,7 +691,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         inviteCode = null
     }
 
-    fun redeemInvite(code: String) = action { userRepository.redeemInvite(code) }
+    fun requestJoin(code: String) = action {
+        userRepository.requestJoin(code, Firebase.auth.currentUser?.email.orEmpty())
+    }
+
+    fun confirmIncomingRequest() = action {
+        incomingRequest.value?.let { userRepository.confirmRequest(it) }
+    }
+
+    fun declineIncomingRequest() = action {
+        incomingRequest.value?.let { userRepository.declineRequest(it) }
+    }
+
+    fun cancelPendingRequest() = action {
+        pendingInviteCode.value?.let { userRepository.cancelJoin(it) }
+    }
 
     fun syncNow() = action {
         val db = Firebase.firestore

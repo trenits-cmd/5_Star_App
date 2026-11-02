@@ -13,6 +13,7 @@ import com.trenits.fivestar.R
 import com.trenits.fivestar.data.CoupleRepository
 import com.trenits.fivestar.data.InvalidInviteException
 import com.trenits.fivestar.data.Listed
+import com.trenits.fivestar.data.LocalProfileStore
 import com.trenits.fivestar.data.UserProfile
 import com.trenits.fivestar.data.UserRepository
 import com.trenits.fivestar.domain.CatalogItem
@@ -86,6 +87,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val uid: String = Firebase.auth.currentUser?.uid.orEmpty()
     private val zone = ZoneId.systemDefault()
     private val userRepository = UserRepository(uid)
+    private val localProfileStore = LocalProfileStore(getApplication())
     private val clock = MutableStateFlow(Instant.now())
 
     val profile: StateFlow<UserProfile?> = userRepository.profile().share(null)
@@ -117,18 +119,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val myName: StateFlow<String?> = if (uid.isEmpty()) {
         flowOf(null).share(null)
     } else {
-        userRepository.nameOf(uid).share(null)
+        localProfileStore.displayName.share(null)
     }
 
-    val myPhoto: StateFlow<String?> = profile.map { it?.photoBase64 }.share(null)
+    val myPhoto: StateFlow<String?> = localProfileStore.photoBase64.share(null)
 
-    val partnerName: StateFlow<String?> = partnerUid
-        .flatMapLatest { id -> if (id == null) flowOf(null) else userRepository.nameOf(id) }
-        .share(null)
+    val partnerName: StateFlow<String?> = localProfileStore.partnerDisplayName.share(null)
 
-    val partnerPhoto: StateFlow<String?> = partnerUid
-        .flatMapLatest { id -> if (id == null) flowOf(null) else userRepository.photoOf(id) }
-        .share(null)
+    val partnerPhoto: StateFlow<String?> = localProfileStore.partnerPhotoBase64.share(null)
 
     /** Katalogeinträge, die ich selbst angelegt habe. */
     val myCatalog: StateFlow<List<CatalogItem>> = catalog
@@ -405,7 +403,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * - Strafen: kein Orgasmus, keine Bar
      */
     fun applyRosiePreset() {
-        userRepository.setDisplayName("Rosie")
+        localProfileStore.saveDisplayName("Rosie")
+        localProfileStore.savePartnerDisplayName("Andi")
         val repo = repo() ?: return
         val bothTargets = listOfNotNull(uid, partnerUid.value).distinct()
         val myTargets = listOf(uid)
@@ -502,7 +501,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * - Strafe: Cooking
      */
     fun applyAndiPreset() {
-        userRepository.setDisplayName("Andi")
+        localProfileStore.saveDisplayName("Andi")
+        localProfileStore.savePartnerDisplayName("Rosie")
         val repo = repo() ?: return
         val bothTargets = listOfNotNull(uid, partnerUid.value).distinct()
         val myTargets = listOf(uid)
@@ -610,11 +610,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun saveDisplayName(name: String) {
-        userRepository.setDisplayName(name)
+        localProfileStore.saveDisplayName(name)
     }
 
     fun savePhoto(base64: String?) {
-        userRepository.setPhotoBase64(base64)
+        localProfileStore.savePhotoBase64(base64)
     }
 
     fun archiveCategory(id: String) {

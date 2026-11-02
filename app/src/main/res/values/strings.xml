@@ -41,6 +41,7 @@
     <string name="tab_history">Verlauf</string>
     <string name="tab_settings">Einstellungen</string>
     <string name="tab_partner">Partner</string>
+    <string name="tab_me">Ich</string>
 
     <string name="score_yours">Dein Score</string>
     <string name="score_for_name">Tagesstand (%1$s)</string>
@@ -240,6 +241,7 @@
     <string name="rotation_task_dishes">Geschirr spülen (1×/Woche)</string>
     <string name="rotation_yes">Ja (5 ★)</string>
     <string name="rotation_no">Nein (0 ★)</string>
+    <string name="rotation_not_set">Noch keine Wechsel-Aufgabe gewählt</string>
 
     <!-- Abendessen vor 20h -->
     <string name="dinner_rules_hint">Vor 20:00 Uhr = 5 ★ · Vor 21:00 Uhr = 1 ★ · Sonst = 0 ★</string>
@@ -247,9 +249,9 @@
     <string name="dinner_time_not_set">Heute noch keine Abendessen-Uhrzeit eingetragen</string>
     <string name="dinner_pick_time">Uhrzeit eingeben (Andi)</string>
     <string name="dinner_tracked_by_andi">Die Uhrzeit wird von Andi eingegeben und in beiden Apps getrackt.</string>
-    <string name="dinner_quick_before_20">Vor 20h (19:30)</string>
-    <string name="dinner_quick_before_21">Vor 21h (20:30)</string>
-    <string name="dinner_quick_after_21">Ab 21h (21:15)</string>
+    <string name="dinner_quick_before_20">Vor 20h</string>
+    <string name="dinner_quick_before_21">Vor 21h</string>
+    <string name="dinner_quick_after_21">Ab 21h</string>
 
     <!-- Übersetzbare Standard-Kategorienamen -->
     <string name="cat_preset_water">Wasser trinken</string>

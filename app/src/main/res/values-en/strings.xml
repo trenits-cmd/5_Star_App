@@ -41,6 +41,7 @@
     <string name="tab_history">History</string>
     <string name="tab_settings">Settings</string>
     <string name="tab_partner">Partner</string>
+    <string name="tab_me">Me</string>
 
     <string name="score_yours">Your score</string>
     <string name="score_for_name">Daily Status (%1$s)</string>
@@ -240,6 +241,7 @@
     <string name="rotation_task_dishes">Wash dishes (1×/week)</string>
     <string name="rotation_yes">Yes (5 ★)</string>
     <string name="rotation_no">No (0 ★)</string>
+    <string name="rotation_not_set">No alternating task chosen yet</string>
 
     <!-- Dinner before 20h -->
     <string name="dinner_rules_hint">Before 20:00 = 5 ★ · Before 21:00 = 1 ★ · Otherwise = 0 ★</string>
@@ -247,9 +249,9 @@
     <string name="dinner_time_not_set">No dinner time recorded for today yet</string>
     <string name="dinner_pick_time">Enter time (Andi)</string>
     <string name="dinner_tracked_by_andi">Time is entered by Andi and tracked in both apps.</string>
-    <string name="dinner_quick_before_20">Before 20h (19:30)</string>
-    <string name="dinner_quick_before_21">Before 21h (20:30)</string>
-    <string name="dinner_quick_after_21">21h+ (21:15)</string>
+    <string name="dinner_quick_before_20">Before 20h</string>
+    <string name="dinner_quick_before_21">Before 21h</string>
+    <string name="dinner_quick_after_21">21h+</string>
 
     <!-- Translatable preset category names -->
     <string name="cat_preset_water">Drink water</string>

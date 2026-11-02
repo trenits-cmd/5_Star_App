@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -147,6 +148,71 @@ fun localizedCategoryName(category: Category): String {
             stringResource(R.string.cat_preset_reading)
         else -> category.name
     }
+}
+
+@Composable
+fun localizedCategorySnapshotName(rawName: String): String {
+    val trimmed = rawName.trim()
+    return when {
+        trimmed in setOf("Wasser trinken", "Drink water", "Boire de l'eau") ->
+            stringResource(R.string.cat_preset_water)
+        trimmed in setOf("Alkohol-Grenze", "Alkohol Grenze", "Alcohol limit", "Limite d'alcool") ->
+            stringResource(R.string.cat_preset_alcohol)
+        trimmed.startsWith("Wechsel-Aufgaben") ||
+            trimmed.startsWith("Weitere Aufgaben") ||
+            trimmed.startsWith("Alternating tasks") ||
+            trimmed.startsWith("Other tasks") ||
+            trimmed.startsWith("Tâches alternées") ||
+            trimmed.startsWith("Autres tâches") ->
+            stringResource(R.string.cat_preset_rotation)
+        trimmed in setOf("Abendessen vor 20h", "Dinner before 20h", "Dîner avant 20h") ->
+            stringResource(R.string.cat_preset_dinner)
+        trimmed in setOf("Essen", "Regelmäßig essen", "Meals", "Eat regularly", "Repas", "Manger régulièrement") ->
+            stringResource(R.string.cat_preset_food)
+        trimmed in setOf("Sport", "Fitness") ->
+            stringResource(R.string.cat_preset_sport)
+        trimmed in setOf("Lesen", "Reading", "Lecture") ->
+            stringResource(R.string.cat_preset_reading)
+        else -> rawName
+    }
+}
+
+fun translateCatalogTitle(context: Context, rawTitle: String): String {
+    val trimmed = rawTitle.trim()
+    val lower = trimmed.lowercase()
+    return when {
+        lower.startsWith("vinted budget") || lower.startsWith("budget vinted") ->
+            context.getString(R.string.seed_reward_1)
+        lower.startsWith("blumen:") || lower.startsWith("flowers:") || lower.startsWith("fleurs") ->
+            context.getString(R.string.seed_reward_2)
+        lower == "massage für 30 minuten" || lower == "massage (20 min)" ||
+            lower == "massage for 30 minutes" || lower.startsWith("massage de 30") ->
+            context.getString(R.string.seed_reward_3)
+        lower.startsWith("essen gehen") || lower.startsWith("eat out:") || lower.startsWith("sortie au restaurant") ->
+            context.getString(R.string.seed_reward_4)
+        lower.startsWith("gemeinsames kochen") || lower.startsWith("cooking of choice:") || lower.startsWith("cuisine au choix") ->
+            context.getString(R.string.seed_reward_5)
+        lower.startsWith("kuscheln") || lower.startsWith("cuddling for 30") || lower.startsWith("câlins") ->
+            context.getString(R.string.seed_reward_andi_1)
+        lower.startsWith("lieblingsgericht") || lower == "lieblingsessen" ||
+            lower.startsWith("favourite dish:") || lower.startsWith("plat préféré") ->
+            context.getString(R.string.seed_reward_andi_7)
+        lower.startsWith("kein orgasmus") || lower.startsWith("no orgasm") || lower.startsWith("pas d'orgasme") ->
+            context.getString(R.string.seed_penalty_1)
+        lower.startsWith("keine bar") || lower.startsWith("no bar") || lower.startsWith("pas de bar") ->
+            context.getString(R.string.seed_penalty_2)
+        lower.contains("an andi abgeben") || lower.contains("to andi for 1 hour") || lower.contains("à andi pendant") ->
+            context.getString(R.string.seed_penalty_3)
+        lower.contains("an rosie abgeben") || lower.contains("to rosie for 1 hour") || lower.contains("à rosie pendant") ->
+            context.getString(R.string.seed_penalty_andi_1)
+        else -> trimmed
+    }
+}
+
+@Composable
+fun localizedCatalogTitle(rawTitle: String): String {
+    val context = LocalContext.current
+    return translateCatalogTitle(context, rawTitle)
 }
 
 fun periodLabelRes(period: Period): Int = when (period) {

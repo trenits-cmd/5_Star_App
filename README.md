@@ -2,23 +2,23 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.02112026_1600)
+## Features (v1.02112026_2240)
 
 - **Confirm today:**
   - A button at the end of the *Today* tab saves and syncs all of today's values.
   - If something is still missing, the app lists exactly which categories or relationship aspects still need an entry (e.g. *Drink water*, *Sport*, *Sex*).
   - The day is only marked as confirmed (with time) once everything is filled in.
   - More values can still be added after confirming. Each change is saved and synced immediately; press *Confirm again* to update the confirmation time.
-  - A short confirmation toast appears after every saved entry.
+  - A short confirmation toast appears after every saved entry and whenever *Save* is clicked across the app.
 
 - **Profile & Partner Name:**
-  - Each user chooses their own name (e.g. *Rosie* or *Andi*), used as a variable across all screens, tabs, score cards, target chips, and tasks.
+  - Each user chooses their own name (e.g. *Rosie* or *Andi*), used as a variable across all screens, tabs, score cards, target chips, and tasks, and automatically syncs the matching profile categories, rewards, and penalties.
   - Each user can choose their partner's name in Settings, displayed as a variable everywhere (partner cards, scores, tasks).
   - Each user can upload a **profile photo** from the gallery (cropped & scaled to a 128×128 avatar, synced via Firestore), shown as icon in headers, partner cards, and the Partner tab.
   - Each person must use **their own account**. Settings shows the signed-in account (*Signed in as …*) so that two phones signed in with the same account can be spotted.
 
-- **Invite Partner via Email & Remove Partner for Testing:**
-  - Invite the partner by **email** (creates an invitation code and opens the mail app with a pre-filled message).
+- **Invite Partner via Email & In-App Confirmation:**
+  - Invite the partner by **email** (sends only the invitation code; the invitee enters the code in the app to request joining, and the inviter confirms the partner with a button press in the app).
   - Remove/unpair the partner at any time in Settings (*Remove partner / Unpair (Test)*).
 
 - **Daily scoring & 0 stars for missing days:**
@@ -32,13 +32,17 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
   - **Relationship Mood:** the 5 relationship aspects are rated 0–5 stars, weighted equally, and the daily mood is shown separately on the Dashboard.
 
 - **Categories, Weights & Scoring:**
-  - Each category has a weight (1–5) that flows into the daily and weekly target. Food is weighted highest.
-  - **Rosie:** ... (unchanged)
-  - **Andi:** ... (unchanged)
+  - Each category has a weight (1–5) that flows into the daily and weekly target.
+  - **Rosie:** Drink water (3×, min. 2.5 L in glasses or decimal liters), Alcohol limit (2×, 0 L = 5 ★, 2.5 L benchmark, Demi 0.25 L / Pint 0.5 L + decimal L), Other tasks / alternating (1×: Tidy up apartment, Take out trash, Wash dishes, Cook meal, Plan lessons – Yes = 5 ★, No = 0 ★), Dinner before 20h (3×: <20h = 5 ★, <21h = 1 ★, else 0 ★; entered by Andi & tracked in both apps), Meals (3×: breakfast, lunch, dinner – nothing/little/medium/healthy; all healthy = 5 ★).
+  - **Andi:** Sport (3×), Drink water (2×, min. 2.5 L), Reading (2×: 0–5 pages = 0 ★, >50 pages = 5 ★, 6–50 proportional), Dinner before 20h (3×, time entered by Andi).
   - **Dinner before 20h:** time options are shown without brackets (e.g. "Before 20h", "Before 21h", "21h+").
   - Each category has a meaningful illustrated icon (food, water, alcohol, fitness, home, mind, detox, stars, relationship, reading).
 
 - **Rewards & Penalties (managed in Partner tab):**
+  - **Rosie Rewards:** Vinted Budget (10 € from Andi), Flowers (from Andi), Massage for 30 minutes, Eat out (choose restaurant), Cooking of choice (prepared by Andi).
+  - **Rosie Penalties:** No orgasm (sex happens, but Rosie has no orgasm), No bar for two days, Phone handover (1h to Andi).
+  - **Andi Rewards:** Cuddling for 30 minutes, Massage for 30 minutes, Edging, Blowjob, Handjob, Video, Favourite dish (Rosie cooks Andi's favourite meal).
+  - **Andi Penalty:** Phone handover (1h to Rosie).
   - Rewards and penalties are shown in Settings as a **read-only overview** (cannot be created, edited, or deleted in Settings).
   - Penalties are chosen from a dropdown; a chosen penalty disappears until all penalties have been used. The pool resets every Sunday evening after the weekly review.
   - Penalty redemption must be confirmed by the partner before moving to the Archive. Tracked with **penalty date** (`dayKey`) and **redemption date** (`redeemedDayKey`).
@@ -58,11 +62,11 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
   - Personalised messages per category; the reminder push includes the category name.
 
 - **Settings (restricted):**
-  - Profile photo & name, partner name, partner invite/remove, presets (Rosie & Andi), push notifications & reminder, quiet hours, sync & sign out, **app version (last item, matches release)**.
+  - Profile photo & name, partner name, partner invite/remove, push notifications & reminder, quiet hours, read-only rewards & penalties overview, sync & sign out, **app version (last item, matches release)**.
+  - Quick Start preset switching buttons removed from Settings (categories, rewards & penalties sync automatically by profile name).
   - No category creation/editing/deletion. No rewards/penalties management.
-  - Only category assignment (you / partner / both) and push reminder time can be changed.
 
-- **English only:** all UI text is in English.
+- **English only:** all UI text, push notifications, categories, rewards, and penalties are in English.
 
 ## Tech Stack
 
@@ -79,7 +83,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.02112026_1600`** – Partner name chooseable by user & shown as variable; 0 stars for missing day; entries until 6:00 AM; daily reminder push at configurable time (default 22:00) with category name; "No entry available" in archive; expandable archive days; save confirmation toast; dinner time options without brackets; Settings: read-only rewards/penalties overview, no category CRUD, only push time changeable; app version as last Settings item matching release.
+- **Latest: `v1.02112026_2240`** – Quick Start preset buttons removed from Settings; automatic role-based sync & cleanup of categories, rewards, and penalties for Rosie & Andi (fixing cross-assigned tasks/rewards/penalties and duplicate dinner category); all remaining German push notifications and legacy catalog/snapshot titles translated to English; confirmation toast shown on every Save button click across all tabs; partner invite via code email & in-app button confirmation by inviter.
+- `v1.02112026_1600` – Partner name chooseable by user & shown as variable; 0 stars for missing day; entries until 6:00 AM; daily reminder push at configurable time (default 22:00) with category name; "No entry available" in archive; expandable archive days; save confirmation toast; dinner time options without brackets; Settings: read-only rewards/penalties overview, no category CRUD, only push time changeable; app version as last Settings item matching release.
 - `v1.02112026_1500` – English only, 2 partner-named tabs ([Rosie] [Andi] [Woche] [Einstellungen]), relationship tracker in partner tab (read-only + 7-day history), Settings restricted (no category CRUD, no rewards/penalties), reminder default 22:00, deadline 06:00 (skipped = 0 stars).
 - `v1.02112026_1013` – "Heute bestätigen" button at the end of the Today tab with a list of still-missing entries, confirmation time stored per day and synced; further values can still be added.
 - `v1.02112026_1000` – Partner avatar next to partner ratings (Dashboard and Relationship tab), signed-in account shown in Settings, Rosie's flower reward text updated.

@@ -75,7 +75,7 @@ import java.time.ZonedDateTime
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val starterCatalog = listOf(
+    private val rosieStarterCatalog = listOf(
         R.string.seed_reward_1 to TaskType.REWARD,
         R.string.seed_reward_2 to TaskType.REWARD,
         R.string.seed_reward_3 to TaskType.REWARD,
@@ -84,6 +84,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         R.string.seed_penalty_1 to TaskType.PENALTY,
         R.string.seed_penalty_2 to TaskType.PENALTY,
         R.string.seed_penalty_3 to TaskType.PENALTY,
+    )
+
+    private val andiStarterCatalog = listOf(
+        R.string.seed_reward_andi_1 to TaskType.REWARD,
+        R.string.seed_reward_andi_2 to TaskType.REWARD,
+        R.string.seed_reward_andi_3 to TaskType.REWARD,
+        R.string.seed_reward_andi_4 to TaskType.REWARD,
+        R.string.seed_reward_andi_5 to TaskType.REWARD,
+        R.string.seed_reward_andi_6 to TaskType.REWARD,
+        R.string.seed_reward_andi_7 to TaskType.REWARD,
         R.string.seed_penalty_andi_1 to TaskType.PENALTY,
     )
 
@@ -139,10 +149,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         .flatMapLatest { code -> if (code == null) flowOf(null) else userRepository.inviteFlow(code) }
         .share(null)
 
-    /** Katalogeinträge, die ich selbst angelegt habe. */
-    val myCatalog: StateFlow<List<CatalogItem>> = catalog
-        .map { list -> list.items.filter { it.ownerUid == uid } }
-        .share(emptyList())
+    /** Katalogeinträge, die ich selbst angelegt habe (passend zu meiner Rolle). */
+    val myCatalog: StateFlow<List<CatalogItem>> = combine(catalog, myName) { list, localName ->
+        val isAndi = localName?.trim()?.equals("Andi", ignoreCase = true) == true
+        val isRosie = localName?.trim()?.equals("Rosie", ignoreCase = true) == true
+        list.items.filter { item ->
+            item.ownerUid == uid && when {
+                isAndi -> !item.id.startsWith("rosie_")
+                isRosie -> !item.id.startsWith("andi_")
+                else -> true
+            }
+        }
+    }.share(emptyList())
 
     val myToday: StateFlow<DayRecord?> = combine(days, todayKey) { list, key ->
         list.items.firstOrNull { it.ownerUid == uid && it.dayKey == key }
@@ -232,16 +250,49 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             days.collect { if (!it.fromCache) lastSync.value = Instant.now() }
         }
         viewModelScope.launch {
-            var seeded = false
-            profile.collect { p ->
+            var lastSyncedRole: String? = null
+            combine(profile, myName, categories, catalog) { p, localName, cats, catItems ->
+                Triple(p, localName, cats to catItems)
+            }.collect { (p, localName, pair) ->
                 val coupleId = p?.coupleId ?: return@collect
-                if (p.catalogSeeded || seeded) return@collect
-                seeded = true
-                val repo = CoupleRepository(coupleId)
-                starterCatalog.forEach { (res, type) ->
-                    repo.saveCatalogItem(CatalogItem("", uid, type, text(res), listOf(uid)))
+                val (cats, catItems) = pair
+                val effectiveName = localName?.trim()?.takeIf { it.isNotEmpty() }
+                    ?: p.displayName?.trim()?.takeIf { it.isNotEmpty() }
+                val role = when {
+                    effectiveName?.equals("Rosie", ignoreCase = true) == true -> "rosie"
+                    effectiveName?.equals("Andi", ignoreCase = true) == true -> "andi"
+                    cats.items.any { it.id == "preset_meals_$uid" && !it.archived } -> "rosie"
+                    cats.items.any { it.id == "preset_sport_$uid" && !it.archived } -> "andi"
+                    else -> null
+                } ?: return@collect
+
+                val expectedCatIds = if (role == "rosie") rosieCategoryIds() else andiCategoryIds()
+                val expectedCatalogIds = if (role == "rosie") rosieCatalogIds() else andiCatalogIds()
+                val hasForeignCats = cats.items.any {
+                    (it.ownerUid == uid && !it.archived && it.id !in expectedCatIds) ||
+                        (it.ownerUid == uid && it.targets != listOf(uid))
                 }
-                userRepository.markCatalogSeeded()
+                val hasMissingCats = expectedCatIds.any { expectedId ->
+                    cats.items.none { it.id == expectedId && !it.archived }
+                }
+                val hasForeignCatalog = catItems.items.any {
+                    it.ownerUid == uid && it.id !in expectedCatalogIds
+                }
+                val hasMissingCatalog = expectedCatalogIds.any { expectedId ->
+                    catItems.items.none { it.id == expectedId }
+                }
+
+                if (lastSyncedRole != role || hasForeignCats || hasMissingCats || hasForeignCatalog || hasMissingCatalog) {
+                    lastSyncedRole = role
+                    if (role == "rosie") {
+                        applyRosiePreset()
+                    } else {
+                        applyAndiPreset()
+                    }
+                    if (!p.catalogSeeded) {
+                        userRepository.markCatalogSeeded()
+                    }
+                }
             }
         }
         viewModelScope.launch {
@@ -288,14 +339,29 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * Für Strafen wird der Pool jeden Sonntagabend nach der Wochenbilanz zurückgesetzt.
      */
     fun availableChoicesFor(task: Task): Pair<List<String>, Int> {
+        val ownerIsAndi = when {
+            task.ownerUid == uid && myName.value?.trim()?.equals("Andi", ignoreCase = true) == true -> true
+            task.ownerUid != uid && partnerName.value?.trim()?.equals("Andi", ignoreCase = true) == true -> true
+            categories.value.items.any { it.id == "preset_sport_${task.ownerUid}" && !it.archived } -> true
+            else -> false
+        }
+        val expectedCatalogPrefix = if (ownerIsAndi) "andi_" else "rosie_"
+        val fallbackStarter = if (ownerIsAndi) andiStarterCatalog else rosieStarterCatalog
+
         val poolFromCatalog = catalog.value.items
-            .filter { it.type == task.type && it.appliesTo(task.ownerUid) }
-            .map { it.title.trim() }
+            .filter {
+                it.type == task.type &&
+                    it.appliesTo(task.ownerUid) &&
+                    (it.id.startsWith(expectedCatalogPrefix) || (!it.id.startsWith("rosie_") && !it.id.startsWith("andi_")))
+            }
+            .map { translateCatalogTitle(getApplication(), it.title) }
             .filter { it.isNotEmpty() }
             .distinct()
 
-        val pool = poolFromCatalog.ifEmpty {
-            starterCatalog
+        val pool = if (poolFromCatalog.isNotEmpty() && catalog.value.items.any { it.id.startsWith(expectedCatalogPrefix) }) {
+            poolFromCatalog
+        } else {
+            fallbackStarter
                 .filter { (_, t) -> t == task.type }
                 .map { (res, _) -> text(res) }
         }
@@ -315,7 +381,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     (cycleStartKey.isEmpty() || it.dayKey >= cycleStartKey)
             }
             .sortedWith(compareBy<Task> { it.dayKey }.thenBy { it.createdAt })
-            .map { it.title }
+            .map { translateCatalogTitle(getApplication(), it.title) }
 
         return availablePoolOptions(pool, usedChronological) to pool.size
     }
@@ -443,12 +509,45 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * - Belohnungen: Vinted Budget (10 € von Andi), Blumen, Massage für 30 Minuten, Essen gehen
      * - Strafen: kein Orgasmus, keine Bar
      */
+    private fun rosieCategoryIds(): Set<String> = setOf(
+        "preset_meals_$uid",
+        "preset_dinner_$uid",
+        "preset_water_$uid",
+        "preset_alcohol_$uid",
+        "preset_rotation_$uid",
+    )
+
+    private fun andiCategoryIds(): Set<String> = setOf(
+        "preset_sport_$uid",
+        "preset_water_$uid",
+        "preset_reading_$uid",
+        "preset_dinner_$uid",
+    )
+
+    private fun rosieCatalogIds(): Set<String> =
+        (0..4).map { "rosie_reward_${it}_$uid" }.toSet() +
+            (0..2).map { "rosie_penalty_${it}_$uid" }.toSet()
+
+    private fun andiCatalogIds(): Set<String> =
+        (0..6).map { "andi_reward_${it}_$uid" }.toSet() +
+            setOf("andi_penalty_0_$uid")
+
     fun applyRosiePreset() {
-        localProfileStore.saveDisplayName("Rosie")
-        localProfileStore.savePartnerDisplayName("Andi")
+        if (myName.value.isNullOrBlank()) {
+            localProfileStore.saveDisplayName("Rosie")
+            userRepository.setDisplayName("Rosie")
+        }
+        if (partnerName.value.isNullOrBlank()) {
+            localProfileStore.savePartnerDisplayName("Andi")
+        }
         val repo = repo() ?: return
-        val bothTargets = listOfNotNull(uid, partnerUid.value).distinct()
         val myTargets = listOf(uid)
+        val allowedCategories = rosieCategoryIds()
+        val allowedCatalog = rosieCatalogIds()
+
+        categories.value.items
+            .filter { it.ownerUid == uid && !it.archived && it.id !in allowedCategories }
+            .forEach { repo.archiveCategory(it.id) }
 
         repo.saveCategory(
             ownerUid = uid,
@@ -458,7 +557,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             targets = myTargets,
             goal = 0.0,
             icon = CategoryIcon.FOOD.name,
-            notifications = listOf("Frühstück, Mittagessen & Abendessen gesund eintragen 🥗"),
+            notifications = listOf("Log healthy breakfast, lunch & dinner 🥗"),
             id = "preset_meals_$uid",
         )
         repo.saveCategory(
@@ -466,7 +565,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             name = text(R.string.cat_preset_dinner),
             weight = 3,
             kind = CategoryKind.DINNER_TIME,
-            targets = bothTargets,
+            targets = myTargets,
             goal = 20.0,
             icon = CategoryIcon.FOOD.name,
             notifications = listOf("Dinner before 20:00 = 5 stars 🍽️"),
@@ -496,7 +595,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             targets = myTargets,
             goal = DEFAULT_ALCOHOL_LIMIT,
             icon = CategoryIcon.ALCOHOL.name,
-            notifications = listOf("0 Liter alcohol = 5 stars ⭐"),
+            notifications = listOf("0 liters of alcohol = 5 stars ⭐"),
             id = "preset_alcohol_$uid",
         )
         repo.saveCategory(
@@ -507,11 +606,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             targets = myTargets,
             goal = 0.0,
             icon = CategoryIcon.HOME.name,
-            notifications = listOf("Heutige Wechsel-Aufgabe auswählen (Unterricht / Haushalt) 🏠"),
+            notifications = listOf("Select today's alternating task (lessons / household) 🏠"),
             id = "preset_rotation_$uid",
         )
 
-        // Rosie Belohnungen & Strafen
         val rosieRewards = listOf(
             text(R.string.seed_reward_1),
             text(R.string.seed_reward_2),
@@ -530,6 +628,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         rosiePenalties.forEachIndexed { idx, title ->
             repo.saveCatalogItem(CatalogItem("rosie_penalty_${idx}_$uid", uid, TaskType.PENALTY, title, myTargets))
         }
+
+        catalog.value.items
+            .filter { it.ownerUid == uid && it.id !in allowedCatalog }
+            .forEach { repo.deleteCatalogItem(it.id) }
     }
 
     /**
@@ -538,15 +640,25 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * - Wasser trinken (2-fache Wertung, mind. 2,5 L)
      * - Lesen (2-fache Wertung, Seitenanzahl: 0–5 = 0 ★, > 50 = 5 ★)
      * - Abendessen vor 20h (3-fache Wertung, Andi gibt die Uhrzeit ein)
-     * - Belohnungen: Kuscheln für 30 Minuten, Massage für 30 Minuten
-     * - Strafe: Cooking
+     * - Belohnungen: Kuscheln, Massage, Edging, Blowjob, Handjob, Video, Lieblingsgericht
+     * - Strafe: Handy-Abgabe an Rosie
      */
     fun applyAndiPreset() {
-        localProfileStore.saveDisplayName("Andi")
-        localProfileStore.savePartnerDisplayName("Rosie")
+        if (myName.value.isNullOrBlank()) {
+            localProfileStore.saveDisplayName("Andi")
+            userRepository.setDisplayName("Andi")
+        }
+        if (partnerName.value.isNullOrBlank()) {
+            localProfileStore.savePartnerDisplayName("Rosie")
+        }
         val repo = repo() ?: return
-        val bothTargets = listOfNotNull(uid, partnerUid.value).distinct()
         val myTargets = listOf(uid)
+        val allowedCategories = andiCategoryIds()
+        val allowedCatalog = andiCatalogIds()
+
+        categories.value.items
+            .filter { it.ownerUid == uid && !it.archived && it.id !in allowedCategories }
+            .forEach { repo.archiveCategory(it.id) }
 
         repo.saveCategory(
             ownerUid = uid,
@@ -583,7 +695,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             targets = myTargets,
             goal = 50.0,
             icon = CategoryIcon.MIND.name,
-            notifications = listOf("Heute noch ein paar Seiten lesen 📖"),
+            notifications = listOf("Read a few more pages today 📖"),
             id = "preset_reading_$uid",
         )
         repo.saveCategory(
@@ -591,7 +703,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             name = text(R.string.cat_preset_dinner),
             weight = 3,
             kind = CategoryKind.DINNER_TIME,
-            targets = bothTargets,
+            targets = myTargets,
             goal = 20.0,
             icon = CategoryIcon.FOOD.name,
             notifications = listOf("Enter dinner time (before 20h = 5 ★) 🍽️"),
@@ -613,6 +725,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         repo.saveCatalogItem(
             CatalogItem("andi_penalty_0_$uid", uid, TaskType.PENALTY, text(R.string.seed_penalty_andi_1), myTargets),
         )
+
+        catalog.value.items
+            .filter { it.ownerUid == uid && it.id !in allowedCatalog }
+            .forEach { repo.deleteCatalogItem(it.id) }
     }
 
     fun saveCategory(
@@ -644,6 +760,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             pushMinute = pushMinute.coerceIn(0, 59),
             id = id,
         )
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     fun setCategoryPushEnabled(id: String, enabled: Boolean) {
@@ -651,15 +768,25 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun saveDisplayName(name: String) {
-        localProfileStore.saveDisplayName(name)
+        val trimmed = name.trim()
+        localProfileStore.saveDisplayName(trimmed)
+        userRepository.setDisplayName(trimmed)
+        when {
+            trimmed.equals("Rosie", ignoreCase = true) -> applyRosiePreset()
+            trimmed.equals("Andi", ignoreCase = true) -> applyAndiPreset()
+        }
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     fun savePartnerDisplayName(name: String) {
         localProfileStore.savePartnerDisplayName(name.trim())
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     fun savePhoto(base64: String?) {
         localProfileStore.savePhotoBase64(base64)
+        userRepository.setPhotoBase64(base64)
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     fun archiveCategory(id: String) {
@@ -668,6 +795,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveCatalogItem(type: TaskType, title: String, targets: List<String> = listOf(uid), id: String = "") {
         repo()?.saveCatalogItem(CatalogItem(id, uid, type, title.trim(), targets))
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     fun deleteCatalogItem(id: String) {
@@ -676,6 +804,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun chooseTaskTitle(taskId: String, title: String) {
         repo()?.setTaskTitle(taskId, title)
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     /** Partner bestätigt die Einlösung; hält das heutige Datum als Tag der Einlösung fest. */

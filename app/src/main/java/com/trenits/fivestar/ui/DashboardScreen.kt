@@ -120,15 +120,6 @@ fun DashboardScreen(vm: AppViewModel) {
     val streak by vm.weekSuccessfulDays.collectAsState()
     val weekRewardUnlocked by vm.weekRewardUnlocked.collectAsState()
 
-    // Toast-Bestätigung nach erfolgreichem Speichern
-    val toast by vm.toastMessage.collectAsState()
-    val context = LocalContext.current
-    LaunchedEffect(toast) {
-        if (toast != null) {
-            Toast.makeText(context, toast, Toast.LENGTH_SHORT).show()
-        }
-    }
-
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 
@@ -1480,11 +1471,11 @@ private fun TaskCard(
                         }
                     }
                 }
-                isMine -> Text(stringResource(R.string.task_waiting_confirm, task.title, partnerLabel))
+                isMine -> Text(stringResource(R.string.task_waiting_confirm, localizedCatalogTitle(task.title), partnerLabel))
                 task.title.isEmpty() -> Text(stringResource(R.string.task_partner_chooses, partnerLabel))
                 else -> {
                     Text(
-                        stringResource(R.string.task_partner_label, task.title),
+                        stringResource(R.string.task_partner_label, localizedCatalogTitle(task.title)),
                         fontWeight = FontWeight.Medium,
                     )
                     Spacer(Modifier.height(8.dp))

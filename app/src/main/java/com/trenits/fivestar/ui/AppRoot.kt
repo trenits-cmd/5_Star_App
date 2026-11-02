@@ -3,6 +3,7 @@ package com.trenits.fivestar.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -73,6 +74,15 @@ private fun MainTabs(viewModel: AppViewModel) {
     val myPhoto by viewModel.myPhoto.collectAsState()
     val partnerName by viewModel.partnerName.collectAsState()
     val partnerPhoto by viewModel.partnerPhoto.collectAsState()
+    val toast by viewModel.toastMessage.collectAsState()
+
+    LaunchedEffect(toast) {
+        val msg = toast
+        if (msg != null) {
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            viewModel.toastMessage.value = null
+        }
+    }
 
     LaunchedEffect(Unit) {
         ReminderScheduler.schedule(context, ReminderPrefs(context).time())

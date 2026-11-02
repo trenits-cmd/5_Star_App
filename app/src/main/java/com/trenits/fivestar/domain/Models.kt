@@ -88,7 +88,8 @@ data class Category(
     val pushMinute: Int = 0,
 ) {
     /** Gilt die Kategorie für diese Person? */
-    fun appliesTo(uid: String): Boolean = !archived && uid in targets
+    fun appliesTo(uid: String): Boolean =
+        !archived && (if (id.startsWith("preset_")) ownerUid == uid else uid in targets)
 
     /** Liefert das gewählte Bild oder erkennt automatisch ein passendes Bild anhand von Art und Name. */
     fun resolvedIcon(): CategoryIcon {

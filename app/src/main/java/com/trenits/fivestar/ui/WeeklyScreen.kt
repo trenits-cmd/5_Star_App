@@ -99,7 +99,7 @@ fun WeeklyScreen(vm: AppViewModel) {
                     if (weekRewardUnlocked && reward != null && reward.title.isNotBlank()) {
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            reward.title,
+                            localizedCatalogTitle(reward.title),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -210,7 +210,7 @@ private fun ArchivedTaskCard(
     partnerLabel: String,
 ) {
     val who = if (task.ownerUid == myUid) myLabel else partnerLabel
-    val action = task.title.ifEmpty { stringResource(R.string.no_action_chosen) }
+    val action = if (task.title.isEmpty()) stringResource(R.string.no_action_chosen) else localizedCatalogTitle(task.title)
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Row(

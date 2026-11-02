@@ -172,19 +172,21 @@ private fun DayCard(
                 } else {
                     Spacer(Modifier.height(8.dp))
                     mySnapshots.takeIf { it.isNotEmpty() }?.let { list ->
+                        val itemsText = list.map { s -> "${localizedCategorySnapshotName(s.name)} ${s.stars}★" }.joinToString(" · ")
                         Text(
                             stringResource(
                                 R.string.history_your_categories,
-                                list.joinToString(" · ") { s -> "${s.name} ${s.stars}★" },
+                                itemsText,
                             ),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
                     partnerSnapshots.takeIf { it.isNotEmpty() }?.let { list ->
+                        val itemsText = list.map { s -> "${localizedCategorySnapshotName(s.name)} ${s.stars}★" }.joinToString(" · ")
                         Text(
                             stringResource(
                                 R.string.history_partner_categories,
-                                list.joinToString(" · ") { s -> "${s.name} ${s.stars}★" },
+                                itemsText,
                             ),
                             style = MaterialTheme.typography.bodySmall,
                         )
@@ -192,20 +194,20 @@ private fun DayCard(
                     myScore?.counters?.forEach { (categoryId, values) ->
                         val category = categories.firstOrNull { it.id == categoryId && it.appliesTo(myUid) }
                         if (category != null) {
-                            CounterSummary(category.name, values)
+                            CounterSummary(localizedCategoryName(category), values)
                         }
                     }
                     partnerScore?.counters?.forEach { (categoryId, values) ->
                         val partner = partnerUid ?: return@forEach
                         val category = categories.firstOrNull { it.id == categoryId && it.appliesTo(partner) }
                         if (category != null) {
-                            CounterSummary(category.name, values)
+                            CounterSummary(localizedCategoryName(category), values)
                         }
                     }
                     dayTasks.forEach { task ->
                         Spacer(Modifier.height(8.dp))
-                        val who = stringResource(if (task.ownerUid == myUid) R.string.who_you else R.string.who_partner)
-                        val action = task.title.ifEmpty { stringResource(R.string.no_action_chosen) }
+                        val who = if (task.ownerUid == myUid) myLabel else partnerLabel
+                        val action = if (task.title.isEmpty()) stringResource(R.string.no_action_chosen) else localizedCatalogTitle(task.title)
                         Text(
                             stringResource(
                                 R.string.history_task_line,

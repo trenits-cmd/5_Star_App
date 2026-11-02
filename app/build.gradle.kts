@@ -13,8 +13,8 @@ android {
         applicationId = "com.trenits.fivestar"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10
-        versionName = "1.02112026_1600"
+        versionCode = 11
+        versionName = "1.02112026_2240"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

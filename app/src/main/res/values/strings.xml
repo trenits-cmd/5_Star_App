@@ -18,11 +18,19 @@
     <string name="pairing_create_code">Create invitation code</string>
     <string name="pairing_or">or enter your partner\'s code</string>
     <string name="pairing_code_label">Invitation code</string>
-    <string name="pairing_join">Join</string>
+    <string name="pairing_join">Send request</string>
     <string name="invite_email_label">Partner\'s email address</string>
     <string name="invite_send_email">Invite partner via email</string>
     <string name="invite_email_subject">Invitation to 5 Star App</string>
-    <string name="invite_email_body">Hi! Connect with me in the 5 Star App. My invitation code is: %1$s</string>
+    <string name="invite_email_body">Hi! Connect with me in the 5 Star App: open the app, enter this invitation code and send a connection request. I will confirm it. Code: %1$s</string>
+    <string name="invite_request_title">Connection request</string>
+    <string name="invite_request_body">%1$s wants to connect with you. Confirm only if this is your partner.</string>
+    <string name="invite_confirm">Confirm</string>
+    <string name="invite_decline">Decline</string>
+    <string name="invite_waiting_title">Waiting for confirmation</string>
+    <string name="invite_waiting_body">Your request was sent. Your partner has to confirm it in their app.</string>
+    <string name="invite_cancel">Cancel request</string>
+    <string name="invite_declined">Your partner declined the connection request.</string>
     <string name="partner_remove_button">Remove partner / Unpair (Test)</string>
     <string name="partner_remove_hint">Disconnects the current partner for testing purposes so you can invite again.</string>
 

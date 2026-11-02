@@ -109,6 +109,7 @@ fun DashboardScreen(vm: AppViewModel) {
     val partnerToday by vm.partnerToday.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
     val members by vm.members.collectAsState()
+    val incomingRequest by vm.incomingRequest.collectAsState()
     val days by vm.days.collectAsState()
     val tasks by vm.tasks.collectAsState()
     val catalog by vm.catalog.collectAsState()
@@ -154,6 +155,10 @@ fun DashboardScreen(vm: AppViewModel) {
                     }
                 }
             }
+        }
+
+        incomingRequest?.takeIf { it.status == "requested" && partnerUid == null }?.let { request ->
+            item { IncomingRequestCard(vm, request.requestedEmail.orEmpty()) }
         }
 
         if (!members.fromCache && partnerUid == null) {
@@ -639,6 +644,36 @@ private fun RelationshipMoodBanner(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun IncomingRequestCard(vm: AppViewModel, requestedEmail: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text(stringResource(R.string.invite_request_title), style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(R.string.invite_request_body, requestedEmail.ifBlank { "?" }),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = { vm.confirmIncomingRequest() },
+                    enabled = !vm.busy,
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.invite_confirm)) }
+                OutlinedButton(
+                    onClick = { vm.declineIncomingRequest() },
+                    enabled = !vm.busy,
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.invite_decline)) }
             }
         }
     }

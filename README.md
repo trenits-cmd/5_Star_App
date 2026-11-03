@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.03112026_1948)
+## Features (v1.03112026_2049)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.03112026_1948`** – Date simulator (test only) is now available on both devices (main_user and partner); each device keeps its own offset.
+- **Latest: `v1.03112026_2049`** – Daily status of the main_user shows a countdown to 00:00 (hh:mm:ss). Colour warning: below 70 % red, 70–99 % yellow, 100 % green, each with a motivating message.
+- `v1.03112026_1948` – Date simulator (test only) is now available on both devices (main_user and partner); each device keeps its own offset.
 - `v1.03112026_1943` – **Penalties & rewards:** only the partner confirms (the owner chooses the option and sees "waiting for …"). The 3 h reminder and the 48 h auto-confirm now start when the option is chosen (`selectedAt`, fallback: creation). After 48 h without confirmation the penalty counts as fulfilled. **Statistics:** groups Overall / Categories / Relationship / Penalties / Rewards, sub-filter per category, relationship aspect or penalty/reward title, person filter (me / partner / both), totals (weighted stars, stars, counts) and a detail list below the chart.
 - `v1.03112026_1900` – **Date simulator (test only):** On the Today tab of the `main_user`, the current date is shown as `dd.mm.yyyy` with a **−/+** control that shifts the app's date by whole days (`TEST +N d`). All app time (day keys, 06:00 rule, penalties, 3 h/48 h rules, statistics, background worker) uses `AppClock`. The offset is stored per device. Remove the control before the final release.
 - `v1.03112026_1853` – Roles instead of names: the inviter is **`main_user`** (category template of the former Andi set: sport, water, reading), the invited person is **`partner`** (former Rosie set: water, dinner, meals, alcohol, alternating tasks). Stored per user as `users/{uid}.presetRole`. Existing users keep their current role (one-time migration from the old name rules). Names are only taken from Settings.

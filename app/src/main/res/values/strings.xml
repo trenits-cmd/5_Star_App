@@ -95,6 +95,10 @@
     <string name="score_for_name">Daily Status (%1$s)</string>
     <string name="status_daily_title">Daily Status (Target: 80%%)</string>
     <string name="status_daily_ok">Daily goal reached (≥ 80%%) ✓</string>
+    <string name="countdown_label">Time left today</string>
+    <string name="countdown_behind">Below 70 %. There is still time to turn the day around. Every entry counts!</string>
+    <string name="countdown_almost">Almost there. A little more and you reach 100 %!</string>
+    <string name="countdown_perfect">Perfect day. Everything is at 100 %!</string>
     <string name="status_daily_below">Below 80%% – missing the target triggers a daily penalty</string>
     <string name="status_weekly_title">Weekly Status (7-Day Streak)</string>
     <string name="status_weekly_progress">%1$d / %2$d consecutive days ≥ 80%%</string>

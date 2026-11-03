@@ -56,6 +56,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trenits.fivestar.R
+import java.time.ZoneId
+import java.time.Duration
+import kotlinx.coroutines.delay
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.produceState
+import androidx.compose.foundation.background
 import com.trenits.fivestar.data.AppClock
 import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
@@ -222,6 +228,7 @@ fun DashboardScreen(vm: AppViewModel) {
             ScoreHero(
                 score = myScore,
                 title = stringResource(R.string.score_for_name, myLabel),
+                showCountdown = myPresetRole == "main_user",
             )
         }
 
@@ -607,7 +614,7 @@ private fun CategoryWeightSubtitle(weight: Int, sharePercent: Int) {
 }
 
 @Composable
-private fun ScoreHero(score: Double?, title: String) {
+private fun ScoreHero(score: Double?, title: String, showCountdown: Boolean = false) {
     val effectiveScore = score ?: 0.0
     val progress = (effectiveScore / 100.0).toFloat().coerceIn(0f, 1f)
     val reached = effectiveScore >= THRESHOLD_PERCENT
@@ -641,6 +648,9 @@ private fun ScoreHero(score: Double?, title: String) {
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onPrimary,
             )
+            if (showCountdown) {
+                DayCountdown(effectiveScore)
+            }
         }
     }
 }
@@ -2039,5 +2049,75 @@ internal fun TaskCard(
                 }
             }
         }
+    }
+}
+
+private val StatusRed = Color(0xFFC62828)
+private val StatusYellow = Color(0xFFF9A825)
+private val StatusGreen = Color(0xFF2E7D32)
+
+/** Sekunden bis 0 Uhr (nächste Mitternacht in der Gerätezeitzone), basierend auf der App-Uhr. */
+private fun secondsUntilMidnight(): Long {
+    val zone = ZoneId.systemDefault()
+    val now = AppClock.now().atZone(zone)
+    val midnight = now.toLocalDate().plusDays(1).atStartOfDay(zone)
+    return Duration.between(now, midnight).seconds.coerceAtLeast(0)
+}
+
+private fun formatCountdown(total: Long): String =
+    "%02d:%02d:%02d".format(total / 3600, (total % 3600) / 60, total % 60)
+
+/** Countdown bis 0 Uhr mit Warnfarbe je nach Tagesstand: unter 70 % rot, 70–99 % gelb, 100 % grün. */
+@Composable
+private fun DayCountdown(score: Double) {
+    val seconds by produceState(initialValue = secondsUntilMidnight()) {
+        while (true) {
+            value = secondsUntilMidnight()
+            delay(1000)
+        }
+    }
+    val background: Color
+    val content: Color
+    val message: String
+    when {
+        score >= 100.0 -> {
+            background = StatusGreen
+            content = Color.White
+            message = stringResource(R.string.countdown_perfect)
+        }
+        score >= 70.0 -> {
+            background = StatusYellow
+            content = Color.Black
+            message = stringResource(R.string.countdown_almost)
+        }
+        else -> {
+            background = StatusRed
+            content = Color.White
+            message = stringResource(R.string.countdown_behind)
+        }
+    }
+    Spacer(Modifier.height(12.dp))
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
+            .background(background)
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(stringResource(R.string.countdown_label), style = MaterialTheme.typography.bodySmall, color = content)
+            Text(
+                formatCountdown(seconds),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = content,
+            )
+        }
+        Text(message, style = MaterialTheme.typography.bodySmall, color = content)
     }
 }

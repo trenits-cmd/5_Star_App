@@ -86,6 +86,7 @@ private fun MainTabs(viewModel: AppViewModel) {
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val partnerUid by viewModel.partnerUid.collectAsState()
+    val myPresetRole by viewModel.myPresetRole.collectAsState()
     val myName by viewModel.myName.collectAsState()
     val myPhoto by viewModel.myPhoto.collectAsState()
     val partnerName by viewModel.partnerName.collectAsState()
@@ -113,10 +114,12 @@ private fun MainTabs(viewModel: AppViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "5 Star", style = MaterialTheme.typography.titleMedium) },
+                title = { Text(text = "5 Star App", style = MaterialTheme.typography.titleMedium) },
                 actions = {
-                    IconButton(onClick = { viewModel.signOut() }) {
-                        Icon(Icons.Filled.ExitToApp, contentDescription = stringResource(R.string.settings_sign_out))
+                    if (!(tab == Tab.TODAY && myPresetRole == "main_user")) {
+                        IconButton(onClick = { viewModel.signOut() }) {
+                            Icon(Icons.Filled.ExitToApp, contentDescription = stringResource(R.string.settings_sign_out))
+                        }
                     }
                 },
             )

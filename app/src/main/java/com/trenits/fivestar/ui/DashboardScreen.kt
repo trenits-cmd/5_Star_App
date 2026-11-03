@@ -60,6 +60,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trenits.fivestar.R
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
 import kotlin.math.roundToInt
 import androidx.compose.foundation.shape.CircleShape
 import java.util.Locale
@@ -358,6 +364,14 @@ fun DashboardScreen(vm: AppViewModel) {
             }
         }
 
+        item {
+            WaitingForConfirmationCard(
+                myUid = vm.uid,
+                partnerLabel = partnerLabel,
+                openTasks = openTasks,
+                dinner = activeDinnerConfirmation,
+            )
+        }
         item { SectionTitle(stringResource(R.string.section_open_tasks)) }
         val hasPenaltyForActiveDay = tasks.items.any {
             it.ownerUid == vm.uid && it.dayKey == activeDayKey && it.type == TaskType.PENALTY
@@ -1824,6 +1838,8 @@ private fun PartnerCard(
 
 @Composable
 fun PartnerTodayScreen(vm: AppViewModel) {
+    val hintText = stringResource(R.string.readonly_hint)
+    val hintContext = LocalContext.current
     val myName by vm.myName.collectAsState()
     val partnerName by vm.partnerName.collectAsState()
     val partnerPhoto by vm.partnerPhoto.collectAsState()
@@ -1887,7 +1903,7 @@ fun PartnerTodayScreen(vm: AppViewModel) {
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().readOnlyHint { Toast.makeText(hintContext, hintText, Toast.LENGTH_SHORT).show() },
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -1928,13 +1944,7 @@ fun PartnerTodayScreen(vm: AppViewModel) {
         if (partnerOpenTasks.isNotEmpty()) {
             item { SectionTitle(stringResource(R.string.section_open_tasks)) }
             items(partnerOpenTasks, key = { it.id }) { task ->
-                TaskCard(
-                    vm = vm,
-                    task = task,
-                    partnerUid = partnerUid,
-                    myLabel = myLabel,
-                    partnerLabel = partnerLabel,
-                )
+                ReadOnlyTaskSummary(task = task, who = if (task.ownerUid == vm.uid) myLabel else partnerLabel)
             }
         }
         item {
@@ -2258,5 +2268,86 @@ private fun DayCountdown(score: Double) {
             )
         }
         Text(message, style = MaterialTheme.typography.bodySmall, color = content)
+    }
+}
+
+/** Tipp auf eine Stelle ohne Aktion: zeigt den Hinweis "nur Ansicht". Blockiert keine Eingaben. */
+private fun Modifier.readOnlyHint(onTap: () -> Unit): Modifier = pointerInput(Unit) {
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        val up = waitForUpOrCancellation(pass = PointerEventPass.Initial)
+        if (up != null && (up.position - down.position).getDistance() < 24f) onTap()
+    }
+}
+
+/** Nur-Lese-Zusammenfassung einer offenen Strafe/Belohnung (ohne Aktionen). */
+@Composable
+private fun ReadOnlyTaskSummary(task: Task, who: String) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Text(
+                "$who · ${typeLabel(task.type)}",
+                style = MaterialTheme.typography.titleSmall,
+                color = if (task.type == TaskType.REWARD) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            )
+            Text(
+                if (task.title.isBlank()) stringResource(R.string.no_action_chosen) else localizedCatalogTitle(task.title),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                statusLabel(task.status),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Was wartet auf eine Bestätigung: in beide Richtungen, mit Frist. */
+@Composable
+private fun WaitingForConfirmationCard(
+    myUid: String,
+    partnerLabel: String,
+    openTasks: List<Task>,
+    dinner: DinnerConfirmation?,
+) {
+    val rows = buildList {
+        dinner?.takeIf { it.isPending }?.let { dc ->
+            val time = "%02d:%02d".format(dc.hour, dc.minute)
+            add(
+                if (dc.enteredBy == myUid) {
+                    stringResource(R.string.waiting_dinner_partner, partnerLabel, time, formatTime(dc.deadline))
+                } else {
+                    stringResource(R.string.waiting_dinner_you, time, formatTime(dc.deadline))
+                },
+            )
+        }
+        openTasks.filter { it.title.isNotBlank() }.forEach { task ->
+            val action = localizedCatalogTitle(task.title)
+            add(
+                if (task.ownerUid == myUid) {
+                    stringResource(R.string.waiting_task_partner, partnerLabel, action, formatTime(task.autoConfirmAt))
+                } else {
+                    stringResource(R.string.waiting_task_you, action, formatTime(task.autoConfirmAt))
+                },
+            )
+        }
+    }
+    if (rows.isEmpty()) return
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                stringResource(R.string.waiting_section),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            rows.forEach { row ->
+                Text(row, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+            }
+        }
     }
 }

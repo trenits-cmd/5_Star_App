@@ -228,7 +228,12 @@
     <string name="invite_new_code">New invitation</string>
     <string name="invite_copy_code">Copy code</string>
     <string name="invite_code_copied">Code copied</string>
-    <string name="invite_partner_removed">Your partner is no longer connected. Send a new invitation.</string>    <string name="week_title">Daily &amp; Weekly Status / Archive</string>
+    <string name="invite_partner_removed">Your partner is no longer connected. Send a new invitation.</string>    <string name="readonly_hint">Read only here. Actions are done on the Dashboard.</string>
+    <string name="waiting_section">Waiting for confirmation</string>
+    <string name="waiting_task_you">You confirm: %1$s · counts as done at %2$s</string>
+    <string name="waiting_task_partner">Waiting for %1$s to confirm: %2$s · counts as done at %3$s</string>
+    <string name="waiting_dinner_you">You confirm the dinner time %1$s · counts as confirmed at %2$s</string>
+    <string name="waiting_dinner_partner">Waiting for %1$s to confirm the dinner time %2$s · counts as confirmed at %3$s</string>    <string name="week_title">Daily &amp; Weekly Status / Archive</string>
     <string name="week_streak">Weekly status:\n%1$d of %2$d days in a row (≥ 80%%)</string>
     <string name="week_reward_unlocked">7 days in a row achieved – Reward unlocked!</string>
     <string name="week_no_reward">%1$d more consecutive day(s) until the next reward.</string>

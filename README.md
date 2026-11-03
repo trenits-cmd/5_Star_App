@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.03112026_2206)
+## Features (v1.03112026_2244)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.03112026_2206`** – Fix: after a partner's account was removed, the partner's daily status showed the **own** score (fallback to the own day record). The partner's score is now only taken from the partner's own day record; without one it shows 0 %.
+- **Latest: `v1.03112026_2244`** – Partner tab is read-only: tapping shows a hint, open penalties/rewards are summaries without buttons. Dashboard shows a card 'Waiting for confirmation' in both directions (what you confirm and what waits for your partner), including the dinner time.
+- `v1.03112026_2206` Fix: after a partner's account was removed, the partner's daily status showed the **own** score (fallback to the own day record). The partner's score is now only taken from the partner's own day record; without one it shows 0 %.
 - `v1.03112026_2147` (1) Dinner time: partner enters it, main_user confirms per push (48 h, 6 h warning; stars count before confirmation). (2) Dashboard week card: last 7 days as dots, today's shortfall to 80 %, reward status with deadline, evaluation note. (3) New invitations always create a new code; invite by e-mail or copy the code; stale invites are removed.
 - `v1.03112026_2118` Passwordless sign-in with an e-mail link (Firebase email link sign-in). The link opens the app via App Links on `starapp-99d8e.firebaseapp.com/finishSignIn`. The invite code is redeemed after sign-in. The old password derived from the e-mail address has been removed. The partner's e-mail is shown in Settings.
 - `v1.03112026_2111` – Penalty logic fixed: the partner can choose **Not yet** (+24 h, unlimited) or confirm. The deadline is 48 h after the option is chosen; postponing moves it by 24 h. A reminder comes 3 h after selection and an early warning 6 h before the deadline. Without confirmation the penalty counts as executed at the deadline. Open penalties with deadline are shown on the partner dashboard.

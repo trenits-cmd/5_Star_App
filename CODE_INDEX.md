@@ -1,7 +1,7 @@
 # CODE_INDEX.md – AI-Readable Architecture & Code Directory (5 Star App)
 
 > **Purpose for AI Agents & Developers:**  
-> This document is the canonical, structured table of contents and architectural reference for the **5 Star – Daily Synergy & Motivation** Android application (`com.trenits.fivestar`, current release `v1.03112026_0235`, `versionCode = 18`). Keep this file updated whenever source files, UI structure, domain rules, or Firestore schemas change.
+> This document is the canonical, structured table of contents and architectural reference for the **5 Star – Daily Synergy & Motivation** Android application (`com.trenits.fivestar`, current release `v1.03112026_1255`, `versionCode = 19`). Keep this file updated whenever source files, UI structure, domain rules, or Firestore schemas change.
 
 ---
 
@@ -12,7 +12,7 @@
 | `settings.gradle.kts` | Gradle root configuration (`rootProject.name = "5_Star_App"`, module `:app`). |
 | `build.gradle.kts` | Top-level Gradle plugins (`android.application`, `kotlin.android`, `kotlin.compose`, `google.services`). |
 | `gradle/libs.versions.toml` | Version catalog defining AGP, Kotlin, Jetpack Compose BOM, Material 3, Firebase BOM (Auth + Firestore), Credential Manager, and WorkManager versions. |
-| `app/build.gradle.kts` | App module configuration (`namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 18`, `versionName = "1.03112026_0235"`). |
+| `app/build.gradle.kts` | App module configuration (`namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 19`, `versionName = "1.03112026_1255"`). |
 | `app/src/main/res/values/strings.xml` | Single-language (English) string resources for all tabs, cards, categories, rewards, penalties, dialogs, notifications, and status messages. |
 | `firestore.rules` | Cloud Firestore security rules for `/users/{uid}`, `/invites/{code}`, and `/couples/{coupleId}` (`categories`, `catalog`, `days`, `tasks`). |
 | `rules-tests/rules.test.mjs` | Node.js unit tests verifying `firestore.rules` against the Firebase Firestore Emulator. |
@@ -74,7 +74,7 @@
 | `WeeklyScreen.kt` | `WeeklyScreen`, `ExpandableArchiveDayCard`, `ArchivedTaskCard` | **Archive Tab (`tab_week = "Archive"`):**<br>• Centered multi-line 7-day streak progress card (`R.string.week_streak` with `\n` line break).<br>• Last 7 days list where each day is **expandable** to inspect all category ratings, counters, and tasks (shows *"No entry available"* if a day has no data).<br>• Open penalties & rewards section for quick selection/confirmation.<br>• Archive of confirmed & auto-confirmed penalties and rewards showing both **penalty/reward date (`dayKey`)** and **redemption date (`redeemedDayKey`)**. |
 | `RelationshipScreen.kt` | `RelationshipScreen`, `RelationshipTodaySection` | Reusable 5-dimension relationship tracker section (`editable = true` on Today tab, `editable = false` on Partner tab) with couple average, partner avatar/ratings, and 7-day relationship history. |
 | `HistoryScreen.kt` | `HistoryScreen` | Historical overview across periods (`7 days`, `30 days`, `This year`, `All`). |
-| `SettingsScreen.kt` | `SettingsScreen` | **Restricted Settings Tab:**<br>• Signed-in account display, profile photo upload/crop (128×128 Base64), own name (`Rosie` / `Andi`) and partner name with `Save` buttons.<br>• Partner email invitation & *Remove partner / Unpair (Test)* button guarded by a confirmation `AlertDialog`.<br>• Global push notification switch, daily reminder time picker (default 22:00), interval selector, quiet hours (23:00–09:00), and test push button.<br>• Sync section with *Sync now* button, explicit `syncStatus` feedback text, and *Sign out*.<br>• App version (`BuildConfig.VERSION_NAME`) as the very last item. |
+| `SettingsScreen.kt` | `SettingsScreen` | **Restricted Settings Tab:**<br>• Signed-in account display, profile photo upload/crop (128×128 Base64), own name (`Rosie` / `Andi`) and partner name with `Save` buttons.<br>• Partner email invitation & *Remove partner / Unpair (Test)* button guarded by a confirmation `AlertDialog`.<br>• Global push notification switch, daily reminder time picker (default 22:00), interval selector, quiet hours (23:00–09:00), and test push button.<br>• Sync section with *Sync now* button, explicit `syncStatus` feedback text, *Sign out*, and *Delete account* button (with confirmation `AlertDialog`, safe Firebase data cleanup, and automatic sign-out).<br>• App version (`BuildConfig.VERSION_NAME`) as the very last item. |
 | `PairingScreen.kt` | `PairingScreen` | Initial couple connection screen: create invitation code, send code via email, or enter partner's code to automatically pair. |
 | `LoginScreen.kt` | `LoginScreen` | Passwordless sign-in screen with **Email + Invitation code** (`Sign in with Email & Code`) and **Google Sign-In**. |
 | `Format.kt` | `localizedCategoryName`, `localizedCategorySnapshotName`, `localizedCatalogTitle`, `translateCatalogTitle`, `UserAvatar`, `encodeAvatarUri`, `launchInviteEmail` | Formatting helpers, English localization of legacy German/French category/catalog titles, avatar bitmap cropping/encoding, and `mailto:` intent launcher. |

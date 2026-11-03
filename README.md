@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.03112026_1255)
+## Features (v1.03112026_1351)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.03112026_1255`** – Safe **Delete account** button & confirmation dialog in Settings (wipes Firestore user/couple data, local profile store, and Firebase Auth account without crashing, followed by automatic sign-out); Daily Status percentage (`0%`–`100%`) and accurate category weight shares displayed on the Partner tab (`PartnerTodayScreen`).
+- **Latest: `v1.03112026_1351`** – Redesigned **Archive** day cards (`WeeklyScreen`): status chip, score rows with percentage, stars and progress bar per person, sectioned details (categories, counters, penalties & rewards), animated expand/collapse; Rosie's Daily Status percentage on Andi's view fixed (`PartnerTodayScreen`, `AppViewModel.partnerToday`, couple membership auto-repair).
+- `v1.03112026_1255` – Safe **Delete account** button & confirmation dialog in Settings (wipes Firestore user/couple data, local profile store, and Firebase Auth account without crashing, followed by automatic sign-out); Daily Status percentage (`0%`–`100%`) and accurate category weight shares displayed on the Partner tab (`PartnerTodayScreen`).
 - `v1.03112026_0235` – Weekly Status banner/card text formatting & centered multi-line layout (`DashboardScreen` & `WeeklyScreen`); Partner tab always visible in bottom navigation (`AppRoot`); `Streak / Archive` tab renamed to `Archive`; Remove Partner confirmation dialog and Sync Now status feedback; Sport & Reading counter step size set to 1.
 - `v1.03112026_0115` – Password option removed from `LoginScreen`: entering only the **Email address + Invitation code** (or Google Sign-In) signs the user in, validates `/invites/{code}`, automatically pairs the couple, and notifies the inviter.
 - `v1.03112026_0105` – Automatic partner pairing via invitation code during registration/login or pairing screen; rewards and penalties overview removed from `SettingsScreen` and moved to dedicated expandable `CatalogOverviewCard` sections on the user and partner dashboard views (`DashboardScreen` & `PartnerTodayScreen`).

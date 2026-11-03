@@ -130,25 +130,35 @@ class UserRepository(private val uid: String) {
     suspend fun requestJoin(input: String, email: String) {
         val code = normalizeInviteCode(input)
         val invite = Firebase.firestore.collection("invites").document(code).get().await()
+        if (!invite.exists()) {
+            val existingUser = runCatching { user.get().await() }.getOrNull()
+            if (!existingUser?.getString("coupleId").isNullOrBlank()) return
+            throw InvalidInviteException()
+        }
         val status = invite.getString("status")
-        if (!invite.exists() || (status != "open" && status != "requested")) throw InvalidInviteException()
         val invitedEmail = invite.getString("invitedEmail")
         if (!invitedEmail.isNullOrBlank() && email.isNotBlank() && !invitedEmail.equals(email, ignoreCase = true)) {
             throw InvalidInviteException()
         }
         val coupleId = invite.getString("coupleId") ?: throw InvalidInviteException()
-        Firebase.firestore.collection("couples").document(coupleId)
-            .update("members", FieldValue.arrayUnion(uid)).await()
+        if (status == "confirmed") {
+            user.set(mapOf("coupleId" to coupleId, "pendingInviteCode" to FieldValue.delete()), SetOptions.merge()).await()
+            return
+        }
+        if (status != "open" && status != "requested") throw InvalidInviteException()
+        runCatching {
+            Firebase.firestore.collection("couples").document(coupleId)
+                .update("members", FieldValue.arrayUnion(uid)).await()
+        }
         invite.reference.update(
             mapOf("status" to "confirmed", "requestedBy" to uid, "requestedEmail" to email),
         ).await()
         user.set(mapOf("coupleId" to coupleId, "pendingInviteCode" to FieldValue.delete()), SetOptions.merge()).await()
     }
 
-    /** Einlader räumt die bestätigte Einladung nach Erhalt der Benachrichtigung auf. */
+    /** Einlader räumt activeInviteCode nach Erhalt der Benachrichtigung auf (lässt den bestätigten Code für spätere Logins bestehen). */
     suspend fun acknowledgeConfirmedInvite(code: String) {
         runCatching { user.update(mapOf("activeInviteCode" to FieldValue.delete())).await() }
-        runCatching { Firebase.firestore.collection("invites").document(code).delete().await() }
     }
 
     /** Einlader bestätigt die Anfrage: Partner wird Mitglied des Paares, die Einladung wird bestätigt. */

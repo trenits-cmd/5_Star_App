@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.03112026_0105)
+## Features (v1.03112026_0115)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -71,10 +71,10 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 - **English only:** all UI text, push notifications, categories, rewards, and penalties are in English.
 
-## Tech Stack
+- **Tech Stack**
 
 - Android native, Kotlin, Jetpack Compose (Material 3).
-- Firebase Auth (Google + Email/Password) and Cloud Firestore with persistent cache.
+- Firebase Auth (Google + Passwordless Email & Invitation Code) and Cloud Firestore with persistent cache.
 - WorkManager for push notifications, quiet hours and confirmation reminders.
 - Pure Kotlin scoring (categories, meals, reading pages, alcohol/water, relationship mood, streak, rotation, pool logic), covered by JUnit tests.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.03112026_0105`** – Automatic partner pairing via invitation code during registration/login or pairing screen (validating `/invites/{code}`, adding partner to `couples/{coupleId}.members`, setting status to `confirmed`, and notifying the sender via push & toast); rewards and penalties overview removed from `SettingsScreen` and moved to dedicated expandable `CatalogOverviewCard` sections on the user and partner dashboard views (`DashboardScreen` & `PartnerTodayScreen`).
+- **Latest: `v1.03112026_0115`** – Password option removed from `LoginScreen`: entering only the **Email address + Invitation code** (or Google Sign-In) signs the user in, validates `/invites/{code}`, automatically pairs the couple, and notifies the inviter.
+- `v1.03112026_0105` – Automatic partner pairing via invitation code during registration/login or pairing screen; rewards and penalties overview removed from `SettingsScreen` and moved to dedicated expandable `CatalogOverviewCard` sections on the user and partner dashboard views (`DashboardScreen` & `PartnerTodayScreen`).
 - `v1.03112026_0055` – Persistent input saving in category cards (`ReadingCategoryCard`, `SportCategoryCard`, `CounterCard`/`LitersField`) via synchronous in-memory `localDayRecords` state in `AppViewModel`, focus-safe text state hoisting, `ImeAction.Done` / `onFocusChanged` commits, and dedicated *Save* buttons next to input fields.
 - `v1.03112026_0045` – Penalty & reward confirmation fixed across all tabs (`Today`, `Partner`, `Streak / Archive`) and deployed to Firestore rules (`starapp-99d8e`); immediate daily penalty selection & confirmation when `< 80 %`; Today/Yesterday switcher until 06:00 AM; expandable 7-day archive cards in `WeeklyScreen` with *"No entry available"* when empty; AI-readable code directory [`CODE_INDEX.md`](./CODE_INDEX.md) added.
 - `v1.03112026_0030` – Canonical role-based categories, rewards & penalties for Andi (Sport 3× with 3 days/week × 45 min daily time input, Drink water 2× min. 2.5 L, Reading 2× pages read + 7 Rewards & 1 Penalty) and Rosie (5 Categories + 5 Rewards & 3 Penalties).

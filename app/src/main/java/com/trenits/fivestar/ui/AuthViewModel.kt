@@ -13,6 +13,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
 import com.trenits.fivestar.R
 import com.trenits.fivestar.data.AuthRepository
+import com.trenits.fivestar.data.InvalidInviteException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,9 +33,9 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     var error by mutableStateOf<String?>(null)
         private set
 
-    fun signIn(email: String, password: String) = run { repository.signInWithEmail(email, password) }
-
-    fun createAccount(email: String, password: String) = run { repository.createAccount(email, password) }
+    fun signInWithEmailAndCode(email: String, code: String) = run {
+        repository.signInWithEmailAndCode(email, code)
+    }
 
     fun signInWithGoogle(activity: Activity) = run { repository.signInWithGoogle(activity) }
 
@@ -50,6 +51,8 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 throw e
             } catch (e: GetCredentialCancellationException) {
                 // Der Nutzer hat den Google-Dialog geschlossen. Das ist kein Fehler.
+            } catch (e: InvalidInviteException) {
+                error = getApplication<Application>().getString(R.string.error_invalid_code)
             } catch (e: Exception) {
                 error = getApplication<Application>().getString(R.string.error_auth_failed)
             } finally {

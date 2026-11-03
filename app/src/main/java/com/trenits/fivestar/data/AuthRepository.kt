@@ -13,10 +13,12 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.R
+import com.trenits.fivestar.domain.normalizeInviteCode
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import java.security.MessageDigest
 
 class AuthRepository {
 
@@ -27,14 +29,47 @@ class AuthRepository {
         awaitClose { auth.removeAuthStateListener(listener) }
     }
 
-    suspend fun signInWithEmail(email: String, password: String) {
-        val user = Firebase.auth.signInWithEmailAndPassword(email, password).await().user
-        user?.let { saveProfile(it) }
+    private fun derivePassword(email: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+            .digest("5Star_Auth_${email.trim().lowercase()}".toByteArray(Charsets.UTF_8))
+        val hex = digest.joinToString("") { "%02x".format(it) }.take(20)
+        return "5S!$hex"
     }
 
-    suspend fun createAccount(email: String, password: String) {
-        val user = Firebase.auth.createUserWithEmailAndPassword(email, password).await().user
-        user?.let { saveProfile(it) }
+    /**
+     * Meldet den Nutzer allein mit E-Mail-Adresse und Einladungscode an (ohne separates Passwort):
+     * Erstellt bei Bedarf automatisch das Firebase-Konto, validiert den Einladungscode gegen /invites/{code}
+     * und verknüpft das Paar automatisch.
+     */
+    suspend fun signInWithEmailAndCode(email: String, code: String) {
+        val cleanEmail = email.trim()
+        val cleanCode = normalizeInviteCode(code)
+        if (cleanEmail.isBlank() || cleanCode.isBlank()) throw InvalidInviteException()
+
+        val derivedPwd = derivePassword(cleanEmail)
+        val codePwd = "${cleanCode}_5Star!"
+        val user = runCatching {
+            Firebase.auth.createUserWithEmailAndPassword(cleanEmail, derivedPwd).await().user
+        }.getOrElse {
+            runCatching {
+                Firebase.auth.signInWithEmailAndPassword(cleanEmail, derivedPwd).await().user
+            }.getOrElse {
+                Firebase.auth.signInWithEmailAndPassword(cleanEmail, codePwd).await().user
+            }
+        } ?: throw InvalidInviteException()
+
+        saveProfile(user)
+        try {
+            UserRepository(user.uid).requestJoin(cleanCode, cleanEmail)
+        } catch (e: InvalidInviteException) {
+            val snap = runCatching {
+                Firebase.firestore.collection("users").document(user.uid).get().await()
+            }.getOrNull()
+            if (snap?.getString("coupleId").isNullOrBlank()) {
+                Firebase.auth.signOut()
+                throw e
+            }
+        }
     }
 
     suspend fun signInWithGoogle(activity: Activity) {

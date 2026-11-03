@@ -45,16 +45,10 @@ import com.trenits.fivestar.ui.theme.Amber
 @Composable
 fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
     var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
     var inviteCode by remember { mutableStateOf("") }
     val context = LocalContext.current
     val activity = context as Activity
-    val canSubmit = !viewModel.busy && email.isNotBlank() && password.isNotBlank()
-    val storePendingCode = {
-        if (inviteCode.isNotBlank()) {
-            LocalProfileStore(context).savePendingRedeemCode(inviteCode)
-        }
-    }
+    val canSubmit = !viewModel.busy && email.isNotBlank() && inviteCode.isNotBlank()
 
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -89,19 +83,9 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
         )
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text(stringResource(R.string.login_password)) },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
             value = inviteCode,
             onValueChange = { inviteCode = it.uppercase() },
-            label = { Text(stringResource(R.string.login_invite_code_optional)) },
+            label = { Text(stringResource(R.string.pairing_code_label)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -109,25 +93,17 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
 
         Button(
             onClick = {
-                storePendingCode()
-                viewModel.signIn(email.trim(), password)
+                viewModel.signInWithEmailAndCode(email.trim(), inviteCode.trim())
             },
             enabled = canSubmit,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.login_sign_in)) }
+        ) { Text(stringResource(R.string.login_sign_in_with_code)) }
         Spacer(Modifier.height(8.dp))
         OutlinedButton(
             onClick = {
-                storePendingCode()
-                viewModel.createAccount(email.trim(), password)
-            },
-            enabled = canSubmit,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.login_create_account)) }
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(
-            onClick = {
-                storePendingCode()
+                if (inviteCode.isNotBlank()) {
+                    LocalProfileStore(context).savePendingRedeemCode(inviteCode)
+                }
                 viewModel.signInWithGoogle(activity)
             },
             enabled = !viewModel.busy,

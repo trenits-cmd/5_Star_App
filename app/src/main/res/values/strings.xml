@@ -5,8 +5,7 @@
 
     <string name="login_tagline">Reach your goals together</string>
     <string name="login_email">Email</string>
-    <string name="login_password">Password</string>
-    <string name="login_invite_code_optional">Invitation code (optional – for joining partner)</string>
+    <string name="login_sign_in_with_code">Sign in with Email &amp; Code</string>
     <string name="login_sign_in">Sign in</string>
     <string name="login_create_account">Create account</string>
     <string name="login_google">Sign in with Google</string>

@@ -76,6 +76,7 @@ fun SettingsScreen(vm: AppViewModel) {
     val catalog by vm.myCatalog.collectAsState()
     val days by vm.days.collectAsState()
     val lastSync by vm.lastSync.collectAsState()
+    val syncStatus by vm.syncStatus.collectAsState()
     val myName by vm.myName.collectAsState()
     val myPhoto by vm.myPhoto.collectAsState()
     val partnerName by vm.partnerName.collectAsState()
@@ -105,6 +106,7 @@ fun SettingsScreen(vm: AppViewModel) {
 
     var displayName by rememberSaveable(myName) { mutableStateOf(myName.orEmpty()) }
     var partnerEmail by rememberSaveable { mutableStateOf("") }
+    var showUnpairDialog by rememberSaveable { mutableStateOf(false) }
     var catalogTitle by rememberSaveable { mutableStateOf("") }
     var catalogType by remember { mutableStateOf(TaskType.REWARD) }
     var catalogAudience by remember { mutableStateOf(Audience.ME) }
@@ -241,7 +243,7 @@ fun SettingsScreen(vm: AppViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     OutlinedButton(
-                        onClick = { vm.removePartnerForTest() },
+                        onClick = { showUnpairDialog = true },
                         enabled = !vm.busy,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                         modifier = Modifier.fillMaxWidth(),
@@ -452,6 +454,14 @@ fun SettingsScreen(vm: AppViewModel) {
                     ) {
                         Text(stringResource(R.string.sync_now))
                     }
+                    syncStatus?.let { statusText ->
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                     HorizontalDivider(Modifier.padding(vertical = 4.dp))
                     Button(
                         onClick = { vm.signOut() },
@@ -474,7 +484,29 @@ fun SettingsScreen(vm: AppViewModel) {
         }
     }
 
-
+    if (showUnpairDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnpairDialog = false },
+            title = { Text(stringResource(R.string.partner_remove_confirm_title)) },
+            text = { Text(stringResource(R.string.partner_remove_confirm_message)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showUnpairDialog = false
+                        vm.removePartnerForTest()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                ) {
+                    Text(stringResource(R.string.partner_remove_confirm_yes))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUnpairDialog = false }) {
+                    Text(stringResource(R.string.settings_cancel))
+                }
+            },
+        )
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)

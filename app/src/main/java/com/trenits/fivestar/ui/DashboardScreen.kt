@@ -52,6 +52,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trenits.fivestar.R
@@ -614,24 +615,21 @@ private fun WeeklyStatusBanner(streak: Int, rewardUnlocked: Boolean) {
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    stringResource(R.string.status_weekly_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-                Text(
-                    stringResource(R.string.status_weekly_progress, cycleStreak, STREAK_DAYS_FOR_REWARD),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-            }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "${stringResource(R.string.status_weekly_title)}\n${stringResource(R.string.status_weekly_progress, cycleStreak, STREAK_DAYS_FOR_REWARD)}",
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                textAlign = TextAlign.Center,
+                softWrap = true,
+            )
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { progress },
@@ -640,13 +638,16 @@ private fun WeeklyStatusBanner(streak: Int, rewardUnlocked: Boolean) {
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                if (rewardUnlocked) {
+                text = if (rewardUnlocked) {
                     stringResource(R.string.week_reward_unlocked)
                 } else {
                     stringResource(R.string.week_no_reward, remaining)
                 },
+                modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
+                textAlign = TextAlign.Center,
+                softWrap = true,
             )
         }
     }

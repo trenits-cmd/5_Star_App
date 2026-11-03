@@ -36,6 +36,9 @@
     <string name="invite_declined">Your partner declined the connection request.</string>
     <string name="partner_remove_button">Remove partner / Unpair (Test)</string>
     <string name="partner_remove_hint">Disconnects the current partner for testing purposes so you can invite again.</string>
+    <string name="partner_remove_confirm_title">Remove partner?</string>
+    <string name="partner_remove_confirm_message">Are you sure you want to remove your partner? This will disconnect your shared status and couple records.</string>
+    <string name="partner_remove_confirm_yes">Yes, Remove</string>
 
     <string name="profile_photo_title">Your profile picture (icon)</string>
     <string name="profile_photo_upload">Choose / upload photo</string>
@@ -160,10 +163,12 @@
     <string name="sync_last">Last sync: %1$s</string>
     <string name="sync_never">not yet</string>
     <string name="sync_now">Sync now</string>
+    <string name="sync_status_success">Synced successfully</string>
+    <string name="sync_status_nothing">Nothing to update</string>
 
     <!-- Week / Streak & Archive -->
     <string name="week_title">Daily &amp; Weekly Status / Archive</string>
-    <string name="week_streak">Weekly status: %1$d of %2$d days in a row (≥ 80%%)</string>
+    <string name="week_streak">Weekly status:\n%1$d of %2$d days in a row (≥ 80%%)</string>
     <string name="week_reward_unlocked">7 days in a row achieved – Reward unlocked!</string>
     <string name="week_no_reward">%1$d more consecutive day(s) until the next reward.</string>
     <string name="week_no_data">No ratings for the last 7 days yet.</string>

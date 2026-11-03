@@ -156,6 +156,8 @@ fun DashboardScreen(vm: AppViewModel) {
     val editingYesterday by vm.editingYesterday.collectAsState()
     val activeDayKey by vm.activeDayKey.collectAsState()
     val activeDinnerConfirmation by vm.activeDinnerConfirmation.collectAsState()
+    val allDinnerConfirmations by vm.dinnerConfirmations.collectAsState()
+    val pendingDinner = allDinnerConfirmations.items.filter { it.isPending }.maxByOrNull { it.enteredAt }
     val weekDays by vm.weekDays.collectAsState()
     val weekOutcomes by vm.weekOutcomes.collectAsState()
     val currentWeeklyReward by vm.currentWeeklyReward.collectAsState()
@@ -326,7 +328,7 @@ fun DashboardScreen(vm: AppViewModel) {
                         confirmation = activeDinnerConfirmation,
                         myUid = vm.uid,
                         partnerLabel = partnerLabel,
-                        onConfirm = { vm.confirmDinner() },
+                        onConfirm = { activeDinnerConfirmation?.let { vm.confirmDinner(it.dayKey) } },
                         onTimeSelected = { h, m -> vm.setDinnerTime(category.id, h, m) },
                     )
                 }
@@ -369,7 +371,8 @@ fun DashboardScreen(vm: AppViewModel) {
                 myUid = vm.uid,
                 partnerLabel = partnerLabel,
                 openTasks = openTasks,
-                dinner = activeDinnerConfirmation,
+                dinner = pendingDinner,
+                onConfirmDinner = { pendingDinner?.let { vm.confirmDinner(it.dayKey) } },
             )
         }
         item { SectionTitle(stringResource(R.string.section_open_tasks)) }
@@ -2311,6 +2314,7 @@ private fun WaitingForConfirmationCard(
     partnerLabel: String,
     openTasks: List<Task>,
     dinner: DinnerConfirmation?,
+    onConfirmDinner: () -> Unit,
 ) {
     val rows = buildList {
         dinner?.takeIf { it.isPending }?.let { dc ->
@@ -2347,6 +2351,11 @@ private fun WaitingForConfirmationCard(
             )
             rows.forEach { row ->
                 Text(row, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+            }
+            if (dinner != null && dinner.isPending && dinner.enteredBy != myUid) {
+                Button(onClick = onConfirmDinner, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.dinner_confirm_button))
+                }
             }
         }
     }

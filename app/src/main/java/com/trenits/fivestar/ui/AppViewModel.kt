@@ -162,9 +162,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }.share(null)
 
     /** Die andere Person bestätigt die eingetragene Abendessen-Uhrzeit. */
-    fun confirmDinner() {
-        val confirmation = activeDinnerConfirmation.value ?: return
-        if (confirmation.enteredBy == uid) return
+    fun confirmDinner(dayKey: String) {
+        val confirmation = dinnerConfirmations.value.items.firstOrNull { it.dayKey == dayKey } ?: return
+        if (confirmation.enteredBy == uid || !confirmation.isPending) return
         repo()?.confirmDinner(confirmation.dayKey, uid, AppClock.now(), auto = false)
         toastMessage.value = text(R.string.save_confirmation)
     }

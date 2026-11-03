@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.03112026_1510)
+## Features (v1.03112026_1535)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.03112026_1510`** – Release with APK. Contents identical to `v1.03112026_1410` (category assignment in Settings, rewards & penalties overview), version bumped.
+- **Latest: `v1.03112026_1535`** – Settings: the rewards & penalties overview for the partner is now always visible (previously only when a partner was connected).
+- `v1.03112026_1510` – Release with APK. Category assignment in Settings, rewards & penalties overview.
 - `v1.03112026_1410` – **Settings:** category **assignment** (only me / partner / both) is saved to Firestore (`categories.targets`) and shown per category. It is display/storage only and does **not** change scoring yet. Preset sync no longer resets assignments. Read-only overview of rewards & penalties for you and your partner (`CatalogOverviewCard`). No category or catalog create/edit/delete.
 - `v1.03112026_1400` – **Settings** read-only rewards & penalties overview (`CatalogOverviewCard`).
 - `v1.03112026_1351` – Redesigned **Archive** day cards (`WeeklyScreen`): status chip, score rows with percentage, stars and progress bar per person, sectioned details (categories, counters, penalties & rewards), animated expand/collapse; Rosie's Daily Status percentage on Andi's view fixed (`PartnerTodayScreen`, `AppViewModel.partnerToday`, couple membership auto-repair).

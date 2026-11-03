@@ -237,6 +237,47 @@ fun SettingsScreen(vm: AppViewModel) {
             }
         }
 
+        // 1d. Push-Erinnerung je Kategorie (Ruhepause 23:00–09:00 gilt weiterhin)
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(stringResource(R.string.settings_category_push), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.settings_category_push_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    myCategories.forEach { category ->
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                localizedCategoryName(category),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Switch(
+                                checked = category.pushEnabled,
+                                onCheckedChange = { vm.setCategoryPushEnabled(category.id, it) },
+                            )
+                        }
+                        if (category.pushEnabled) {
+                            CategoryPushIntervalSelector(
+                                intervalHours = category.pushIntervalHours,
+                                onSelected = { vm.setCategoryPushInterval(category.id, it) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         // 1c. Belohnungen & Strafen als reine Übersicht (nicht bearbeitbar)
         item {
             CatalogOverviewCard(ownerLabel = myLabel, items = catalog)
@@ -605,6 +646,25 @@ private fun PushScheduleSelector(
             FilterChip(
                 selected = intervalHours == h,
                 onClick = { onIntervalSelected(h) },
+                label = { Text(stringResource(R.string.push_mode_interval, h)) },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CategoryPushIntervalSelector(intervalHours: Int, onSelected: (Int) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        FilterChip(
+            selected = intervalHours == 0,
+            onClick = { onSelected(0) },
+            label = { Text(stringResource(R.string.push_category_global)) },
+        )
+        INTERVAL_OPTIONS.forEach { h ->
+            FilterChip(
+                selected = intervalHours == h,
+                onClick = { onSelected(h) },
                 label = { Text(stringResource(R.string.push_mode_interval, h)) },
             )
         }

@@ -108,6 +108,10 @@ class CoupleRepository(private val coupleId: String) {
         couple.collection("categories").document(id).update("pushEnabled", enabled)
     }
 
+    fun setCategoryPushInterval(id: String, hours: Int) {
+        couple.collection("categories").document(id).update("pushIntervalHours", hours)
+    }
+
     fun setCategoryTargets(id: String, targets: List<String>) {
         couple.collection("categories").document(id).update("targets", targets)
     }
@@ -293,6 +297,7 @@ class CoupleRepository(private val coupleId: String) {
             confirmedAt = doc.getTimestamp("confirmedAt")?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) },
             confirmedBy = doc.getString("confirmedBy"),
             autoConfirmed = doc.getBoolean("autoConfirmed") ?: false,
+            rejectedAt = doc.getTimestamp("rejectedAt")?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) },
         )
     }
 
@@ -305,6 +310,13 @@ class CoupleRepository(private val coupleId: String) {
                 "minute" to minute,
                 "enteredAt" to Timestamp(enteredAt.epochSecond, enteredAt.nano),
             ),
+        )
+    }
+
+    /** Die andere Person lehnt die Uhrzeit ab: der Eintragende muss korrigieren. */
+    fun rejectDinner(dayKey: String, rejectedBy: String, rejectedAt: Instant) {
+        couple.collection("dinnerConfirmations").document(dayKey).update(
+            mapOf("rejectedAt" to Timestamp(rejectedAt.epochSecond, rejectedAt.nano)),
         )
     }
 

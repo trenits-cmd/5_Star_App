@@ -12,7 +12,7 @@
 | `settings.gradle.kts` | Gradle root configuration (`rootProject.name = "5_Star_App"`, module `:app`). |
 | `build.gradle.kts` | Top-level Gradle plugins (`android.application`, `kotlin.android`, `kotlin.compose`, `google.services`). |
 | `gradle/libs.versions.toml` | Version catalog defining AGP, Kotlin, Jetpack Compose BOM, Material 3, Firebase BOM (Auth + Firestore), Credential Manager, and WorkManager versions. |
-| `app/build.gradle.kts` | App module configuration (`namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 44`, `versionName = "1.03112026_2347"`). |
+| `app/build.gradle.kts` | App module configuration (`namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 45`, `versionName = "1.04112026_0002"`). |
 | `app/src/main/res/values/strings.xml` | Single-language (English) string resources for all tabs, cards, categories, rewards, penalties, dialogs, notifications, and status messages. |
 | `firestore.rules` | Cloud Firestore security rules for `/users/{uid}`, `/invites/{code}`, and `/couples/{coupleId}` (`categories`, `catalog`, `days`, `tasks`). |
 | `rules-tests/rules.test.mjs` | Node.js unit tests verifying `firestore.rules` against the Firebase Firestore Emulator. |

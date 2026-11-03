@@ -135,7 +135,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         it.atZone(zone).toLocalTime().hour < 6
     }.share(AppClock.now().atZone(zone).toLocalTime().hour < 6)
 
-    val editingYesterday = MutableStateFlow(false)
+    /** Wahl des Nutzers (null = Standard: vor 06:00 Vortag, danach heute). */
+    private val yesterdayChoice = MutableStateFlow<Boolean?>(null)
+
+    val editingYesterday: StateFlow<Boolean> = combine(yesterdayChoice, canEditYesterday) { choice, canYesterday ->
+        choice ?: canYesterday
+    }.share(canEditYesterday.value)
 
     val activeDayKey: StateFlow<String> = combine(todayKey, yesterdayKey, canEditYesterday, editingYesterday) { today, yesterday, canYesterday, useYesterday ->
         if (canYesterday && useYesterday) yesterday else today
@@ -157,6 +162,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val activeDinnerConfirmation: StateFlow<DinnerConfirmation?> = combine(dinnerConfirmations, activeDayKey) { list, key ->
         list.items.firstOrNull { it.dayKey == key }
     }.share(null)
+
+    /** Die andere Person lehnt die eingetragene Abendessen-Uhrzeit ab; der Eintragende korrigiert sie. */
+    fun rejectDinner(dayKey: String) {
+        val confirmation = dinnerConfirmations.value.items.firstOrNull { it.dayKey == dayKey } ?: return
+        if (confirmation.enteredBy == uid || !confirmation.isPending) return
+        repo()?.rejectDinner(dayKey, uid, AppClock.now())
+        toastMessage.value = text(R.string.save_confirmation)
+    }
 
     /** Die andere Person bestätigt die eingetragene Abendessen-Uhrzeit. */
     fun confirmDinner(dayKey: String) {
@@ -683,7 +696,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setEditingYesterday(useYesterday: Boolean) {
-        editingYesterday.value = useYesterday && canEditYesterday.value
+        yesterdayChoice.value = useYesterday
     }
 
     private fun currentMergedDay(dayKey: String = activeDayKey.value): DayRecord? {
@@ -771,6 +784,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     /** Speichert die Abendessen-Uhrzeit (wird von Andi eingegeben und in beiden Apps synchronisiert). */
     fun setDinnerTime(categoryId: String, hour: Int, minute: Int) {
         val dayKey = activeDayKey.value
+        if (dinnerConfirmations.value.items.any { it.dayKey == dayKey && it.isConfirmed }) {
+            toastMessage.value = text(R.string.dinner_locked)
+            return
+        }
         val current = currentMergedDay(dayKey)
         val stored = current?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
         val counters = current?.counters.orEmpty().toMutableMap()
@@ -1098,6 +1115,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setCategoryPushEnabled(id: String, enabled: Boolean) {
         repo()?.setCategoryPushEnabled(id, enabled)
+    }
+
+    fun setCategoryPushInterval(id: String, hours: Int) {
+        repo()?.setCategoryPushInterval(id, hours.coerceIn(0, 12))
     }
 
     fun saveDisplayName(name: String) {

@@ -50,11 +50,11 @@ class CounterTest {
     }
 
     @Test
-    fun `Abendessen vor 20h gibt 5 Sterne, vor 21h 1 Stern, sonst 0 Sterne`() {
+    fun `Abendessen vor 20h gibt 5 Sterne, vor 21h 3 Sterne, sonst 0 Sterne`() {
         assertEquals(5, dinnerStars(19, 30))
         assertEquals(5, dinnerStars(19, 59))
-        assertEquals(1, dinnerStars(20, 0))
-        assertEquals(1, dinnerStars(20, 45))
+        assertEquals(3, dinnerStars(20, 0))
+        assertEquals(3, dinnerStars(20, 45))
         assertEquals(0, dinnerStars(21, 0))
         assertEquals(0, dinnerStars(22, 15))
     }
@@ -87,7 +87,7 @@ class CounterTest {
 
         val dinner = Category("d", "andi", "Abendessen vor 20h", 5, kind = CategoryKind.DINNER_TIME)
         assertEquals(5, counterStars(dinner, mapOf(DINNER_HOUR to 19.0, DINNER_MINUTE to 15.0)))
-        assertEquals(1, counterStars(dinner, mapOf(DINNER_HOUR to 20.0, DINNER_MINUTE to 30.0)))
+        assertEquals(3, counterStars(dinner, mapOf(DINNER_HOUR to 20.0, DINNER_MINUTE to 30.0)))
 
         val meals = Category("m", "rosie", "Essen", 3, kind = CategoryKind.MEALS)
         assertEquals(

@@ -321,7 +321,7 @@ fun dinnerStars(hour: Int, minute: Int = 0): Int {
     if (hour < 0 || minute < 0) return 0
     return when {
         hour < 20 -> MAX_STARS
-        hour < 21 -> 1
+        hour < 21 -> 3
         else -> 0
     }
 }

@@ -105,6 +105,7 @@ import com.trenits.fivestar.domain.RelationshipAspect
 import com.trenits.fivestar.domain.RotationTask
 import com.trenits.fivestar.domain.SPORT_MINUTES
 import com.trenits.fivestar.domain.SPORT_WEEKLY_DAYS_GOAL
+import com.trenits.fivestar.domain.REWARD_TIER_BY_STREAK
 import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
 import com.trenits.fivestar.domain.THRESHOLD_PERCENT
 import com.trenits.fivestar.domain.Task
@@ -238,6 +239,12 @@ fun DashboardScreen(vm: AppViewModel) {
                     )
                 }
             }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(R.string.day_cutoff_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         incomingRequest?.takeIf { it.status == "requested" && partnerUid == null }?.let { request ->
@@ -321,7 +328,7 @@ fun DashboardScreen(vm: AppViewModel) {
                     }
                     
                     // Die Partner-Rolle trägt die Abendessen-Uhrzeit ein; main_user kann sie nicht ändern.
-                    val canEditTime = myPresetRole == "partner"
+                    val canEditTime = myPresetRole == "partner" && activeDinnerConfirmation?.isConfirmed != true
                     DinnerTimeCard(
                         category = category,
                         sharePercent = sharePercent,
@@ -331,6 +338,7 @@ fun DashboardScreen(vm: AppViewModel) {
                         myUid = vm.uid,
                         partnerLabel = partnerLabel,
                         onConfirm = { activeDinnerConfirmation?.let { vm.confirmDinner(it.dayKey) } },
+                        onReject = { activeDinnerConfirmation?.let { vm.rejectDinner(it.dayKey) } },
                         onTimeSelected = { h, m -> vm.setDinnerTime(category.id, h, m) },
                     )
                 }
@@ -383,6 +391,7 @@ fun DashboardScreen(vm: AppViewModel) {
                 openTasks = openTasks,
                 dinner = pendingDinner,
                 onConfirmDinner = { pendingDinner?.let { vm.confirmDinner(it.dayKey) } },
+                onRejectDinner = { pendingDinner?.let { vm.rejectDinner(it.dayKey) } },
             )
         }
         item { SectionTitle(stringResource(R.string.section_open_tasks)) }
@@ -827,6 +836,18 @@ private fun WeeklyStatusBanner(
                 )
             }
             Text(rewardText, style = MaterialTheme.typography.bodySmall, color = onCard, textAlign = TextAlign.Center)
+            REWARD_TIER_BY_STREAK.keys.filter { it > streak }.minOrNull()?.let { milestone ->
+                Text(
+                    stringResource(
+                        R.string.week_next_reward,
+                        milestone - streak,
+                        REWARD_TIER_BY_STREAK.getValue(milestone),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onCard,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Text(
                 stringResource(R.string.reward_tiers_hint),
                 style = MaterialTheme.typography.labelSmall,
@@ -1579,6 +1600,7 @@ private fun DinnerTimeCard(
     myUid: String,
     partnerLabel: String,
     onConfirm: () -> Unit,
+    onReject: () -> Unit,
     onTimeSelected: (Int, Int) -> Unit,
 ) {
     val context = LocalContext.current
@@ -1620,6 +1642,16 @@ private fun DinnerTimeCard(
             confirmation?.let { dc ->
                 Spacer(Modifier.height(4.dp))
                 when {
+                    dc.isRejected && dc.enteredBy == myUid -> Text(
+                        stringResource(R.string.dinner_rejected_partner, partnerLabel),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    dc.isRejected -> Text(
+                        stringResource(R.string.dinner_rejected_you, partnerLabel),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     dc.isPending && dc.enteredBy != myUid -> {
                         Text(
                             stringResource(R.string.task_deadline_dinner, formatTime(dc.deadline)),
@@ -1629,6 +1661,10 @@ private fun DinnerTimeCard(
                         Spacer(Modifier.height(6.dp))
                         Button(onClick = onConfirm, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(R.string.dinner_confirm_button))
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        OutlinedButton(onClick = onReject, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.dinner_reject_button))
                         }
                     }
                     dc.isPending -> Text(
@@ -2049,7 +2085,6 @@ internal fun CatalogOverviewCard(
 ) {
     var expanded by rememberSaveable(ownerLabel) { mutableStateOf(true) }
     val rewards = remember(items) { items.filter { it.type == TaskType.REWARD } }
-    val penalties = remember(items) { items.filter { it.type == TaskType.PENALTY } }
 
     Card(
         modifier = Modifier
@@ -2143,10 +2178,7 @@ internal fun TaskCard(
                 },
             )
             Text(
-                stringResource(
-                    if (task.type == TaskType.PENALTY) R.string.archive_penalty_date else R.string.archive_reward_date,
-                    formatDay(task.dayKey),
-                ),
+                stringResource(R.string.archive_reward_date, formatDay(task.dayKey)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -2189,13 +2221,6 @@ internal fun TaskCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
-                    if (task.type == TaskType.PENALTY) {
-                        Text(
-                            stringResource(R.string.penalty_pool_reset_hint),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
                     Spacer(Modifier.height(6.dp))
                     Box(Modifier.fillMaxWidth()) {
                         OutlinedButton(
@@ -2386,6 +2411,7 @@ private fun WaitingForConfirmationCard(
     openTasks: List<Task>,
     dinner: DinnerConfirmation?,
     onConfirmDinner: () -> Unit,
+    onRejectDinner: () -> Unit,
 ) {
     val rows = buildList {
         dinner?.takeIf { it.isPending }?.let { dc ->
@@ -2426,6 +2452,9 @@ private fun WaitingForConfirmationCard(
             if (dinner != null && dinner.isPending && dinner.enteredBy != myUid) {
                 Button(onClick = onConfirmDinner, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.dinner_confirm_button))
+                }
+                OutlinedButton(onClick = onRejectDinner, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.dinner_reject_button))
                 }
             }
         }

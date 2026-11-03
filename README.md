@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.04112026_0002)
+## Features (v1.04112026_0053)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.04112026_0002`** – (1) Dinner: after the partner enters the time, main_user can confirm or reject it; a confirmed time is locked, a rejected one must be corrected by the partner. Dinner before 21:00 = 3 stars (was 1). (2) Day cut-off hint on the dashboard; entries before 06:00 count for the previous day by default. (3) Reward cards show the days until the next reward and its category. (4) Penalty leftovers removed from the dashboard. (5) Push reminders can be set per category (on/off and interval, global by default); quiet hours still apply.
+- **Latest: `v1.04112026_0053`** – (1) Tapping a dinner push opens the app on the dinner day. (2) Penalty term removed everywhere; `TaskType` is now REWARD only, `DayOutcome.MISSED` replaces the old penalty outcome. (3) Partner category 'Other tasks' removed. (4) Category assignment (who has which category) removed from Settings; the structure is fixed in the app. (5) Input fields for pages, minutes and liters are narrower. (6) The date at the top shows the day being entered (yesterday before 06:00). (7) Reward tiers: day 3 = category 3, day 5 = category 2, day 7 = category 1.
+- `v1.04112026_0002` (1) Dinner: after the partner enters the time, main_user can confirm or reject it; a confirmed time is locked, a rejected one must be corrected by the partner. Dinner before 21:00 = 3 stars (was 1). (2) Day cut-off hint on the dashboard; entries before 06:00 count for the previous day by default. (3) Reward cards show the days until the next reward and its category. (4) Penalty leftovers removed from the dashboard. (5) Push reminders can be set per category (on/off and interval, global by default); quiet hours still apply.
 - `v1.03112026_2347` Tiered rewards: day 3 = category 3, day 4 = category 2, day 7 = category 1. Choosing a reward restarts counting at day 0. Partner rewards and main_user rewards have their own list with categories (Vinted 3, Flowers 1, Massage 3, Eat out 2, Cooking 2 / Cuddling 2, Massage 2, Edging 1, Blowjob/Handjob 3, Video 1, Favourite dish 1). All rewards are confirmed by the other person. Old open rewards without a category are not shown.
 - `v1.03112026_2328` (1) Penalties removed completely. Reward after 3 successful days (was 7). (2) New category **Bedtime** for both partners, weight 2: before midnight 5 stars, 0:00–0:59 4, 1:00–1:59 3, 2:00–2:59 2, otherwise 0. (3) The partner's name comes from the partner's own profile; in Settings the partner's information is read-only. (4) Statistics: penalties group removed.
 - `v1.03112026_2306` Fix: the main_user could not confirm the dinner time, because the dinner card only exists in the partner's category list. The confirmation is now also a button in the 'Waiting for confirmation' card on the dashboard, and it works for any pending day.

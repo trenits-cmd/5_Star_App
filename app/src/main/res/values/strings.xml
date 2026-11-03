@@ -182,6 +182,10 @@
     <string name="archive_redeemed_date">Redemption date: %1$s</string>
 
     <string name="settings_sign_out">Sign out</string>
+    <string name="settings_delete_account">Delete account</string>
+    <string name="delete_account_confirm_title">Delete account?</string>
+    <string name="delete_account_confirm_message">Are you sure you want to permanently delete your account and all your data on Firebase? This action cannot be undone.</string>
+    <string name="delete_account_confirm_yes">Yes, Delete Account</string>
 
     <!-- Rosie & Andi Rewards and Penalties -->
     <string name="seed_reward_1">Vinted Budget: Rosie gets 10 € from Andi</string>

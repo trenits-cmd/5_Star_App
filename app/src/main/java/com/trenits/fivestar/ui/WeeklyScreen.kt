@@ -1,20 +1,35 @@
 package com.trenits.fivestar.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,6 +41,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -34,13 +52,16 @@ import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.DayOutcome
 import com.trenits.fivestar.domain.DayRecord
+import com.trenits.fivestar.domain.MAX_STARS
 import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
+import com.trenits.fivestar.ui.theme.Amber
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
 fun WeeklyScreen(vm: AppViewModel) {
@@ -241,10 +262,15 @@ private fun ExpandableArchiveDayCard(
         myRecord?.counters?.isNotEmpty() == true ||
         partnerRecord?.counters?.isNotEmpty() == true ||
         dayTasks.isNotEmpty()
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "archiveChevron",
+    )
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .animateContentSize()
             .clickable { expanded = !expanded },
     ) {
         Column(Modifier.padding(16.dp)) {
@@ -258,95 +284,197 @@ private fun ExpandableArchiveDayCard(
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                 )
-                when {
-                    !hasAnyData -> Text(
-                        stringResource(R.string.archive_no_entry),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    outcome == DayOutcome.REWARD -> Text(
-                        "✓ ≥ 80 %",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    outcome == DayOutcome.PENALTY -> Text(
-                        "✗ < 80 %",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    else -> Text(
-                        stringResource(R.string.archive_tap_details),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    DayStatusChip(hasAnyData = hasAnyData, outcome = outcome)
+                    Spacer(Modifier.width(4.dp))
+                    Icon(
+                        Icons.Filled.ArrowDropDown,
+                        contentDescription = stringResource(R.string.archive_tap_details),
+                        modifier = Modifier.graphicsLayer { rotationZ = chevronRotation },
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
             if (hasAnyData) {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    stringResource(R.string.history_you, myLabel, formatPercent(myRecord?.scorePercent)),
-                    style = MaterialTheme.typography.bodySmall,
+                Spacer(Modifier.height(12.dp))
+                ArchiveScoreRow(
+                    label = myLabel,
+                    score = myRecord?.scorePercent,
+                    accent = MaterialTheme.colorScheme.primary,
                 )
                 if (showPartner) {
-                    Text(
-                        stringResource(R.string.history_partner, partnerLabel, formatPercent(partnerRecord?.scorePercent)),
-                        style = MaterialTheme.typography.bodySmall,
+                    Spacer(Modifier.height(10.dp))
+                    ArchiveScoreRow(
+                        label = partnerLabel,
+                        score = partnerRecord?.scorePercent,
+                        accent = MaterialTheme.colorScheme.tertiary,
                     )
                 }
-                Text(
-                    stringResource(R.string.archive_tap_details),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
             }
-            if (expanded) {
-                Spacer(Modifier.height(8.dp))
-                if (!hasAnyData) {
-                    Text(
-                        stringResource(R.string.archive_no_entry),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    if (mySnapshots.isNotEmpty()) {
-                        val itemsText = mySnapshots.map { s -> "${localizedCategorySnapshotName(s.name)} ${s.stars}★" }.joinToString(" · ")
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Column(Modifier.padding(top = 8.dp)) {
+                    if (!hasAnyData) {
                         Text(
-                            stringResource(R.string.history_your_categories, itemsText),
+                            stringResource(R.string.archive_no_entry),
                             style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    }
-                    if (partnerSnapshots.isNotEmpty()) {
-                        val itemsText = partnerSnapshots.map { s -> "${localizedCategorySnapshotName(s.name)} ${s.stars}★" }.joinToString(" · ")
-                        Text(
-                            stringResource(R.string.history_partner_categories, itemsText),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                    myRecord?.counters?.forEach { (categoryId, values) ->
-                        val category = categories.firstOrNull { it.id == categoryId }
-                        if (category != null) {
-                            CounterSummary(localizedCategoryName(category), values)
+                    } else {
+                        if (mySnapshots.isNotEmpty()) {
+                            ArchiveSectionTitle(stringResource(R.string.archive_section_categories, myLabel))
+                            mySnapshots.forEach { s ->
+                                ArchiveCategoryRow(localizedCategorySnapshotName(s.name), s.stars)
+                            }
+                        }
+                        if (partnerSnapshots.isNotEmpty()) {
+                            ArchiveSectionTitle(stringResource(R.string.archive_section_categories, partnerLabel))
+                            partnerSnapshots.forEach { s ->
+                                ArchiveCategoryRow(localizedCategorySnapshotName(s.name), s.stars)
+                            }
+                        }
+                        val counterEntries = myRecord?.counters?.mapNotNull { (categoryId, values) ->
+                            categories.firstOrNull { it.id == categoryId }?.let { it to values }
+                        }.orEmpty()
+                        if (counterEntries.isNotEmpty()) {
+                            ArchiveSectionTitle(stringResource(R.string.archive_section_details))
+                            counterEntries.forEach { (category, values) ->
+                                CounterSummary(localizedCategoryName(category), values)
+                            }
+                        }
+                        if (dayTasks.isNotEmpty()) {
+                            ArchiveSectionTitle(stringResource(R.string.archive_section_tasks))
+                            dayTasks.forEach { task ->
+                                Spacer(Modifier.height(6.dp))
+                                ArchiveTaskRow(
+                                    who = if (task.ownerUid == myUid) myLabel else partnerLabel,
+                                    typeLabel = typeLabel(task.type),
+                                    action = if (task.title.isEmpty()) stringResource(R.string.no_action_chosen) else localizedCatalogTitle(task.title),
+                                    statusLabel = statusLabel(task.status),
+                                    isReward = task.type == TaskType.REWARD,
+                                )
+                            }
                         }
                     }
-                    dayTasks.forEach { task ->
-                        Spacer(Modifier.height(6.dp))
-                        val who = if (task.ownerUid == myUid) myLabel else partnerLabel
-                        val action = if (task.title.isEmpty()) stringResource(R.string.no_action_chosen) else localizedCatalogTitle(task.title)
-                        Text(
-                            stringResource(
-                                R.string.history_task_line,
-                                who,
-                                typeLabel(task.type),
-                                action,
-                                statusLabel(task.status),
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DayStatusChip(hasAnyData: Boolean, outcome: DayOutcome?) {
+    val (text, color) = when {
+        !hasAnyData -> stringResource(R.string.archive_no_entry) to MaterialTheme.colorScheme.onSurfaceVariant
+        outcome == DayOutcome.REWARD -> stringResource(R.string.archive_status_reached) to MaterialTheme.colorScheme.primary
+        outcome == DayOutcome.PENALTY -> stringResource(R.string.archive_status_missed) to MaterialTheme.colorScheme.error
+        else -> stringResource(R.string.archive_status_pending) to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Box(
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.small)
+            .background(color.copy(alpha = 0.12f))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = color,
+        )
+    }
+}
+
+@Composable
+private fun ArchiveScoreRow(label: String, score: Double?, accent: Color) {
+    val value = (score ?: 0.0).coerceIn(0.0, 100.0)
+    val stars = (value / 100.0 * MAX_STARS).roundToInt()
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    formatPercent(score),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = accent,
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Amber,
+                )
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        LinearProgressIndicator(
+            progress = { (value / 100.0).toFloat() },
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(MaterialTheme.shapes.small),
+            color = accent,
+        )
+    }
+}
+
+@Composable
+private fun ArchiveSectionTitle(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 14.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
+private fun ArchiveCategoryRow(name: String, stars: Int) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(
+            "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
+            style = MaterialTheme.typography.bodyMedium,
+            color = Amber,
+        )
+    }
+}
+
+@Composable
+private fun ArchiveTaskRow(
+    who: String,
+    typeLabel: String,
+    action: String,
+    statusLabel: String,
+    isReward: Boolean,
+) {
+    val accent = if (isReward) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+        Box(
+            Modifier
+                .width(4.dp)
+                .fillMaxHeight()
+                .clip(MaterialTheme.shapes.extraSmall)
+                .background(accent),
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.padding(vertical = 2.dp)) {
+            Text("$who · $typeLabel", style = MaterialTheme.typography.labelMedium, color = accent)
+            Text(action, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            Text(
+                statusLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

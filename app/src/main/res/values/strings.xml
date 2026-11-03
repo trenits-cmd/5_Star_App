@@ -180,6 +180,12 @@
     <string name="archive_penalty_date">Penalty date: %1$s</string>
     <string name="archive_reward_date">Reward date: %1$s</string>
     <string name="archive_redeemed_date">Redemption date: %1$s</string>
+    <string name="archive_status_reached">✓ ≥ 80 %</string>
+    <string name="archive_status_missed">✗ &lt; 80 %</string>
+    <string name="archive_status_pending">Pending</string>
+    <string name="archive_section_categories">Categories of %1$s</string>
+    <string name="archive_section_details">Details</string>
+    <string name="archive_section_tasks">Penalties &amp; rewards</string>
 
     <string name="settings_sign_out">Sign out</string>
     <string name="settings_delete_account">Delete account</string>

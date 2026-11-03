@@ -15,7 +15,7 @@ class TaskTest {
     private fun task(status: TaskStatus = TaskStatus.OPEN) = Task(
         id = "t1",
         ownerUid = "u1",
-        type = TaskType.PENALTY,
+        type = TaskType.REWARD,
         title = "Test",
         dayKey = "2026-11-01",
         status = status,
@@ -85,12 +85,4 @@ class TaskTest {
         assertFalse(openTask.needsPartnerConfirmationReminder(created.plusSeconds(48 * 3600)))
     }
 
-    @Test
-    fun `Strafen-Pool-Reset am Sonntagabend ab 20 Uhr`() {
-        val zone = ZoneId.of("Europe/Berlin")
-        val sundayAfternoon = ZonedDateTime.of(2026, 11, 8, 18, 0, 0, 0, zone)
-        val sundayEvening = ZonedDateTime.of(2026, 11, 8, 20, 30, 0, 0, zone)
-        assertEquals("2026-11-02", penaltyCycleStartDayKey(sundayAfternoon))
-        assertEquals("2026-11-08", penaltyCycleStartDayKey(sundayEvening))
-    }
 }

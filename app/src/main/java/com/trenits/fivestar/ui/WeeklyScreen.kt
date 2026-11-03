@@ -370,7 +370,7 @@ private fun DayStatusChip(hasAnyData: Boolean, outcome: DayOutcome?) {
     val (text, color) = when {
         !hasAnyData -> stringResource(R.string.archive_no_entry) to MaterialTheme.colorScheme.onSurfaceVariant
         outcome == DayOutcome.REWARD -> stringResource(R.string.archive_status_reached) to MaterialTheme.colorScheme.primary
-        outcome == DayOutcome.PENALTY -> stringResource(R.string.archive_status_missed) to MaterialTheme.colorScheme.error
+        outcome == DayOutcome.MISSED -> stringResource(R.string.archive_status_missed) to MaterialTheme.colorScheme.error
         else -> stringResource(R.string.archive_status_pending) to MaterialTheme.colorScheme.onSurfaceVariant
     }
     Box(
@@ -519,7 +519,7 @@ private fun ArchivedTaskCard(
             Spacer(Modifier.height(6.dp))
             Text(
                 stringResource(
-                    if (task.type == TaskType.PENALTY) R.string.archive_penalty_date else R.string.archive_reward_date,
+                    R.string.archive_reward_date,
                     formatDay(task.dayKey),
                 ),
                 style = MaterialTheme.typography.bodySmall,

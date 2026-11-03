@@ -60,7 +60,6 @@
     <string name="stats_group_overall">Overall</string>
     <string name="stats_group_categories">Categories</string>
     <string name="stats_group_relationship">Relationship</string>
-    <string name="stats_group_penalties">Penalties</string>
     <string name="stats_group_rewards">Rewards</string>
     <string name="stats_all">All</string>
     <string name="stats_person_both">Both</string>
@@ -69,11 +68,10 @@
     <string name="stats_total_weighted">Weighted stars</string>
     <string name="stats_total_short">Σ %1$d</string>
     <string name="stats_details_title">Details</string>
-    <string name="stats_no_tasks">No penalties or rewards in this period.</string>
+    <string name="stats_no_tasks">No rewards in this period.</string>
     <string name="stats_no_partner">No partner connected.</string>
     <string name="stats_chart_title_categories">Categories (weighted %)</string>
     <string name="stats_chart_title_aspect">%1$s (%%)</string>
-    <string name="stats_chart_title_penalties">Penalties (count per period)</string>
     <string name="stats_chart_title_rewards">Rewards (count per period)</string>
     <string name="stats_range_week">Last week</string>
     <string name="stats_range_month">Last month</string>
@@ -81,11 +79,10 @@
     <string name="stats_range_all">All time</string>
     <string name="stats_category_all">All categories</string>
     <string name="stats_filter_relationship">Relationship</string>
-    <string name="stats_filter_tasks">Penalties &amp; rewards</string>
+    <string name="stats_filter_tasks">Rewards</string>
     <string name="stats_chart_title_relationship">Relationship (%)</string>
-    <string name="stats_chart_title_tasks">Penalties &amp; rewards (count per period)</string>
+    <string name="stats_chart_title_tasks">Rewards (count per period)</string>
     <string name="stats_rewards">Rewards</string>
-    <string name="stats_penalties">Penalties</string>
     <string name="stats_chart_title_overall">Daily status (%)</string>
     <string name="stats_chart_title_category">%1$s (%%)</string>
     <string name="stats_point_detail">%1$s: %2$s</string>
@@ -104,18 +101,17 @@
     <string name="countdown_behind">Below 70 %. There is still time to turn the day around. Every entry counts!</string>
     <string name="countdown_almost">Almost there. A little more and you reach 100 %!</string>
     <string name="countdown_perfect">Perfect day. Everything is at 100 %!</string>
-    <string name="status_daily_below">Below 80%% – missing the target triggers a daily penalty</string>
+    <string name="status_daily_below">Below 80%% - the daily target is missed</string>
     <string name="status_weekly_title">Weekly Status (3-Day Streak)</string>
     <string name="status_weekly_progress">%1$d / %2$d consecutive days ≥ 80%%</string>
     <string name="status_relationship_title">Relationship Mood Today</string>
     <string name="status_relationship_summary">Avg %1$.1f / 5 ★ (%2$s)</string>
-    <string name="penalty_pool_reset_hint">Penalty pool resets every Sunday evening after the weekly review.</string>
     <string name="confirm_warn_title">Confirm or it counts as done: %1$s</string>
     <string name="confirm_warn_body">&quot;%1$s&quot; counts as executed automatically at %2$s unless you confirm it or choose &quot;Not yet&quot; (+24 h).</string>
     <string name="confirm_push_title">%1$s is waiting for your confirmation!</string>
     <string name="confirm_push_body">%1$s: "%2$s" – Please confirm redemption in the app (auto-confirm after 48h).</string>
 
-    <string name="score_hint" formatted="false">Missing the daily target (&lt; 80%) triggers a penalty. 7 consecutive days at 80%+ unlocks a reward.</string>
+    <string name="score_hint" formatted="false">Reaching 80% on a day counts as a success. 3 successful days in a row unlock a reward.</string>
     <string name="percent_value">%1$.0f%%</string>
     <string name="section_categories">Categories of %1$s</string>
     <string name="categories_empty">Set your name in Settings to load your categories.</string>
@@ -131,9 +127,8 @@
     <string name="partner_no_rating">no rating yet</string>
     <string name="partner_today">today</string>
     <string name="offline_stale">Offline. Showing the last known state.</string>
-    <string name="section_open_tasks">Open penalties &amp; rewards</string>
+    <string name="section_open_tasks">Open rewards</string>
     <string name="no_open_tasks">No open tasks. Well done!</string>
-    <string name="penalty_trigger_now">Select daily penalty</string>
     <string name="day_switch_today">Today</string>
     <string name="day_switch_yesterday">Yesterday (until 06:00 AM)</string>
     <string name="waiting_partner">Waiting for your partner</string>
@@ -154,7 +149,6 @@
     <string name="task_confirm">Confirm redemption</string>
 
     <string name="task_reward">Reward</string>
-    <string name="task_penalty">Penalty</string>
     <string name="who_you">You</string>
     <string name="who_partner">Partner</string>
     <string name="status_open">open</string>
@@ -180,12 +174,9 @@
     <string name="settings_archive">Archive</string>
     <string name="settings_new_category">New category</string>
     <string name="settings_add_category">Add category</string>
-    <string name="settings_rewards">Rewards and penalties</string>
+    <string name="settings_rewards">Rewards</string>
     <string name="settings_rewards_hint">Read-only overview. Managed in the Partner tab.</string>
-    <string name="settings_penalties">Possible penalties</string>
-    <string name="settings_penalties_hint">Read-only overview. Managed in the Partner tab.</string>
     <string name="catalog_item_empty_rewards">No rewards available yet.</string>
-    <string name="catalog_item_empty_penalties">No penalties available yet.</string>
     <string name="settings_delete">Delete</string>
     <string name="settings_new_entry">New entry</string>
     <string name="settings_add_entry">Add entry</string>
@@ -240,10 +231,8 @@
     <string name="week_no_data">No ratings for the last 7 days yet.</string>
     <string name="week_successful_days">Daily status – Last 7 days</string>
     <string name="week_reward_pool">Available rewards</string>
-    <string name="week_penalty_pool">Possible daily penalties</string>
-    <string name="archive_title">Archive (Confirmed Penalties &amp; Rewards)</string>
-    <string name="archive_empty">No confirmed penalties or rewards in the archive yet.</string>
-    <string name="archive_penalty_date">Penalty date: %1$s</string>
+    <string name="archive_title">Archive (confirmed rewards)</string>
+    <string name="archive_empty">No confirmed rewards in the archive yet.</string>
     <string name="archive_reward_date">Reward date: %1$s</string>
     <string name="archive_redeemed_date">Redemption date: %1$s</string>
     <string name="archive_status_reached">✓ ≥ 80 %</string>
@@ -251,7 +240,7 @@
     <string name="archive_status_pending">Pending</string>
     <string name="archive_section_categories">Categories of %1$s</string>
     <string name="archive_section_details">Details</string>
-    <string name="archive_section_tasks">Penalties &amp; rewards</string>
+    <string name="archive_section_tasks">Rewards</string>
 
     <string name="settings_sign_out">Sign out</string>
     <string name="settings_delete_account">Delete account</string>
@@ -272,10 +261,6 @@
     <string name="seed_reward_andi_5">Handjob</string>
     <string name="seed_reward_andi_6">Video</string>
     <string name="seed_reward_andi_7">Favourite dish: partner cooks your favourite meal</string>
-    <string name="seed_penalty_1">No orgasm: sex happens, but without orgasm</string>
-    <string name="seed_penalty_2">No bar for two days</string>
-    <string name="seed_penalty_3">Phone handover: hand over smartphone to partner for 1 hour to stop distraction</string>
-    <string name="seed_penalty_andi_1">Phone handover: hand over smartphone to partner for 1 hour to stop distraction</string>
 
     <string name="reminder_channel">Category notifications</string>
     <string name="reminder_text">Your rating for today is still missing.</string>
@@ -306,7 +291,7 @@
     <string name="push_category_global">Global</string>
     <string name="day_cutoff_hint">The current day can be confirmed until 06:00 the next day. Entries before 06:00 count for the previous day.</string>
     <string name="week_next_reward">Next reward in %1$d days (category %2$d)</string>
-    <string name="reward_tiers_hint">Rewards: day 3 = category 3, day 4 = category 2, day 7 = category 1. After you choose a reward, counting starts again at day 0.</string>
+    <string name="reward_tiers_hint">Rewards: day 3 = category 3, day 5 = category 2, day 7 = category 1. After you choose a reward, counting starts again at day 0.</string>
     <string name="dinner_locked">The dinner time is confirmed and can no longer be changed.</string>
     <string name="dinner_reject_button">Reject time</string>
     <string name="dinner_rejected_you">You rejected the dinner time. Waiting for %1$s to correct it.</string>
@@ -334,7 +319,7 @@
     <string name="settings_display_name_hint">Choose your name. It will be displayed everywhere for you and your partner.</string>
     <string name="settings_partner_name">Partner name (used as variable)</string>
     <string name="settings_partner_name_hint">Choose your partner\'s name. It will be displayed everywhere for you.</string>
-    <string name="settings_no_category_crud">Categories, rewards and penalties are managed in the Partner tab. Here only the assignment (you / partner / both) and the push reminder time can be changed.</string>
+    <string name="settings_no_category_crud">Categories and rewards are fixed in the app. Here you can only change the push reminders of your own categories.</string>
     <string name="save_confirmation">Saved and synced.</string>
     <string name="archive_no_entry">No entry available</string>
     <string name="archive_tap_details">Tap to show details</string>
@@ -372,7 +357,7 @@
     <string name="rotation_not_set">No alternating task chosen yet</string>
 
     <!-- Dinner before 20h -->
-    <string name="dinner_rules_hint">Before 20:00 = 5 ★ · Before 21:00 = 1 ★ · Otherwise = 0 ★</string>
+    <string name="dinner_rules_hint">Before 20:00 = 5 stars � 20:00-20:59 = 3 stars � otherwise 0 stars</string>
     <string name="dinner_time_current">Recorded time: %1$s</string>
     <string name="dinner_time_not_set">No dinner time recorded for today yet</string>
     <string name="dinner_confirm_title">Confirm dinner time from %1$s</string>

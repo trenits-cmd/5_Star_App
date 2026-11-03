@@ -59,9 +59,9 @@ fun dateHeader(today: LocalDate): String =
     today.format(DateTimeFormatter.ofPattern("EEEE, d. MMMM", Locale.getDefault()))
 
 @Composable
-fun typeLabel(type: TaskType): String =
-    stringResource(if (type == TaskType.REWARD) R.string.task_reward else R.string.task_penalty)
-
+    /** Return the task type label. Since penalties are removed, always shows reward. */
+    fun typeLabel(type: TaskType): String =
+        stringResource(R.string.task_reward)
 @Composable
 fun statusLabel(status: TaskStatus): String = stringResource(
     when (status) {
@@ -130,11 +130,8 @@ fun localizedCategoryName(category: Category): String {
         trimmed.startsWith("Wechsel-Aufgaben") ||
             trimmed.startsWith("Weitere Aufgaben") ||
             trimmed.startsWith("Alternating tasks") ||
-            trimmed.startsWith("Other tasks") ||
             trimmed.startsWith("Tâches alternées") ||
             trimmed.startsWith("Autres tâches") ||
-            category.kind == CategoryKind.ROTATION ->
-            stringResource(R.string.cat_preset_rotation)
         trimmed in setOf("Abendessen vor 20h", "Dinner before 20h", "Dîner avant 20h") ||
             category.kind == CategoryKind.DINNER_TIME ->
             stringResource(R.string.cat_preset_dinner)
@@ -162,7 +159,6 @@ fun localizedCategorySnapshotName(rawName: String): String {
         trimmed.startsWith("Wechsel-Aufgaben") ||
             trimmed.startsWith("Weitere Aufgaben") ||
             trimmed.startsWith("Alternating tasks") ||
-            trimmed.startsWith("Other tasks") ||
             trimmed.startsWith("Tâches alternées") ||
             trimmed.startsWith("Autres tâches") ->
             stringResource(R.string.cat_preset_rotation)
@@ -198,14 +194,6 @@ fun translateCatalogTitle(context: Context, rawTitle: String): String {
         lower.startsWith("lieblingsgericht") || lower == "lieblingsessen" ||
             lower.startsWith("favourite dish:") || lower.startsWith("plat préféré") ->
             context.getString(R.string.seed_reward_andi_7)
-        lower.startsWith("kein orgasmus") || lower.startsWith("no orgasm") || lower.startsWith("pas d'orgasme") ->
-            context.getString(R.string.seed_penalty_1)
-        lower.startsWith("keine bar") || lower.startsWith("no bar") || lower.startsWith("pas de bar") ->
-            context.getString(R.string.seed_penalty_2)
-        lower.contains("an andi abgeben") || lower.contains("to andi for 1 hour") || lower.contains("à andi pendant") ->
-            context.getString(R.string.seed_penalty_3)
-        lower.contains("an rosie abgeben") || lower.contains("to rosie for 1 hour") || lower.contains("à rosie pendant") ->
-            context.getString(R.string.seed_penalty_andi_1)
         else -> trimmed
     }
 }

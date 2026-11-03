@@ -126,7 +126,7 @@ class CoupleRepository(private val coupleId: String) {
         CatalogItem(
             id = doc.id,
             ownerUid = owner,
-            type = doc.getString("type")?.let { TaskType.valueOf(it) }?.takeIf { it == TaskType.REWARD } ?: return@listen null,
+            type = doc.getString("type")?.takeIf { it == TaskType.REWARD.name }?.let { TaskType.REWARD } ?: return@listen null,
             title = doc.getString("title") ?: "",
             targets = if (targets.isNullOrEmpty()) listOf(owner) else targets,
             tier = doc.getLong("tier")?.toInt() ?: 0,
@@ -207,7 +207,7 @@ class CoupleRepository(private val coupleId: String) {
         Task(
             id = doc.id,
             ownerUid = owner,
-            type = doc.getString("type")?.let { TaskType.valueOf(it) }?.takeIf { it == TaskType.REWARD } ?: return@listen null,
+            type = doc.getString("type")?.takeIf { it == TaskType.REWARD.name }?.let { TaskType.REWARD } ?: return@listen null,
             title = doc.getString("title") ?: "",
             dayKey = doc.getString("dayKey") ?: "",
             status = doc.getString("status")?.let { TaskStatus.valueOf(it) } ?: TaskStatus.OPEN,

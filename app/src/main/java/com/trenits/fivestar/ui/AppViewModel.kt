@@ -91,7 +91,7 @@ import java.time.ZonedDateTime
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
 
-    /** Belohnungen je Rolle mit Stufe: 3 = nach 3 Tagen, 2 = nach 4 Tagen, 1 = nach 7 Tagen. */
+    /** Belohnungen je Rolle mit Stufe: 3 = nach 3 Tagen, 2 = nach 5 Tagen, 1 = nach 7 Tagen. */
     private val partnerRewardSeeds = listOf(
         R.string.seed_reward_1 to 3,
         R.string.seed_reward_2 to 1,
@@ -352,17 +352,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             goal = 0.0,
             icon = CategoryIcon.MIND.name,
             notifications = listOf("Bedtime before midnight = 5 stars"),
-        ),
-        Category(
-            id = "preset_rotation_$ownerUid",
-            ownerUid = ownerUid,
-            name = text(R.string.cat_preset_rotation),
-            weight = 1,
-            kind = CategoryKind.ROTATION,
-            targets = listOf(ownerUid),
-            goal = 0.0,
-            icon = CategoryIcon.HOME.name,
-            notifications = listOf("Select today's alternating task (lessons / household) 🏠"),
         ),
     )
 
@@ -699,6 +688,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         yesterdayChoice.value = useYesterday
     }
 
+    /** Stellt den Heute-Tab auf den Tag ein, zu dem eine Benachrichtigung gehört. */
+    fun focusDay(dayKey: String) {
+        when (dayKey) {
+            todayKey.value -> yesterdayChoice.value = false
+            yesterdayKey.value -> yesterdayChoice.value = true
+        }
+    }
+
     private fun currentMergedDay(dayKey: String = activeDayKey.value): DayRecord? {
         val remote = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == dayKey }
         val local = localDayRecords.value[dayKey]
@@ -896,7 +893,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         "preset_dinner_$ownerUid",
         "preset_water_$ownerUid",
         "preset_alcohol_$ownerUid",
-        "preset_rotation_$ownerUid",
         "preset_bedtime_$ownerUid",
     )
 
@@ -982,17 +978,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             icon = CategoryIcon.MIND.name,
             notifications = listOf("Bedtime before midnight = 5 stars"),
             id = "preset_bedtime_$uid",
-        )
-        repo.saveCategory(
-            ownerUid = uid,
-            name = text(R.string.cat_preset_rotation),
-            weight = 1,
-            kind = CategoryKind.ROTATION,
-            targets = myTargets,
-            goal = 0.0,
-            icon = CategoryIcon.HOME.name,
-            notifications = listOf("Select today's alternating task (lessons / household) 🏠"),
-            id = "preset_rotation_$uid",
         )
 
         partnerRewardSeeds.forEachIndexed { idx, seed ->
@@ -1341,7 +1326,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * Wochenziel / Streak-Prüfung:
      * Beim Erreichen von 7 Tagen am Stück (≥ 80 %) wird eine Belohnung freigeschaltet.
      */
-    /** Belohnungen nach Serie: Tag 3 = Stufe 3, Tag 4 = Stufe 2, Tag 7 = Stufe 1. Die Zählung startet nach jeder Auswahl neu. */
+    /** Belohnungen nach Serie: Tag 3 = Stufe 3, Tag 5 = Stufe 2, Tag 7 = Stufe 1. Die Zählung startet nach jeder Auswahl neu. */
     private fun evaluateStreakReward() {
         val repo = repo() ?: return
         if (targeted.value.isEmpty()) return

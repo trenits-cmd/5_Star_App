@@ -206,38 +206,7 @@ fun SettingsScreen(vm: AppViewModel) {
                 }
             }
         }
-        // 1a. Zuweisung der Kategorien (nur ich / Partner / beide). Keine Bearbeitung der Kategorien selbst.
-        item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(stringResource(R.string.settings_categories), style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        stringResource(R.string.settings_assignment_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    myCategories.forEach { category ->
-                        val currentTargets = storedCategories.items.firstOrNull { it.id == category.id }?.targets
-                            ?: listOf(vm.uid)
-                        Text(localizedCategoryName(category), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                        AudienceSelector(
-                            audience = audienceFromTargets(currentTargets, vm.uid),
-                            hasPartner = partnerUid != null,
-                            myLabel = myLabel,
-                            partnerLabel = partnerLabel,
-                            onSelect = { audience ->
-                                vm.setCategoryTargets(
-                                    category.id,
-                                    targetsForAudience(audience, vm.uid, partnerUid),
-                                )
-                            },
-                        )
-                    }
-                }
-            }
-        }
-
-        // 1d. Push-Erinnerung je Kategorie (Ruhepause 23:00–09:00 gilt weiterhin)
+// 1d. Push-Erinnerung je Kategorie (Ruhepause 23:00–09:00 gilt weiterhin)
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(

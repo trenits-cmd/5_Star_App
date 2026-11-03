@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.content.Intent
 import com.trenits.fivestar.data.AuthLinks
+import com.trenits.fivestar.data.NotificationTargets
 import com.trenits.fivestar.ui.AppRoot
 import com.trenits.fivestar.ui.AppViewModel
 import com.trenits.fivestar.ui.AuthViewModel
@@ -26,12 +27,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleLink(intent: Intent?) {
+        intent?.getStringExtra("dinner_day_key")?.let { NotificationTargets.dinnerDay.value = it }
         val data = intent?.dataString ?: return
         if (data.startsWith("https://starapp-99d8e.firebaseapp.com/finishSignIn")) AuthLinks.incoming.value = data
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleLink(intent)
         setContent {
             FiveStarTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {

@@ -55,7 +55,7 @@ class ScoreTest {
         val single = listOf(WeightedCategory("a", 1), WeightedCategory("b", 1))
         // (5 + 2) / 10 = 70 %
         val stars = mapOf("a" to 5, "b" to 2)
-        assertEquals(DayOutcome.PENALTY, dayOutcome(single, stars))
+        assertEquals(DayOutcome.MISSED, dayOutcome(single, stars))
     }
 
     @Test

@@ -5,7 +5,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZonedDateTime
 
-enum class TaskType { REWARD, PENALTY }
+enum class TaskType { REWARD }
 
 enum class TaskStatus { OPEN, CONFIRMED, AUTO_CONFIRMED }
 
@@ -90,18 +90,6 @@ fun Task.confirmedByPartner(redeemedOn: String? = null): Task =
         this
     }
 
-/**
- * Start-Tagesschlüssel für den aktuellen Strafen-Pool-Durchlauf:
- * Der Strafen-Pool wird jeden Sonntagabend (ab 20:00 Uhr, nach der Wochenbilanz) zurückgesetzt.
- */
-fun penaltyCycleStartDayKey(now: ZonedDateTime): String {
-    val date = now.toLocalDate()
-    return if (date.dayOfWeek == DayOfWeek.SUNDAY && now.hour >= 20) {
-        date.toString()
-    } else {
-        date.with(DayOfWeek.MONDAY).toString()
-    }
-}
 
 /**
  * Berechnet die aktuell im Dropdown wählbaren Strafen/Belohnungen aus [pool].

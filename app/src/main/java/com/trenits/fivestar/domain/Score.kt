@@ -43,10 +43,10 @@ fun scoreParts(categories: List<WeightedCategory>, stars: Map<String, Int>): Pai
     return earned to possible
 }
 
-enum class DayOutcome { REWARD, PENALTY }
+enum class DayOutcome { REWARD, MISSED }
 
-/** Score ≥ 80 % ergibt ein erreichtes Tagesziel (REWARD), darunter eine Strafe (PENALTY). */
+/** Score ≥ 80 % ergibt ein erreichtes Tagesziel (REWARD), darunter verfehlt (MISSED). */
 fun dayOutcome(categories: List<WeightedCategory>, stars: Map<String, Int>): DayOutcome {
     val (earned, possible) = scoreParts(categories, stars)
-    return if (earned * 100 >= THRESHOLD_PERCENT * possible) DayOutcome.REWARD else DayOutcome.PENALTY
+    return if (earned * 100 >= THRESHOLD_PERCENT * possible) DayOutcome.REWARD else DayOutcome.MISSED
 }

@@ -44,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.trenits.fivestar.R
+import com.trenits.fivestar.data.NotificationTargets
 import com.trenits.fivestar.reminder.ReminderPrefs
 import com.trenits.fivestar.reminder.ReminderScheduler
 
@@ -92,6 +93,14 @@ private fun MainTabs(viewModel: AppViewModel) {
     val partnerName by viewModel.partnerName.collectAsState()
     val partnerPhoto by viewModel.partnerPhoto.collectAsState()
     val toast by viewModel.toastMessage.collectAsState()
+    val dinnerDay by NotificationTargets.dinnerDay.collectAsState()
+
+    LaunchedEffect(dinnerDay) {
+        val day = dinnerDay ?: return@LaunchedEffect
+        viewModel.focusDay(day)
+        tab = Tab.TODAY
+        NotificationTargets.dinnerDay.value = null
+    }
 
     LaunchedEffect(toast) {
         val msg = toast

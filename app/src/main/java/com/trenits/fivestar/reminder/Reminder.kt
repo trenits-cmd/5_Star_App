@@ -1,10 +1,12 @@
 package com.trenits.fivestar.reminder
 
+import android.app.PendingIntent
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -23,6 +25,7 @@ import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.R
 import com.trenits.fivestar.data.AppClock
 import com.trenits.fivestar.data.LocalProfileStore
+import com.trenits.fivestar.MainActivity
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.DinnerConfirmation
 import com.trenits.fivestar.domain.needsWarning
@@ -256,12 +259,24 @@ object ReminderScheduler {
             partnerDisplayName,
         )
         val body = context.getString(R.string.dinner_confirm_body, time, until)
+        // Intent to open the app to the dinner confirmation screen
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra("dinner_day_key", dc.dayKey)
+            putExtra("dinner_confirm", true)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
             .build()
         NotificationManagerCompat.from(context).notify(BASE_NOTIFICATION_ID + 700 + (dc.dayKey.hashCode() and 0xFF), notification)
     }
@@ -433,7 +448,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
         for (doc in docs.documents) {
             runCatching {
                 val owner = doc.getString("ownerUid") ?: return@runCatching
-                val type = doc.getString("type")?.let { TaskType.valueOf(it) }?.takeIf { it == TaskType.REWARD } ?: return@runCatching
+                val type = doc.getString("type")?.takeIf { it == TaskType.REWARD.name }?.let { TaskType.REWARD } ?: return@runCatching
                 val createdAt = doc.getTimestamp("createdAt")
                     ?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) }
                     ?: return@runCatching

@@ -201,11 +201,11 @@ fun DashboardScreen(vm: AppViewModel) {
                         style = MaterialTheme.typography.headlineMedium,
                     )
                     Text(
-                        formatDay(simulatedToday.toString()),
+                        formatDay(activeDayKey),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                                        Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { vm.shiftSimulatedDays(-1) }) { Text("−") }
                         Text(
@@ -795,7 +795,7 @@ private fun WeeklyStatusBanner(
                     val outcome = weekOutcomes[key]
                     val dot = when (outcome) {
                         DayOutcome.REWARD -> StatusGreen
-                        DayOutcome.PENALTY -> StatusRed
+                        DayOutcome.MISSED -> StatusRed
                         null -> MaterialTheme.colorScheme.outline
                     }
                     val dayName = runCatching { LocalDate.parse(key).dayOfWeek }.getOrNull()
@@ -1214,8 +1214,7 @@ private fun ReadingCategoryCard(
                             focusManager.clearFocus()
                         },
                     ),
-                    modifier = Modifier
-                        .weight(1f)
+                    modifier = Modifier.width(120.dp)
                         .onFocusChanged { state ->
                             isFocused = state.isFocused
                             if (state.isFocused) {
@@ -1384,8 +1383,7 @@ private fun SportCategoryCard(
                             focusManager.clearFocus()
                         },
                     ),
-                    modifier = Modifier
-                        .weight(1f)
+                    modifier = Modifier.width(120.dp)
                         .onFocusChanged { state ->
                             isFocused = state.isFocused
                             if (state.isFocused) {
@@ -1852,8 +1850,7 @@ private fun LitersField(categoryId: String, value: Double, onChange: (Double, Bo
                     focusManager.clearFocus()
                 },
             ),
-            modifier = Modifier
-                .weight(1f)
+            modifier = Modifier.width(120.dp)
                 .onFocusChanged { state ->
                     isFocused = state.isFocused
                     if (state.isFocused) {

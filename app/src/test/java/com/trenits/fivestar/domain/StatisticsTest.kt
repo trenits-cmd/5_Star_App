@@ -106,11 +106,11 @@ class StatisticsTest {
     }
 
     @Test
-    fun penaltyTimersStartAtSelection() {
+    fun taskTimersStartAtSelection() {
         val created = java.time.Instant.parse("2026-11-01T10:00:00Z")
         val selected = java.time.Instant.parse("2026-11-03T10:00:00Z")
         val task = Task(
-            id = "t", ownerUid = "u", type = TaskType.PENALTY, title = "Phone handover",
+            id = "t", ownerUid = "u", type = TaskType.REWARD, title = "Rewardtitle",
             dayKey = "2026-11-01", status = TaskStatus.OPEN, createdAt = created, selectedAt = selected,
         )
         // 48 h nach Auswahl, nicht nach Erstellung
@@ -125,7 +125,7 @@ class StatisticsTest {
     fun notYetPostponesDeadlineByTwentyFourHours() {
         val selected = java.time.Instant.parse("2026-11-03T10:00:00Z")
         val task = Task(
-            id = "t", ownerUid = "u", type = TaskType.PENALTY, title = "Phone handover",
+            id = "t", ownerUid = "u", type = TaskType.REWARD, title = "Rewardtitle",
             dayKey = "2026-11-03", status = TaskStatus.OPEN, createdAt = selected, selectedAt = selected,
         )
         val now = selected.plusSeconds(40 * 3600)
@@ -142,7 +142,7 @@ class StatisticsTest {
     fun deadlineWarningComesSixHoursBeforeAutoConfirm() {
         val selected = java.time.Instant.parse("2026-11-03T10:00:00Z")
         val task = Task(
-            id = "t", ownerUid = "u", type = TaskType.PENALTY, title = "Phone handover",
+            id = "t", ownerUid = "u", type = TaskType.REWARD, title = "Rewardtitle",
             dayKey = "2026-11-03", status = TaskStatus.OPEN, createdAt = selected, selectedAt = selected,
         )
         assertEquals(false, task.needsDeadlineWarning(selected.plusSeconds(41 * 3600)))
@@ -161,9 +161,9 @@ class StatisticsTest {
     @Test
     fun rewardTiersFollowStreakMilestones() {
         assertEquals(3, rewardTierForStreak(3))
-        assertEquals(2, rewardTierForStreak(4))
+        assertEquals(2, rewardTierForStreak(5))
         assertEquals(1, rewardTierForStreak(7))
-        assertEquals(null, rewardTierForStreak(5))
+        assertEquals(null, rewardTierForStreak(4))
     }
 
     @Test

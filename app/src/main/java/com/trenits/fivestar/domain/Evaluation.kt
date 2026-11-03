@@ -31,5 +31,5 @@ fun dayOutcomeFor(record: DayRecord?, categories: List<Category>): DayOutcome? {
         )
     }
     if (categories.none { !it.archived && it.weight > 0 }) return null
-    return DayOutcome.PENALTY
+    return DayOutcome.MISSED
 }

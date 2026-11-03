@@ -449,8 +449,8 @@ fun weekOutcomeFor(
  * Zählt, wie viele Tage am Stück (rückwärts ab [endDay]) die Person ihr Tagesziel (≥ 80 %)
  * erreicht hat. Sobald ein Tag fehlt oder unter 80 % liegt, endet die Serie.
  */
-/** Belohnungsstufen je Serienlänge: Tag 3 = Stufe 3, Tag 4 = Stufe 2, Tag 7 = Stufe 1. */
-val REWARD_TIER_BY_STREAK: Map<Int, Int> = mapOf(3 to 3, 4 to 2, 7 to 1)
+/** Belohnungsstufen je Serienlänge: Tag 3 = Stufe 3, Tag 5 = Stufe 2, Tag 7 = Stufe 1. */
+val REWARD_TIER_BY_STREAK: Map<Int, Int> = mapOf(3 to 3, 5 to 2, 7 to 1)
 
 fun rewardTierForStreak(streak: Int): Int? = REWARD_TIER_BY_STREAK[streak]
 

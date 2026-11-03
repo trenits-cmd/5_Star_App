@@ -45,12 +45,12 @@ class EvaluationTest {
                 CategorySnapshot("essen", "Essen", 1, 5),
             ),
         )
-        assertEquals(DayOutcome.PENALTY, dayOutcomeFor(r, listOf(sport, essen)))
+        assertEquals(DayOutcome.MISSED, dayOutcomeFor(r, listOf(sport, essen)))
     }
 
     @Test
     fun `fehlender Eintrag mit aktiven Kategorien ist Strafe`() {
-        assertEquals(DayOutcome.PENALTY, dayOutcomeFor(null, listOf(sport, essen)))
+        assertEquals(DayOutcome.MISSED, dayOutcomeFor(null, listOf(sport, essen)))
     }
 
     @Test
@@ -61,7 +61,7 @@ class EvaluationTest {
 
     @Test
     fun `leerer Eintrag zaehlt nicht als Belohnung`() {
-        assertEquals(DayOutcome.PENALTY, dayOutcomeFor(record(), listOf(sport)))
+        assertEquals(DayOutcome.MISSED, dayOutcomeFor(record(), listOf(sport)))
     }
 
     @Test

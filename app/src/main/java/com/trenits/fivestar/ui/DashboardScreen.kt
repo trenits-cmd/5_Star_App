@@ -165,17 +165,15 @@ fun DashboardScreen(vm: AppViewModel) {
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    if (myPresetRole == "main_user") {
-                        Spacer(Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(onClick = { vm.shiftSimulatedDays(-1) }) { Text("−") }
-                            Text(
-                                "TEST ${if (simulatedOffset >= 0) "+" else ""}$simulatedOffset d",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            OutlinedButton(onClick = { vm.shiftSimulatedDays(1) }) { Text("+") }
-                        }
+                                        Spacer(Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { vm.shiftSimulatedDays(-1) }) { Text("−") }
+                        Text(
+                            "TEST ${if (simulatedOffset >= 0) "+" else ""}$simulatedOffset d",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        OutlinedButton(onClick = { vm.shiftSimulatedDays(1) }) { Text("+") }
                     }
                     if (partnerUid != null) {
                         Text(

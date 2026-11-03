@@ -953,7 +953,7 @@ private fun ReadingCategoryCard(
             CounterRow(
                 label = stringResource(R.string.reading_pages_summary, pages),
                 value = pages.toDouble(),
-                step = 5.0,
+                step = 1.0,
             ) { newVal ->
                 val updated = newVal.toInt().coerceAtLeast(0)
                 text = updated.toString()
@@ -1123,7 +1123,7 @@ private fun SportCategoryCard(
             CounterRow(
                 label = stringResource(R.string.sport_minutes_summary, minutes),
                 value = minutes.toDouble(),
-                step = 15.0,
+                step = 1.0,
             ) { newVal ->
                 val updated = newVal.toInt().coerceAtLeast(0)
                 text = updated.toString()

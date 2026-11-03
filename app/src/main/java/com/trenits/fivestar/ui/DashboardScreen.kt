@@ -197,8 +197,16 @@ fun DashboardScreen(vm: AppViewModel) {
 
         // Gesonderte Anzeige 1: Tagesstand
         item {
+            val myScore = remember(myToday, sortedCategories, stored, activeDayKey, vm.uid) {
+                myToday?.scorePercent
+                    ?: if (sortedCategories.isNotEmpty()) {
+                        buildDayRecord(activeDayKey, vm.uid, sortedCategories, stored, emptyMap()).scorePercent ?: 0.0
+                    } else {
+                        0.0
+                    }
+            }
             ScoreHero(
-                score = myToday?.scorePercent,
+                score = myScore,
                 title = stringResource(R.string.score_for_name, myLabel),
             )
         }
@@ -424,6 +432,17 @@ private fun SectionTitle(text: String) {
     )
 }
 
+private fun canonicalPrefixFor(kind: CategoryKind): String = when (kind) {
+    CategoryKind.WATER -> "preset_water_"
+    CategoryKind.DINNER_TIME -> "preset_dinner_"
+    CategoryKind.MEALS -> "preset_meals_"
+    CategoryKind.ALCOHOL -> "preset_alcohol_"
+    CategoryKind.ROTATION -> "preset_rotation_"
+    CategoryKind.SPORT -> "preset_sport_"
+    CategoryKind.READING -> "preset_reading_"
+    CategoryKind.STARS -> "preset_stars_"
+}
+
 /**
  * Zeigt eine einzelne Kategorie im Partner-Tab an (nur deren Kategorien, nicht editierbar).
  * Liest den aktuellen Wert aus der gespeicherten Tagesbilanz und zeigt Stern-/Zählerwert an.
@@ -435,10 +454,18 @@ private fun PartnerCategorySummaryCard(
     values: Map<String, Double>,
     snapshots: List<CategorySnapshot>,
 ) {
-    val prefix = category.id.substringBeforeLast("_") + "_"
-    val stars = (snapshots.firstOrNull { it.categoryId == category.id }
-        ?: snapshots.firstOrNull { it.categoryId.startsWith(prefix) })?.stars
-        ?: counterStars(category, values)
+    val prefix = canonicalPrefixFor(category.kind)
+    val stars = when (category.kind) {
+        CategoryKind.STARS -> (snapshots.firstOrNull { it.categoryId == category.id }
+            ?: snapshots.firstOrNull { it.categoryId.startsWith(prefix) })?.stars ?: 0
+        else -> if (values.isNotEmpty()) {
+            counterStars(category, values)
+        } else {
+            (snapshots.firstOrNull { it.categoryId == category.id }
+                ?: snapshots.firstOrNull { it.categoryId.startsWith(prefix) })?.stars
+                ?: counterStars(category, values)
+        }
+    }
     val counters = values
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1661,15 +1688,24 @@ fun PartnerTodayScreen(vm: AppViewModel) {
     val partnerOpenTasks = tasks.items
         .filter { it.status == TaskStatus.OPEN }
         .sortedWith(compareByDescending<Task> { it.dayKey }.thenByDescending { it.createdAt })
-    val partnerStored = partnerToday?.snapshots.orEmpty()
-    val myDinnerCounters = myToday?.counters?.values?.firstOrNull { it.containsKey(DINNER_HOUR) }
+    val partnerStored = partnerToday?.snapshots?.takeIf { it.isNotEmpty() }
+        ?: myToday?.snapshots.orEmpty()
+    val myCounters = myToday?.counters.orEmpty()
+    val myDinnerCounters = myCounters.values.firstOrNull { it.containsKey(DINNER_HOUR) }
     val rawPartnerCounters = partnerToday?.counters.orEmpty()
-    val partnerCounters = remember(rawPartnerCounters, myDinnerCounters, partnerCategories) {
+    val partnerCounters = remember(rawPartnerCounters, myCounters, myDinnerCounters, partnerCategories, partnerToday) {
         val mutable = mutableMapOf<String, Map<String, Double>>()
         partnerCategories.forEach { cat ->
-            val prefix = cat.id.substringBeforeLast("_") + "_"
-            val existing = rawPartnerCounters[cat.id]
+            val prefix = canonicalPrefixFor(cat.kind)
+            val fromPartner = rawPartnerCounters[cat.id]
                 ?: rawPartnerCounters.entries.firstOrNull { it.key.startsWith(prefix) }?.value
+            val fromSameDeviceFallback = if (partnerToday == null) {
+                myCounters[cat.id]
+                    ?: myCounters.entries.firstOrNull { it.key.startsWith(prefix) }?.value
+            } else {
+                null
+            }
+            val existing = fromPartner ?: fromSameDeviceFallback
             if (existing != null) {
                 mutable[cat.id] = existing
             }
@@ -1683,18 +1719,16 @@ fun PartnerTodayScreen(vm: AppViewModel) {
         }
         mutable
     }
-    val partnerScore = remember(partnerToday, partnerCategories, partnerCounters, pUid) {
-        if (partnerToday == null && partnerCounters.isEmpty()) {
-            0.0
-        } else if (partnerCategories.isNotEmpty()) {
+    val partnerScore = remember(partnerToday, myToday, partnerStored, partnerCategories, partnerCounters, pUid) {
+        if (partnerCategories.isNotEmpty()) {
             val storedMap = partnerCategories.associate { cat ->
-                val prefix = cat.id.substringBeforeLast("_") + "_"
+                val prefix = canonicalPrefixFor(cat.kind)
                 val snap = partnerStored.firstOrNull { it.categoryId == cat.id }
                     ?: partnerStored.firstOrNull { it.categoryId.startsWith(prefix) }
                 cat.id to (snap?.stars ?: 0)
             }
             buildDayRecord(
-                dayKey = partnerToday?.dayKey ?: "",
+                dayKey = partnerToday?.dayKey ?: myToday?.dayKey ?: "",
                 ownerUid = pUid,
                 categories = partnerCategories,
                 stars = storedMap,

@@ -60,10 +60,9 @@ service cloud.firestore {
       // Zu Testzwecken oder beim Löschen des eigenen Accounts darf ein Mitglied die Partner-Verbindung anpassen.
       allow update: if signedIn()
         && (
-          (resource.data.members.size() == 1
-            && request.resource.data.members.size() == 2
-            && request.auth.uid in request.resource.data.members
-            && resource.data.members[0] in request.resource.data.members)
+          (resource.data.members.size() <= 2
+            && request.resource.data.members.size() <= 2
+            && request.auth.uid in request.resource.data.members)
           ||
           (request.auth.uid in resource.data.members
             && request.resource.data.members == [request.auth.uid])

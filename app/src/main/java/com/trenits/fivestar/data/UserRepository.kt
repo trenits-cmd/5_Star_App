@@ -142,6 +142,10 @@ class UserRepository(private val uid: String) {
         }
         val coupleId = invite.getString("coupleId") ?: throw InvalidInviteException()
         if (status == "confirmed") {
+            runCatching {
+                Firebase.firestore.collection("couples").document(coupleId)
+                    .update("members", FieldValue.arrayUnion(uid)).await()
+            }
             user.set(mapOf("coupleId" to coupleId, "pendingInviteCode" to FieldValue.delete()), SetOptions.merge()).await()
             return
         }

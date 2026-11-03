@@ -488,6 +488,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val catItems = args[4] as Listed<CatalogItem>
 
                 val coupleId = p?.coupleId ?: return@collect
+                if (uid.isNotEmpty() && uid !in members.value.items) {
+                    runCatching {
+                        Firebase.firestore.collection("couples").document(coupleId)
+                            .update("members", com.google.firebase.firestore.FieldValue.arrayUnion(uid))
+                    }
+                }
                 val role = resolveRole(localName, pName, p.displayName, cats.items) ?: return@collect
 
                 val expectedCatIds = if (role == "rosie") rosieCategoryIds(uid) else andiCategoryIds(uid)

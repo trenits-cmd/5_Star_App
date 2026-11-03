@@ -50,6 +50,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.DayRecord
@@ -60,7 +62,9 @@ import com.trenits.fivestar.domain.hasCategoryOfKind
 import com.trenits.fivestar.domain.overallPercentOf
 import com.trenits.fivestar.domain.statsDays
 import com.trenits.fivestar.domain.statsPoints
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.ceil
@@ -89,7 +93,12 @@ fun StatisticsScreen(vm: AppViewModel) {
         recordsByDate(days.items.filter { partnerUid != null && it.ownerUid == partnerUid })
     }
     val firstRecorded = (myRecords.keys + partnerRecords.keys).minOrNull()
-    val periodDays = statsDays(range, today, firstRecorded)
+    val accountStart = remember {
+        Firebase.auth.currentUser?.metadata?.creationTimestamp?.let {
+            Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+        }
+    }
+    val periodDays = statsDays(range, today, firstRecorded, accountStart)
     val category = targeted.firstOrNull { it.id == categoryId }
 
     val myValues = periodDays.map { d ->

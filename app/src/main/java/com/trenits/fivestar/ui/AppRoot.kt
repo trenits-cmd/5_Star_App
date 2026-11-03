@@ -108,7 +108,7 @@ private fun MainTabs(viewModel: AppViewModel) {
         if (!granted) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
-    val visibleTabs = listOf(Tab.TODAY, Tab.WEEK, Tab.PARTNER, Tab.STATISTICS, Tab.SETTINGS)
+    val visibleTabs = listOf(Tab.TODAY, Tab.PARTNER, Tab.WEEK, Tab.STATISTICS, Tab.SETTINGS)
 
     Scaffold(
         topBar = {

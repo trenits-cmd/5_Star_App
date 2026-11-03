@@ -30,11 +30,18 @@ class StatisticsTest {
     }
 
     @Test
-    fun allTimeStartsAtFirstRecordedDay() {
-        val first = LocalDate.of(2026, 10, 1)
-        val days = statsDays(StatsRange.ALL, today, first)
-        assertEquals(first, days.first())
+    fun allTimeStartsAtAccountStartEvenWithoutData() {
+        val account = LocalDate.of(2026, 10, 1)
+        val days = statsDays(StatsRange.ALL, today, null, account)
+        assertEquals(account, days.first())
         assertEquals(34, days.size)
+    }
+
+    @Test
+    fun allTimeUsesEarlierOfAccountAndFirstRecord() {
+        val account = LocalDate.of(2026, 10, 10)
+        val firstRecord = LocalDate.of(2026, 10, 1)
+        assertEquals(firstRecord, statsDays(StatsRange.ALL, today, firstRecord, account).first())
     }
 
     @Test

@@ -8,13 +8,21 @@ enum class StatsRange { WEEK, MONTH, THREE_MONTHS, ALL }
 /** Ein Diagrammpunkt: Startdatum des Abschnitts und Durchschnittswert (0–100 %). */
 data class StatsPoint(val start: LocalDate, val value: Double)
 
-/** Alle Kalendertage des Zeitraums bis [today] (inklusive). */
-fun statsDays(range: StatsRange, today: LocalDate, firstRecorded: LocalDate?): List<LocalDate> {
+/**
+ * Alle Kalendertage des Zeitraums bis [today] (inklusive).
+ * ALL beginnt am frühesten bekannten Tag: Account-Erstellung oder erster Eintrag.
+ */
+fun statsDays(
+    range: StatsRange,
+    today: LocalDate,
+    firstRecorded: LocalDate?,
+    accountStart: LocalDate? = null,
+): List<LocalDate> {
     val start = when (range) {
         StatsRange.WEEK -> today.minusDays(6)
         StatsRange.MONTH -> today.minusDays(29)
         StatsRange.THREE_MONTHS -> today.minusDays(89)
-        StatsRange.ALL -> firstRecorded ?: today
+        StatsRange.ALL -> listOfNotNull(accountStart, firstRecorded).minOrNull() ?: today
     }
     val first = if (start.isAfter(today)) today else start
     return generateSequence(first) { it.plusDays(1) }

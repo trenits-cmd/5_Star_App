@@ -29,6 +29,9 @@ import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
 import com.trenits.fivestar.domain.dayKeyOf
 import com.trenits.fivestar.domain.isWithinQuietHours
+import com.trenits.fivestar.domain.needsDeadlineWarning
+import com.trenits.fivestar.domain.postponed
+import com.trenits.fivestar.domain.autoConfirmAt
 import com.trenits.fivestar.domain.needsPartnerConfirmationReminder
 import com.trenits.fivestar.domain.withAutoConfirmation
 import kotlinx.coroutines.tasks.await
@@ -37,6 +40,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
@@ -108,6 +112,12 @@ class ReminderPrefs(context: Context) {
 
     fun markNotifiedConfirmForTask(taskId: String) {
         prefs.edit().putBoolean("confirm_notify_$taskId", true).apply()
+    }
+
+    fun hasNotified(key: String): Boolean = prefs.getBoolean("notified_$key", false)
+
+    fun markNotified(key: String) {
+        prefs.edit().putBoolean("notified_$key", true).apply()
     }
 }
 
@@ -225,6 +235,28 @@ object ReminderScheduler {
             .setAutoCancel(true)
             .build()
         NotificationManagerCompat.from(context).notify(BASE_NOTIFICATION_ID + 900, notification)
+    }
+
+    /** Frühwarnung: bestaetigen oder "Not yet" waehlen, sonst gilt die Strafe zum Fristende als ausgefuehrt. */
+    @SuppressLint("MissingPermission")
+    fun sendDeadlineWarningNotification(context: Context, partnerDisplayName: String, task: Task, deadline: Instant) {
+        createChannel(context)
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!allowed) return
+
+        val time = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").withZone(ZoneId.systemDefault()).format(deadline)
+        val title = context.getString(R.string.confirm_warn_title, partnerDisplayName)
+        val body = context.getString(R.string.confirm_warn_body, task.title, time)
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(BASE_NOTIFICATION_ID + 600 + (task.id.hashCode() and 0xFF), notification)
     }
 
     /**
@@ -355,9 +387,10 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     /**
-     * Offene Aufgaben (läuft auch bei geschlossener App):
-     * - Nach 48 h ohne Bestätigung automatisch bestätigt (Archiv).
-     * - Nach 3 h Push an den Partner, der bestätigen muss („… wartet auf deine Bestätigung!“).
+     * Offene Aufgaben (laeuft auch bei geschlossener App):
+     * - 3 h nach Auswahl: Push an den Partner ("... is waiting for your confirmation!").
+     * - 6 h vor Fristende: Frueh-Warnung an den Partner (bestaetigen oder gilt als ausgefuehrt).
+     * - Fristende (48 h ab Auswahl bzw. verschoben durch "Not yet"): automatisch als ausgefuehrt.
      */
     private suspend fun checkOpenTasks(coupleRef: DocumentReference, uid: String, now: ZonedDateTime) {
         val prefs = ReminderPrefs(applicationContext)
@@ -386,6 +419,9 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     redeemedDayKey = null,
                     selectedAt = doc.getTimestamp("selectedAt")
                         ?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) },
+                    deadlineAt = doc.getTimestamp("deadlineAt")
+                        ?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) },
+                    postponeCount = doc.getLong("postponeCount")?.toInt() ?: 0,
                 )
                 if (task.withAutoConfirmation(instant).status != task.status) {
                     doc.reference.update(
@@ -393,13 +429,21 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     ).await()
                     return@runCatching
                 }
-                if (owner != uid && task.needsPartnerConfirmationReminder(instant) &&
-                    !prefs.hasNotifiedConfirmForTask(task.id)
-                ) {
-                    val partnerName = LocalProfileStore(applicationContext).partnerDisplayName.value
-                        ?: applicationContext.getString(R.string.who_partner)
+                if (owner == uid) return@runCatching
+                val partnerName = LocalProfileStore(applicationContext).partnerDisplayName.value
+                    ?: applicationContext.getString(R.string.who_partner)
+                if (task.needsPartnerConfirmationReminder(instant) && !prefs.hasNotified("confirm_${task.id}")) {
                     ReminderScheduler.sendConfirmationReminderNotification(applicationContext, partnerName, task)
-                    prefs.markNotifiedConfirmForTask(task.id)
+                    prefs.markNotified("confirm_${task.id}")
+                }
+                if (task.needsDeadlineWarning(instant)) {
+                    val key = "warn_${task.id}_${task.autoConfirmAt.epochSecond}"
+                    if (!prefs.hasNotified(key)) {
+                        ReminderScheduler.sendDeadlineWarningNotification(
+                            applicationContext, partnerName, task, task.autoConfirmAt,
+                        )
+                        prefs.markNotified(key)
+                    }
                 }
             }
         }

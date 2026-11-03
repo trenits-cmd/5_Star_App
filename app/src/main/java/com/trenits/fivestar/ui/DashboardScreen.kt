@@ -95,6 +95,7 @@ import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
 import com.trenits.fivestar.domain.WeightedCategory
 import com.trenits.fivestar.domain.alcoholLiters
+import com.trenits.fivestar.domain.autoConfirmAt
 import com.trenits.fivestar.domain.availableRotationTasks
 import com.trenits.fivestar.domain.buildDayRecord
 import com.trenits.fivestar.domain.counterStars
@@ -2030,6 +2031,12 @@ internal fun TaskCard(
                     stringResource(R.string.task_partner_label, localizedCatalogTitle(task.title)),
                     fontWeight = FontWeight.Medium,
                 )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.task_deadline, formatTime(task.autoConfirmAt)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 if (isMine) {
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -2037,14 +2044,20 @@ internal fun TaskCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                }
-                if (!isMine) {
+                } else {
                     Spacer(Modifier.height(8.dp))
                     Button(
                         onClick = { vm.confirmTask(task.id, task.title) },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(stringResource(R.string.task_confirm))
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    OutlinedButton(
+                        onClick = { vm.postponeTask(task.id) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.task_not_yet, task.postponeCount))
                     }
                 }
             }

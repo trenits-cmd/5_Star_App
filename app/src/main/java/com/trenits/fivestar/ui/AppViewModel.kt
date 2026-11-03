@@ -52,6 +52,9 @@ import com.trenits.fivestar.domain.dayKeyOf
 import com.trenits.fivestar.domain.dayOutcomeFor
 import com.trenits.fivestar.domain.missingCategoryIds
 import com.trenits.fivestar.domain.missingRelationshipAspects
+import com.trenits.fivestar.domain.needsDeadlineWarning
+import com.trenits.fivestar.domain.postponed
+import com.trenits.fivestar.domain.autoConfirmAt
 import com.trenits.fivestar.domain.needsPartnerConfirmationReminder
 import com.trenits.fivestar.domain.penaltyCycleStartDayKey
 import com.trenits.fivestar.domain.sportDaysInWeek
@@ -1381,21 +1384,39 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val partnerDisplay = partnerName.value ?: text(R.string.who_partner)
 
         tasks.value.items.forEach { task ->
-            if (task.ownerUid != uid &&
-                task.needsPartnerConfirmationReminder(now) &&
-                !prefs.hasNotifiedConfirmForTask(task.id)
-            ) {
-                ReminderScheduler.sendConfirmationReminderNotification(
-                    context = getApplication(),
-                    partnerDisplayName = partnerDisplay,
-                    task = task,
-                )
-                prefs.markNotifiedConfirmForTask(task.id)
+            if (task.ownerUid != uid) {
+                if (task.needsPartnerConfirmationReminder(now) && !prefs.hasNotified("confirm_${task.id}")) {
+                    ReminderScheduler.sendConfirmationReminderNotification(
+                        context = getApplication(),
+                        partnerDisplayName = partnerDisplay,
+                        task = task,
+                    )
+                    prefs.markNotified("confirm_${task.id}")
+                }
+                if (task.needsDeadlineWarning(now)) {
+                    val key = "warn_${task.id}_${task.autoConfirmAt.epochSecond}"
+                    if (!prefs.hasNotified(key)) {
+                        ReminderScheduler.sendDeadlineWarningNotification(
+                            getApplication(), partnerDisplay, task, task.autoConfirmAt,
+                        )
+                        prefs.markNotified(key)
+                    }
+                }
             }
             if (task.withAutoConfirmation(now).status != task.status) {
                 repo.autoConfirmTask(task.id, todayKey.value)
             }
         }
+    }
+
+    /** Partner wählt „Not yet“: Frist um 24 h verschieben (beliebig oft). Nur für den Partner, solange offen. */
+    fun postponeTask(taskId: String) {
+        val task = tasks.value.items.firstOrNull { it.id == taskId } ?: return
+        if (task.ownerUid == uid || task.status != TaskStatus.OPEN || task.title.isBlank()) return
+        val postponed = task.postponed(AppClock.now())
+        val deadline = postponed.deadlineAt ?: return
+        repo()?.postponeTask(task.id, deadline, postponed.postponeCount)
+        toastMessage.value = text(R.string.save_confirmation)
     }
 
     private fun action(block: suspend () -> Unit) {

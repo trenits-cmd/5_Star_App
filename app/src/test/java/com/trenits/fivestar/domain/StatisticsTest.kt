@@ -120,4 +120,32 @@ class StatisticsTest {
         assertEquals(false, task.needsPartnerConfirmationReminder(selected.plusSeconds(2 * 3600)))
         assertEquals(true, task.needsPartnerConfirmationReminder(selected.plusSeconds(3 * 3600)))
     }
+
+    @Test
+    fun notYetPostponesDeadlineByTwentyFourHours() {
+        val selected = java.time.Instant.parse("2026-11-03T10:00:00Z")
+        val task = Task(
+            id = "t", ownerUid = "u", type = TaskType.PENALTY, title = "Phone handover",
+            dayKey = "2026-11-03", status = TaskStatus.OPEN, createdAt = selected, selectedAt = selected,
+        )
+        val now = selected.plusSeconds(40 * 3600)
+        val once = task.postponed(now)
+        assertEquals(selected.plusSeconds(72 * 3600), once.autoConfirmAt)
+        assertEquals(1, once.postponeCount)
+        val twice = once.postponed(now)
+        assertEquals(selected.plusSeconds(96 * 3600), twice.autoConfirmAt)
+        assertEquals(2, twice.postponeCount)
+        assertEquals(TaskStatus.OPEN, twice.withAutoConfirmation(selected.plusSeconds(95 * 3600)).status)
+    }
+
+    @Test
+    fun deadlineWarningComesSixHoursBeforeAutoConfirm() {
+        val selected = java.time.Instant.parse("2026-11-03T10:00:00Z")
+        val task = Task(
+            id = "t", ownerUid = "u", type = TaskType.PENALTY, title = "Phone handover",
+            dayKey = "2026-11-03", status = TaskStatus.OPEN, createdAt = selected, selectedAt = selected,
+        )
+        assertEquals(false, task.needsDeadlineWarning(selected.plusSeconds(41 * 3600)))
+        assertEquals(true, task.needsDeadlineWarning(selected.plusSeconds(42 * 3600)))
+    }
 }

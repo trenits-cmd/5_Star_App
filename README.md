@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.03112026_2053)
+## Features (v1.03112026_2111)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.03112026_2053`** – Profile photos: the partner's photo was never loaded (only a local field existed). It is now read live from the partner's user document in Firestore (`photoOf`), so both users see each other's picture.
+- **Latest: `v1.03112026_2111`** – Penalty logic fixed: the partner can choose **Not yet** (+24 h, unlimited) or confirm. The deadline is 48 h after the option is chosen; postponing moves it by 24 h. A reminder comes 3 h after selection and an early warning 6 h before the deadline. Without confirmation the penalty counts as executed at the deadline. Open penalties with deadline are shown on the partner dashboard.
+- `v1.03112026_2053` – – Profile photos: the partner's photo was never loaded (only a local field existed). It is now read live from the partner's user document in Firestore (`photoOf`), so both users see each other's picture.
 - `v1.03112026_2049` – Daily status of the main_user shows a countdown to 00:00 (hh:mm:ss). Colour warning: below 70 % red, 70–99 % yellow, 100 % green, each with a motivating message.
 - `v1.03112026_1948` – Date simulator (test only) is now available on both devices (main_user and partner); each device keeps its own offset.
 - `v1.03112026_1943` – **Penalties & rewards:** only the partner confirms (the owner chooses the option and sees "waiting for …"). The 3 h reminder and the 48 h auto-confirm now start when the option is chosen (`selectedAt`, fallback: creation). After 48 h without confirmation the penalty counts as fulfilled. **Statistics:** groups Overall / Categories / Relationship / Penalties / Rewards, sub-filter per category, relationship aspect or penalty/reward title, person filter (me / partner / both), totals (weighted stars, stars, counts) and a detail list below the chart.

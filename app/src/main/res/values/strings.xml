@@ -105,6 +105,8 @@
     <string name="status_relationship_title">Relationship Mood Today</string>
     <string name="status_relationship_summary">Avg %1$.1f / 5 ★ (%2$s)</string>
     <string name="penalty_pool_reset_hint">Penalty pool resets every Sunday evening after the weekly review.</string>
+    <string name="confirm_warn_title">Confirm or it counts as done: %1$s</string>
+    <string name="confirm_warn_body">&quot;%1$s&quot; counts as executed automatically at %2$s unless you confirm it or choose &quot;Not yet&quot; (+24 h).</string>
     <string name="confirm_push_title">%1$s is waiting for your confirmation!</string>
     <string name="confirm_push_body">%1$s: "%2$s" – Please confirm redemption in the app (auto-confirm after 48h).</string>
 
@@ -142,6 +144,8 @@
     <string name="task_waiting_confirm">%1$s – Waiting for %2$s to confirm redemption.</string>
     <string name="task_partner_chooses">%1$s is still choosing an option from the dropdown.</string>
     <string name="task_partner_label">Chosen: %1$s</string>
+    <string name="task_deadline">Counts as executed automatically at %1$s unless confirmed.</string>
+    <string name="task_not_yet">Not yet (+24 h, chosen %1$d times)</string>
     <string name="task_confirm">Confirm redemption</string>
 
     <string name="task_reward">Reward</string>
@@ -150,7 +154,7 @@
     <string name="who_partner">Partner</string>
     <string name="status_open">open</string>
     <string name="status_confirmed">redeemed &amp; confirmed</string>
-    <string name="status_auto_confirmed">automatically confirmed</string>
+    <string name="status_auto_confirmed">executed (deadline passed)</string>
     <string name="no_action_chosen">not chosen yet</string>
 
     <string name="period_7">7 days</string>

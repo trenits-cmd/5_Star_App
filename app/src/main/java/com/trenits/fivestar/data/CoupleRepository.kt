@@ -205,6 +205,8 @@ class CoupleRepository(private val coupleId: String) {
             targets = if (targets.isNullOrEmpty()) listOf(owner) else targets,
             redeemedDayKey = doc.getString("redeemedDayKey")?.takeIf { it.isNotEmpty() },
             selectedAt = doc.getTimestamp("selectedAt")?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) },
+            deadlineAt = doc.getTimestamp("deadlineAt")?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) },
+            postponeCount = doc.getLong("postponeCount")?.toInt() ?: 0,
         )
     }
 
@@ -229,6 +231,16 @@ class CoupleRepository(private val coupleId: String) {
         val now = AppClock.now()
         couple.collection("tasks").document(id).update(
             mapOf("title" to title, "selectedAt" to Timestamp(now.epochSecond, now.nano)),
+        )
+    }
+
+    /** Partner chooses "Not yet": sets new deadline and counter only. */
+    fun postponeTask(id: String, deadline: Instant, postponeCount: Int) {
+        couple.collection("tasks").document(id).update(
+            mapOf(
+                "deadlineAt" to Timestamp(deadline.epochSecond, deadline.nano),
+                "postponeCount" to postponeCount,
+            ),
         )
     }
 

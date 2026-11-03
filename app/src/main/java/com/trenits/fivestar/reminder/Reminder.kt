@@ -227,6 +227,30 @@ object ReminderScheduler {
             .build()
         NotificationManagerCompat.from(context).notify(BASE_NOTIFICATION_ID + 900, notification)
     }
+
+    /**
+     * Benachrichtigt den Einlader per Push, sobald sich der eingeladene Partner mit dem Code
+     * registriert/angemeldet hat und die Verbindung automatisch hergestellt wurde.
+     */
+    @SuppressLint("MissingPermission")
+    fun sendPartnerJoinedNotification(context: Context, partnerLabel: String) {
+        createChannel(context)
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!allowed) return
+
+        val title = context.getString(R.string.partner_joined_push_title)
+        val body = context.getString(R.string.partner_joined_push_body, partnerLabel)
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(BASE_NOTIFICATION_ID + 950, notification)
+    }
 }
 
 /**

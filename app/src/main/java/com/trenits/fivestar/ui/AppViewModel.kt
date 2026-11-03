@@ -323,6 +323,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         return rewards + penalties
     }
 
+    fun canonicalCatalogFor(ownerUid: String, isRosie: Boolean): List<CatalogItem> =
+        if (isRosie) canonicalRosieCatalog(ownerUid) else canonicalAndiCatalog(ownerUid)
+
     /** Kategorien, die für mich gelten (strikt nach Rolle Rosie vs. Andi). */
     val targeted: StateFlow<List<Category>> = combine(categories, myName, partnerName, profile) { list, localName, pName, prof ->
         val role = resolveRole(localName, pName, prof?.displayName, list.items)
@@ -520,6 +523,32 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 evaluateYesterday()
                 evaluateStreakReward()
                 checkConfirmationRemindersAndAutoConfirm()
+            }
+        }
+        viewModelScope.launch {
+            val codeFromLogin = localProfileStore.consumePendingRedeemCode()
+            if (!codeFromLogin.isNullOrBlank()) {
+                try {
+                    userRepository.requestJoin(codeFromLogin, Firebase.auth.currentUser?.email.orEmpty())
+                    toastMessage.value = text(R.string.partner_joined_toast)
+                } catch (e: InvalidInviteException) {
+                    error = text(R.string.error_invalid_code)
+                } catch (_: Exception) {
+                    error = text(R.string.error_generic)
+                }
+            }
+        }
+        viewModelScope.launch {
+            incomingRequest.collect { invite ->
+                if (invite?.status == "confirmed") {
+                    val joinedLabel = invite.requestedEmail?.takeIf { it.isNotBlank() }
+                        ?: partnerName.value
+                        ?: text(R.string.who_partner)
+                    ReminderScheduler.sendPartnerJoinedNotification(getApplication(), joinedLabel)
+                    toastMessage.value = text(R.string.partner_joined_toast)
+                    inviteCode = null
+                    userRepository.acknowledgeConfirmedInvite(invite.code)
+                }
             }
         }
         viewModelScope.launch {

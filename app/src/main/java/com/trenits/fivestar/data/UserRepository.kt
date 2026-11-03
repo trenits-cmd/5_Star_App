@@ -64,8 +64,23 @@ class UserRepository(private val uid: String) {
         return ref.id
     }
 
-    /** Erstellt eine neue Einladung. Der Partner muss sie danach anfordern und du bestätigst sie. */
+    /** Erstellt eine neue Einladung oder verwendet einen bereits offenen Code wieder. */
     suspend fun createInvite(coupleId: String, invitedEmail: String? = null): String {
+        val userSnap = runCatching { user.get().await() }.getOrNull()
+        val existingCode = userSnap?.getString("activeInviteCode")?.trim()?.takeIf { it.isNotEmpty() }
+        if (existingCode != null) {
+            val existingDoc = runCatching {
+                Firebase.firestore.collection("invites").document(existingCode).get().await()
+            }.getOrNull()
+            if (existingDoc != null && existingDoc.exists() && existingDoc.getString("status") == "open") {
+                if (!invitedEmail.isNullOrBlank()) {
+                    runCatching {
+                        existingDoc.reference.update("invitedEmail", invitedEmail.trim()).await()
+                    }
+                }
+                return existingCode
+            }
+        }
         val code = generateInviteCode()
         val data = mutableMapOf<String, Any>(
             "coupleId" to coupleId,
@@ -107,19 +122,33 @@ class UserRepository(private val uid: String) {
         awaitClose { registration.remove() }
     }
 
-    /** Partner fordert den Beitritt an. Die Regeln prüfen, ob die E-Mail zur Einladung passt. */
+    /**
+     * Partner löst den Einladungscode ein:
+     * Validiert gegen /invites/{code}, fügt den Partner automatisch zu couples/{coupleId}.members hinzu
+     * und setzt den Status der Einladung auf "confirmed".
+     */
     suspend fun requestJoin(input: String, email: String) {
         val code = normalizeInviteCode(input)
         val invite = Firebase.firestore.collection("invites").document(code).get().await()
-        if (!invite.exists() || invite.getString("status") != "open") throw InvalidInviteException()
+        val status = invite.getString("status")
+        if (!invite.exists() || (status != "open" && status != "requested")) throw InvalidInviteException()
         val invitedEmail = invite.getString("invitedEmail")
-        if (!invitedEmail.isNullOrBlank() && !invitedEmail.equals(email, ignoreCase = true)) {
+        if (!invitedEmail.isNullOrBlank() && email.isNotBlank() && !invitedEmail.equals(email, ignoreCase = true)) {
             throw InvalidInviteException()
         }
+        val coupleId = invite.getString("coupleId") ?: throw InvalidInviteException()
+        Firebase.firestore.collection("couples").document(coupleId)
+            .update("members", FieldValue.arrayUnion(uid)).await()
         invite.reference.update(
-            mapOf("status" to "requested", "requestedBy" to uid, "requestedEmail" to email),
+            mapOf("status" to "confirmed", "requestedBy" to uid, "requestedEmail" to email),
         ).await()
-        user.set(mapOf("pendingInviteCode" to code), SetOptions.merge()).await()
+        user.set(mapOf("coupleId" to coupleId, "pendingInviteCode" to FieldValue.delete()), SetOptions.merge()).await()
+    }
+
+    /** Einlader räumt die bestätigte Einladung nach Erhalt der Benachrichtigung auf. */
+    suspend fun acknowledgeConfirmedInvite(code: String) {
+        runCatching { user.update(mapOf("activeInviteCode" to FieldValue.delete())).await() }
+        runCatching { Firebase.firestore.collection("invites").document(code).delete().await() }
     }
 
     /** Einlader bestätigt die Anfrage: Partner wird Mitglied des Paares, die Einladung wird bestätigt. */

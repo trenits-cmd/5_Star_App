@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.03112026_0055)
+## Features (v1.03112026_0105)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -19,8 +19,9 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
   - Each user can upload a **profile photo** from the gallery (cropped & scaled to a 128×128 avatar, synced via Firestore), shown as icon in headers, partner cards, and the Partner tab.
   - Each person must use **their own account**. Settings shows the signed-in account (*Signed in as …*) so that two phones signed in with the same account can be spotted.
 
-- **Invite Partner via Email & In-App Confirmation:**
-  - Invite the partner by **email** (sends only the invitation code; the invitee enters the code in the app to request joining, and the inviter confirms the partner with a button press in the app).
+- **Invite Partner via Email & Automatic Pairing:**
+  - Invite the partner by **email** (generates or reuses the invitation code and opens the mail app with instructions).
+  - During sign-up/login (or on the pairing screen), the partner enters this code; the system validates `/invites/{code}`, automatically adds the partner to `couples/{coupleId}.members`, sets the invite status to `confirmed`, and sends a push notification & toast to the inviter that the connection is established.
   - Remove/unpair the partner at any time in Settings (*Remove partner / Unpair (Test)*).
 
 - **Daily scoring & 0 stars for missing days:**
@@ -45,7 +46,7 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
   - **Rosie Penalties:** No orgasm (sex happens, but Rosie has no orgasm), No bar for two days, Phone handover (1h to Andi).
   - **Andi Rewards:** Cuddling for 30 minutes, Massage for 30 minutes, Edging, Blowjob, Handjob, Video, Favourite dish (Rosie cooks Andi's favourite meal).
   - **Andi Penalty:** Phone handover (1h to Rosie).
-  - Rewards and penalties are shown in Settings as a **read-only overview** (cannot be created, edited, or deleted in Settings).
+  - Each user's active rewards and penalties overview is displayed directly on their own dashboard tab and on the partner's dashboard tab (`CatalogOverviewCard`), rather than in Settings.
   - Penalties are chosen from a dropdown; a chosen penalty disappears until all penalties have been used. The pool resets every Sunday evening after the weekly review.
   - Penalty redemption must be confirmed by the partner before moving to the Archive. Tracked with **penalty date** (`dayKey`) and **redemption date** (`redeemedDayKey`).
   - **3 hours** after selection, the partner gets the push *"[Name] is waiting for your confirmation!"*.
@@ -64,8 +65,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
   - Personalised messages per category; the reminder push includes the category name.
 
 - **Settings (restricted):**
-  - Profile photo & name, partner name, partner invite/remove, push notifications & reminder, quiet hours, read-only rewards & penalties overview, sync & sign out, **app version (last item, matches release)**.
-  - Quick Start preset switching buttons removed from Settings (categories, rewards & penalties sync automatically by profile name).
+  - Profile photo & name, partner name, partner invite/remove, push notifications & reminder, quiet hours, sync & sign out, **app version (last item, matches release)**.
+  - Quick Start preset switching buttons and the rewards/penalties overview have been removed from Settings (rewards & penalties are shown directly on the user and partner dashboard tabs).
   - No category creation/editing/deletion. No rewards/penalties management.
 
 - **English only:** all UI text, push notifications, categories, rewards, and penalties are in English.
@@ -85,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.03112026_0055`** – Persistent input saving in category cards (`ReadingCategoryCard`, `SportCategoryCard`, `CounterCard`/`LitersField`) via synchronous in-memory `localDayRecords` state in `AppViewModel`, focus-safe text state hoisting, `ImeAction.Done` / `onFocusChanged` commits, and dedicated *Save* buttons next to input fields.
+- **Latest: `v1.03112026_0105`** – Automatic partner pairing via invitation code during registration/login or pairing screen (validating `/invites/{code}`, adding partner to `couples/{coupleId}.members`, setting status to `confirmed`, and notifying the sender via push & toast); rewards and penalties overview removed from `SettingsScreen` and moved to dedicated expandable `CatalogOverviewCard` sections on the user and partner dashboard views (`DashboardScreen` & `PartnerTodayScreen`).
+- `v1.03112026_0055` – Persistent input saving in category cards (`ReadingCategoryCard`, `SportCategoryCard`, `CounterCard`/`LitersField`) via synchronous in-memory `localDayRecords` state in `AppViewModel`, focus-safe text state hoisting, `ImeAction.Done` / `onFocusChanged` commits, and dedicated *Save* buttons next to input fields.
 - `v1.03112026_0045` – Penalty & reward confirmation fixed across all tabs (`Today`, `Partner`, `Streak / Archive`) and deployed to Firestore rules (`starapp-99d8e`); immediate daily penalty selection & confirmation when `< 80 %`; Today/Yesterday switcher until 06:00 AM; expandable 7-day archive cards in `WeeklyScreen` with *"No entry available"* when empty; AI-readable code directory [`CODE_INDEX.md`](./CODE_INDEX.md) added.
 - `v1.03112026_0030` – Canonical role-based categories, rewards & penalties for Andi (Sport 3× with 3 days/week × 45 min daily time input, Drink water 2× min. 2.5 L, Reading 2× pages read + 7 Rewards & 1 Penalty) and Rosie (5 Categories + 5 Rewards & 3 Penalties).
 - `v1.02112026_2240` – Quick Start preset buttons removed from Settings; automatic role-based sync & cleanup of categories, rewards, and penalties for Rosie & Andi; all remaining German push notifications and legacy catalog/snapshot titles translated to English; confirmation toast shown on every Save button click across all tabs; partner invite via code email & in-app button confirmation by inviter.

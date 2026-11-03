@@ -45,11 +45,25 @@ class LocalProfileStore(context: Context) {
         _partnerPhotoBase64.value = base64
     }
 
+    fun savePendingRedeemCode(code: String?) {
+        val cleaned = code?.trim()?.uppercase().orEmpty()
+        prefs.edit().putString(KEY_PENDING_REDEEM_CODE, cleaned).apply()
+    }
+
+    fun consumePendingRedeemCode(): String? {
+        val code = prefs.getString(KEY_PENDING_REDEEM_CODE, null)?.trim()?.takeIf { it.isNotEmpty() }
+        if (code != null) {
+            prefs.edit().remove(KEY_PENDING_REDEEM_CODE).apply()
+        }
+        return code
+    }
+
     companion object {
         private const val PREFS_NAME = "local_profile"
         private const val KEY_DISPLAY_NAME = "display_name"
         private const val KEY_PHOTO_BASE64 = "photo_base64"
         private const val KEY_PARTNER_DISPLAY_NAME = "partner_display_name"
         private const val KEY_PARTNER_PHOTO_BASE64 = "partner_photo_base64"
+        private const val KEY_PENDING_REDEEM_CODE = "pending_redeem_code"
     }
 }

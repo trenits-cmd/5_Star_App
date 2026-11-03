@@ -55,6 +55,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trenits.fivestar.R
+import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.CategorySnapshot
@@ -121,6 +122,7 @@ fun DashboardScreen(vm: AppViewModel) {
     val days by vm.days.collectAsState()
     val tasks by vm.tasks.collectAsState()
     val catalog by vm.catalog.collectAsState()
+    val myCatalog by vm.myCatalog.collectAsState()
     val weekRecordsBeforeToday by vm.isoWeekRecordsBeforeToday.collectAsState()
     val streak by vm.weekSuccessfulDays.collectAsState()
     val weekRewardUnlocked by vm.weekRewardUnlocked.collectAsState()
@@ -325,6 +327,13 @@ fun DashboardScreen(vm: AppViewModel) {
                 partnerUid = partnerUid,
                 myLabel = myLabel,
                 partnerLabel = partnerLabel,
+            )
+        }
+
+        item {
+            CatalogOverviewCard(
+                ownerLabel = myLabel,
+                items = myCatalog,
             )
         }
 
@@ -1635,6 +1644,9 @@ fun PartnerTodayScreen(vm: AppViewModel) {
             vm.canonicalAndiCategories(pUid)
         }
     }
+    val partnerCatalog = remember(pUid, partnerIsRosie) {
+        vm.canonicalCatalogFor(pUid, partnerIsRosie)
+    }
     val partnerOpenTasks = tasks.items
         .filter { it.status == TaskStatus.OPEN }
         .sortedWith(compareByDescending<Task> { it.dayKey }.thenByDescending { it.createdAt })
@@ -1689,6 +1701,88 @@ fun PartnerTodayScreen(vm: AppViewModel) {
                     myLabel = myLabel,
                     partnerLabel = partnerLabel,
                 )
+            }
+        }
+        item {
+            CatalogOverviewCard(
+                ownerLabel = partnerLabel,
+                items = partnerCatalog,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CatalogOverviewCard(
+    ownerLabel: String,
+    items: List<CatalogItem>,
+) {
+    var expanded by rememberSaveable(ownerLabel) { mutableStateOf(true) }
+    val rewards = remember(items) { items.filter { it.type == TaskType.REWARD } }
+    val penalties = remember(items) { items.filter { it.type == TaskType.PENALTY } }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
+    ) {
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    "${stringResource(R.string.settings_rewards)} ($ownerLabel)",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    stringResource(R.string.archive_tap_details),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            if (expanded) {
+                Text(
+                    stringResource(R.string.week_reward_pool),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (rewards.isEmpty()) {
+                    Text(stringResource(R.string.catalog_item_empty_rewards), style = MaterialTheme.typography.bodySmall)
+                } else {
+                    rewards.forEach { item ->
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("• ", style = MaterialTheme.typography.bodySmall)
+                            Text(localizedCatalogTitle(item.title), style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.week_penalty_pool),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                if (penalties.isEmpty()) {
+                    Text(stringResource(R.string.catalog_item_empty_penalties), style = MaterialTheme.typography.bodySmall)
+                } else {
+                    penalties.forEach { item ->
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("• ", style = MaterialTheme.typography.bodySmall)
+                            Text(localizedCatalogTitle(item.title), style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
             }
         }
     }

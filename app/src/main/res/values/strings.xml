@@ -6,6 +6,7 @@
     <string name="login_tagline">Reach your goals together</string>
     <string name="login_email">Email</string>
     <string name="login_password">Password</string>
+    <string name="login_invite_code_optional">Invitation code (optional – for joining partner)</string>
     <string name="login_sign_in">Sign in</string>
     <string name="login_create_account">Create account</string>
     <string name="login_google">Sign in with Google</string>
@@ -22,7 +23,10 @@
     <string name="invite_email_label">Partner\'s email address</string>
     <string name="invite_send_email">Invite partner via email</string>
     <string name="invite_email_subject">Invitation to 5 Star App</string>
-    <string name="invite_email_body">Hi! Connect with me in the 5 Star App: open the app, enter this invitation code and send a connection request. I will confirm it. Code: %1$s</string>
+    <string name="invite_email_body">Hi! Join me in the 5 Star App: open the app, enter this invitation code during sign-up/login (or on the pairing screen), and our accounts will be connected automatically. Code: %1$s</string>
+    <string name="partner_joined_push_title">Partner connected! 🎉</string>
+    <string name="partner_joined_push_body">%1$s joined with your invitation code. Your accounts are now linked!</string>
+    <string name="partner_joined_toast">Partner connected! Your accounts are now linked.</string>
     <string name="invite_request_title">Connection request</string>
     <string name="invite_request_body">%1$s wants to connect with you. Confirm only if this is your partner.</string>
     <string name="invite_confirm">Confirm</string>

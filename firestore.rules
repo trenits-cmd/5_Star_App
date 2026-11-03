@@ -29,11 +29,11 @@ service cloud.firestore {
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.status == 'open';
 
-      // Partner fordert an. Ist eine E-Mail hinterlegt, muss sie mit der angemeldeten übereinstimmen.
+      // Partner löst den Code ein (direkt auf 'confirmed' oder 'requested'). Ist eine E-Mail hinterlegt, muss sie übereinstimmen.
       allow update: if signedIn()
         && (
-          (resource.data.status == 'open'
-            && request.resource.data.status == 'requested'
+          (resource.data.status in ['open', 'requested']
+            && request.resource.data.status in ['requested', 'confirmed']
             && request.resource.data.requestedBy == request.auth.uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'requestedBy', 'requestedEmail'])
             && (resource.data.get('invitedEmail', '') == ''

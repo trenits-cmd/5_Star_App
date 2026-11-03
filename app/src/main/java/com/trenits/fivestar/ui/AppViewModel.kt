@@ -11,6 +11,7 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.R
+import com.trenits.fivestar.data.AuthRepository
 import com.trenits.fivestar.data.CoupleRepository
 import com.trenits.fivestar.data.InviteState
 import com.trenits.fivestar.data.InvalidInviteException
@@ -384,7 +385,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }.share(null)
 
     val partnerToday: StateFlow<DayRecord?> = combine(days, activeDayKey, partnerUid) { list, key, partner ->
-        list.items.firstOrNull { it.ownerUid == partner && it.dayKey == key }
+        if (partner != null) {
+            list.items.firstOrNull { it.ownerUid == partner && it.dayKey == key }
+        } else {
+            list.items.firstOrNull { it.ownerUid != uid && it.dayKey == key }
+        }
     }.share(null)
 
     /** Schlüssel der aktuellen Woche, z. B. "2026-W44". */
@@ -1219,6 +1224,38 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun signOut() {
         Firebase.auth.signOut()
+    }
+
+    /**
+     * Löscht alle Nutzerdaten in Firestore, den lokalen Profilspeicher sowie das Firebase-Auth-Konto
+     * absturzsicher und meldet den Nutzer anschließend automatisch ab.
+     */
+    fun deleteAccount() {
+        if (busy) return
+        viewModelScope.launch {
+            busy = true
+            error = null
+            try {
+                val currentProfile = profile.value
+                if (uid.isNotEmpty()) {
+                    runCatching {
+                        userRepository.deleteUserData(
+                            coupleId = currentProfile?.coupleId,
+                            activeInviteCode = currentProfile?.activeInviteCode ?: inviteCode,
+                            pendingInviteCode = currentProfile?.pendingInviteCode,
+                        )
+                    }
+                }
+                runCatching { localProfileStore.clearAll() }
+                runCatching { localDayRecords.value = emptyMap() }
+                runCatching { AuthRepository().deleteCurrentUserAndSignOut() }
+            } catch (_: Exception) {
+                // Niemals abstürzen
+            } finally {
+                runCatching { Firebase.auth.signOut() }
+                busy = false
+            }
+        }
     }
 
     private fun repo(): CoupleRepository? = profile.value?.coupleId?.let { CoupleRepository(it) }

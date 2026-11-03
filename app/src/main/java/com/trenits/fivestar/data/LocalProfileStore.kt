@@ -58,6 +58,14 @@ class LocalProfileStore(context: Context) {
         return code
     }
 
+    fun clearAll() {
+        prefs.edit().clear().apply()
+        _displayName.value = null
+        _photoBase64.value = null
+        _partnerDisplayName.value = null
+        _partnerPhotoBase64.value = null
+    }
+
     companion object {
         private const val PREFS_NAME = "local_profile"
         private const val KEY_DISPLAY_NAME = "display_name"

@@ -252,4 +252,58 @@ class UserRepository(private val uid: String) {
             }
         awaitClose { registration.remove() }
     }
+
+    /**
+     * Löscht alle mit diesem Nutzer verknüpften Firestore-Daten (eigene Kategorien, Katalog-Einträge,
+     * Tageseinträge, Aufgaben, offene Einladungen, Paar-Mitgliedschaft sowie das /users/{uid}-Dokument).
+     * Jeder Einzelschritt ist in runCatching gekapselt, damit keinerlei Exception zum Absturz führt.
+     */
+    suspend fun deleteUserData(
+        coupleId: String?,
+        activeInviteCode: String? = null,
+        pendingInviteCode: String? = null,
+    ) {
+        val db = Firebase.firestore
+
+        if (!activeInviteCode.isNullOrBlank()) {
+            runCatching { db.collection("invites").document(activeInviteCode).delete().await() }
+        }
+        if (!pendingInviteCode.isNullOrBlank()) {
+            runCatching { db.collection("invites").document(pendingInviteCode).delete().await() }
+        }
+        runCatching {
+            val createdInvites = db.collection("invites").whereEqualTo("createdBy", uid).get().await()
+            for (doc in createdInvites.documents) {
+                runCatching { doc.reference.delete().await() }
+            }
+        }
+        runCatching {
+            val requestedInvites = db.collection("invites").whereEqualTo("requestedBy", uid).get().await()
+            for (doc in requestedInvites.documents) {
+                runCatching { doc.reference.delete().await() }
+            }
+        }
+
+        if (!coupleId.isNullOrBlank()) {
+            val coupleRef = db.collection("couples").document(coupleId)
+            for (subcollection in listOf("categories", "catalog", "days", "tasks")) {
+                runCatching {
+                    val snap = coupleRef.collection(subcollection)
+                        .whereEqualTo("ownerUid", uid)
+                        .get()
+                        .await()
+                    for (doc in snap.documents) {
+                        runCatching { doc.reference.delete().await() }
+                    }
+                }
+            }
+            runCatching {
+                coupleRef.update("members", FieldValue.arrayRemove(uid)).await()
+            }
+        }
+
+        runCatching {
+            user.delete().await()
+        }
+    }
 }

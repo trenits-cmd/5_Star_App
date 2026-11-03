@@ -57,7 +57,7 @@ service cloud.firestore {
         && request.resource.data.members == [request.auth.uid];
 
       // Beitritt: nur wenn genau ein Mitglied vorhanden ist und man sich selbst hinzufügt.
-      // Zu Testzwecken darf ein Mitglied die Partner-Verbindung auch wieder auf [request.auth.uid] zurücksetzen.
+      // Zu Testzwecken oder beim Löschen des eigenen Accounts darf ein Mitglied die Partner-Verbindung anpassen.
       allow update: if signedIn()
         && (
           (resource.data.members.size() == 1
@@ -67,6 +67,9 @@ service cloud.firestore {
           ||
           (request.auth.uid in resource.data.members
             && request.resource.data.members == [request.auth.uid])
+          ||
+          (request.auth.uid in resource.data.members
+            && !(request.auth.uid in request.resource.data.members))
         );
 
       allow delete: if false;
@@ -84,11 +87,11 @@ service cloud.firestore {
         allow delete: if isMember(coupleId) && resource.data.ownerUid == request.auth.uid;
       }
 
-      // Tageseinträge: nur der Besitzer schreibt die eigenen Bewertungen.
+      // Tageseinträge: nur der Besitzer schreibt oder löscht die eigenen Bewertungen.
       match /days/{dayId} {
         allow read: if isMember(coupleId);
         allow create, update: if isMember(coupleId) && request.resource.data.ownerUid == request.auth.uid;
-        allow delete: if false;
+        allow delete: if isMember(coupleId) && resource.data.ownerUid == request.auth.uid;
       }
 
       // Aufgaben: Mitglieder des Paares legen Aufgaben an, wählen den Titel aus dem Dropdown
@@ -109,7 +112,7 @@ service cloud.firestore {
               && request.resource.data.status == 'AUTO_CONFIRMED'
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'redeemedDayKey']))
           );
-        allow delete: if false;
+        allow delete: if isMember(coupleId) && resource.data.ownerUid == request.auth.uid;
       }
     }
   }

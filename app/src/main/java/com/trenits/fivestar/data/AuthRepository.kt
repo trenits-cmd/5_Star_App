@@ -6,6 +6,7 @@ import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.Firebase
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -83,6 +84,32 @@ class AuthRepository {
 
     fun signOut() {
         Firebase.auth.signOut()
+    }
+
+    /**
+     * Löscht das aktuell angemeldete Firebase-Auth-Konto absturzsicher (inkl. automatischer
+     * Re-Authentifizierung bei E-Mail-Konten) und meldet den Nutzer danach garantiert ab.
+     */
+    suspend fun deleteCurrentUserAndSignOut() {
+        val currentUser = Firebase.auth.currentUser
+        if (currentUser != null) {
+            val deleted = runCatching {
+                currentUser.delete().await()
+                true
+            }.getOrDefault(false)
+
+            if (!deleted) {
+                val email = currentUser.email?.trim()
+                if (!email.isNullOrBlank()) {
+                    runCatching {
+                        val credential = EmailAuthProvider.getCredential(email, derivePassword(email))
+                        currentUser.reauthenticate(credential).await()
+                        currentUser.delete().await()
+                    }
+                }
+            }
+        }
+        runCatching { Firebase.auth.signOut() }
     }
 
     /** Ohne await: Firestore schreibt lokal sofort und synchronisiert, sobald eine Verbindung besteht. */

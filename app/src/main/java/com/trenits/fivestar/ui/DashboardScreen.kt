@@ -52,6 +52,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trenits.fivestar.R
@@ -88,6 +89,7 @@ import com.trenits.fivestar.domain.TaskType
 import com.trenits.fivestar.domain.WeightedCategory
 import com.trenits.fivestar.domain.alcoholLiters
 import com.trenits.fivestar.domain.availableRotationTasks
+import com.trenits.fivestar.domain.buildDayRecord
 import com.trenits.fivestar.domain.counterStars
 import com.trenits.fivestar.domain.coupleRelationshipScorePercent
 import com.trenits.fivestar.domain.relationshipScorePercent
@@ -429,10 +431,14 @@ private fun SectionTitle(text: String) {
 @Composable
 private fun PartnerCategorySummaryCard(
     category: Category,
+    sharePercent: Int,
     values: Map<String, Double>,
     snapshots: List<CategorySnapshot>,
 ) {
-    val stars = snapshots.firstOrNull { it.categoryId == category.id }?.stars ?: 0
+    val prefix = category.id.substringBeforeLast("_") + "_"
+    val stars = (snapshots.firstOrNull { it.categoryId == category.id }
+        ?: snapshots.firstOrNull { it.categoryId.startsWith(prefix) })?.stars
+        ?: counterStars(category, values)
     val counters = values
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -441,7 +447,7 @@ private fun PartnerCategorySummaryCard(
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
-                    CategoryWeightSubtitle(category.weight, weightSharePercent(category.weight, listOf(WeightedCategory(category.id, category.weight))))
+                    CategoryWeightSubtitle(category.weight, sharePercent)
                 }
             }
             when (category.kind) {
@@ -561,8 +567,9 @@ private fun CategoryWeightSubtitle(weight: Int, sharePercent: Int) {
 
 @Composable
 private fun ScoreHero(score: Double?, title: String) {
-    val progress = ((score ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
-    val reached = (score ?: 0.0) >= THRESHOLD_PERCENT
+    val effectiveScore = score ?: 0.0
+    val progress = (effectiveScore / 100.0).toFloat().coerceIn(0f, 1f)
+    val reached = effectiveScore >= THRESHOLD_PERCENT
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
@@ -574,7 +581,7 @@ private fun ScoreHero(score: Double?, title: String) {
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
             )
             Text(
-                formatPercent(score),
+                formatPercent(effectiveScore),
                 fontSize = 44.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary,
@@ -614,24 +621,21 @@ private fun WeeklyStatusBanner(streak: Int, rewardUnlocked: Boolean) {
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    stringResource(R.string.status_weekly_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-                Text(
-                    stringResource(R.string.status_weekly_progress, cycleStreak, STREAK_DAYS_FOR_REWARD),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-            }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "${stringResource(R.string.status_weekly_title)}\n${stringResource(R.string.status_weekly_progress, cycleStreak, STREAK_DAYS_FOR_REWARD)}",
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                textAlign = TextAlign.Center,
+                softWrap = true,
+            )
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { progress },
@@ -640,13 +644,16 @@ private fun WeeklyStatusBanner(streak: Int, rewardUnlocked: Boolean) {
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                if (rewardUnlocked) {
+                text = if (rewardUnlocked) {
                     stringResource(R.string.week_reward_unlocked)
                 } else {
                     stringResource(R.string.week_no_reward, remaining)
                 },
+                modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
+                textAlign = TextAlign.Center,
+                softWrap = true,
             )
         }
     }
@@ -1624,6 +1631,7 @@ fun PartnerTodayScreen(vm: AppViewModel) {
     val myName by vm.myName.collectAsState()
     val partnerName by vm.partnerName.collectAsState()
     val partnerPhoto by vm.partnerPhoto.collectAsState()
+    val myToday by vm.myToday.collectAsState()
     val partnerToday by vm.partnerToday.collectAsState()
     val days by vm.days.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
@@ -1633,7 +1641,7 @@ fun PartnerTodayScreen(vm: AppViewModel) {
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 
-    val pUid = partnerUid ?: vm.uid
+    val pUid = partnerUid ?: partnerToday?.ownerUid ?: vm.uid
     val partnerIsRosie = partnerLabel.trim().contains("rosie", ignoreCase = true) ||
         myLabel.trim().contains("andi", ignoreCase = true) ||
         !partnerLabel.trim().contains("andi", ignoreCase = true)
@@ -1644,6 +1652,9 @@ fun PartnerTodayScreen(vm: AppViewModel) {
             vm.canonicalAndiCategories(pUid)
         }
     }
+    val partnerWeightedList = remember(partnerCategories) {
+        partnerCategories.map { WeightedCategory(it.id, it.weight) }
+    }
     val partnerCatalog = remember(pUid, partnerIsRosie) {
         vm.canonicalCatalogFor(pUid, partnerIsRosie)
     }
@@ -1651,7 +1662,48 @@ fun PartnerTodayScreen(vm: AppViewModel) {
         .filter { it.status == TaskStatus.OPEN }
         .sortedWith(compareByDescending<Task> { it.dayKey }.thenByDescending { it.createdAt })
     val partnerStored = partnerToday?.snapshots.orEmpty()
-    val partnerCounters = partnerToday?.counters.orEmpty()
+    val myDinnerCounters = myToday?.counters?.values?.firstOrNull { it.containsKey(DINNER_HOUR) }
+    val rawPartnerCounters = partnerToday?.counters.orEmpty()
+    val partnerCounters = remember(rawPartnerCounters, myDinnerCounters, partnerCategories) {
+        val mutable = mutableMapOf<String, Map<String, Double>>()
+        partnerCategories.forEach { cat ->
+            val prefix = cat.id.substringBeforeLast("_") + "_"
+            val existing = rawPartnerCounters[cat.id]
+                ?: rawPartnerCounters.entries.firstOrNull { it.key.startsWith(prefix) }?.value
+            if (existing != null) {
+                mutable[cat.id] = existing
+            }
+        }
+        if (myDinnerCounters != null) {
+            partnerCategories.filter { it.kind == CategoryKind.DINNER_TIME }.forEach { dinnerCat ->
+                if (mutable[dinnerCat.id]?.containsKey(DINNER_HOUR) != true) {
+                    mutable[dinnerCat.id] = mutable[dinnerCat.id].orEmpty() + myDinnerCounters
+                }
+            }
+        }
+        mutable
+    }
+    val partnerScore = remember(partnerToday, partnerCategories, partnerCounters, pUid) {
+        if (partnerToday == null && partnerCounters.isEmpty()) {
+            0.0
+        } else if (partnerCategories.isNotEmpty()) {
+            val storedMap = partnerCategories.associate { cat ->
+                val prefix = cat.id.substringBeforeLast("_") + "_"
+                val snap = partnerStored.firstOrNull { it.categoryId == cat.id }
+                    ?: partnerStored.firstOrNull { it.categoryId.startsWith(prefix) }
+                cat.id to (snap?.stars ?: 0)
+            }
+            buildDayRecord(
+                dayKey = partnerToday?.dayKey ?: "",
+                ownerUid = pUid,
+                categories = partnerCategories,
+                stars = storedMap,
+                counters = partnerCounters,
+            ).scorePercent ?: 0.0
+        } else {
+            partnerToday?.scorePercent ?: 0.0
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -1674,7 +1726,7 @@ fun PartnerTodayScreen(vm: AppViewModel) {
         }
         item {
             ScoreHero(
-                score = partnerToday?.scorePercent,
+                score = partnerScore,
                 title = stringResource(R.string.score_for_name, partnerLabel),
             )
         }
@@ -1687,6 +1739,7 @@ fun PartnerTodayScreen(vm: AppViewModel) {
         items(partnerCategories, key = { it.id }) { category ->
             PartnerCategorySummaryCard(
                 category = category,
+                sharePercent = weightSharePercent(category.weight, partnerWeightedList),
                 values = partnerCounters[category.id].orEmpty(),
                 snapshots = partnerStored,
             )

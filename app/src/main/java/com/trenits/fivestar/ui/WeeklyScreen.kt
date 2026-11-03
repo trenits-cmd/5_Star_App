@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.Category
@@ -84,10 +85,18 @@ fun WeeklyScreen(vm: AppViewModel) {
         // 7-Tage-Streak Karte (Wochenstand)
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(20.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                     Text(
-                        stringResource(R.string.week_streak, streakInCurrentCycle, STREAK_DAYS_FOR_REWARD),
+                        text = stringResource(R.string.week_streak, streakInCurrentCycle, STREAK_DAYS_FOR_REWARD),
+                        modifier = Modifier.fillMaxWidth(),
                         style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center,
+                        softWrap = true,
                     )
                     Spacer(Modifier.height(8.dp))
                     val progress = (streakInCurrentCycle.toFloat() / STREAK_DAYS_FOR_REWARD.toFloat()).coerceIn(0f, 1f)
@@ -97,12 +106,15 @@ fun WeeklyScreen(vm: AppViewModel) {
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        if (weekRewardUnlocked) {
+                        text = if (weekRewardUnlocked) {
                             stringResource(R.string.week_reward_unlocked)
                         } else {
                             stringResource(R.string.week_no_reward, remainingForReward)
                         },
+                        modifier = Modifier.fillMaxWidth(),
                         style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        softWrap = true,
                         color = if (weekRewardUnlocked) {
                             MaterialTheme.colorScheme.primary
                         } else {
@@ -113,10 +125,13 @@ fun WeeklyScreen(vm: AppViewModel) {
                     if (weekRewardUnlocked && reward != null && reward.title.isNotBlank()) {
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            localizedCatalogTitle(reward.title),
+                            text = localizedCatalogTitle(reward.title),
+                            modifier = Modifier.fillMaxWidth(),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center,
+                            softWrap = true,
                         )
                     }
                 }

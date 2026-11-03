@@ -107,6 +107,7 @@ fun SettingsScreen(vm: AppViewModel) {
     var displayName by rememberSaveable(myName) { mutableStateOf(myName.orEmpty()) }
     var partnerEmail by rememberSaveable { mutableStateOf("") }
     var showUnpairDialog by rememberSaveable { mutableStateOf(false) }
+    var showDeleteAccountDialog by rememberSaveable { mutableStateOf(false) }
     var catalogTitle by rememberSaveable { mutableStateOf("") }
     var catalogType by remember { mutableStateOf(TaskType.REWARD) }
     var catalogAudience by remember { mutableStateOf(Audience.ME) }
@@ -465,9 +466,18 @@ fun SettingsScreen(vm: AppViewModel) {
                     HorizontalDivider(Modifier.padding(vertical = 4.dp))
                     Button(
                         onClick = { vm.signOut() },
+                        enabled = !vm.busy,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(stringResource(R.string.settings_sign_out))
+                    }
+                    OutlinedButton(
+                        onClick = { showDeleteAccountDialog = true },
+                        enabled = !vm.busy,
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.settings_delete_account))
                     }
                 }
             }
@@ -482,6 +492,31 @@ fun SettingsScreen(vm: AppViewModel) {
                 modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
             )
         }
+    }
+
+    if (showDeleteAccountDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAccountDialog = false },
+            title = { Text(stringResource(R.string.delete_account_confirm_title)) },
+            text = { Text(stringResource(R.string.delete_account_confirm_message)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteAccountDialog = false
+                        vm.deleteAccount()
+                    },
+                    enabled = !vm.busy,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                ) {
+                    Text(stringResource(R.string.delete_account_confirm_yes))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAccountDialog = false }) {
+                    Text(stringResource(R.string.settings_cancel))
+                }
+            },
+        )
     }
 
     if (showUnpairDialog) {

@@ -50,6 +50,16 @@ class LocalProfileStore(context: Context) {
         prefs.edit().putString(KEY_PENDING_REDEEM_CODE, cleaned).apply()
     }
 
+    fun savePendingEmail(email: String) {
+        prefs.edit().putString(KEY_PENDING_EMAIL, email.trim()).apply()
+    }
+
+    fun pendingEmail(): String? = prefs.getString(KEY_PENDING_EMAIL, null)?.takeIf { it.isNotBlank() }
+
+    fun clearPendingEmail() {
+        prefs.edit().remove(KEY_PENDING_EMAIL).apply()
+    }
+
     fun consumePendingRedeemCode(): String? {
         val code = prefs.getString(KEY_PENDING_REDEEM_CODE, null)?.trim()?.takeIf { it.isNotEmpty() }
         if (code != null) {
@@ -73,5 +83,6 @@ class LocalProfileStore(context: Context) {
         private const val KEY_PARTNER_DISPLAY_NAME = "partner_display_name"
         private const val KEY_PARTNER_PHOTO_BASE64 = "partner_photo_base64"
         private const val KEY_PENDING_REDEEM_CODE = "pending_redeem_code"
+        private const val KEY_PENDING_EMAIL = "pending_email"
     }
 }

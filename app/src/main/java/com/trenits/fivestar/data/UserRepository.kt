@@ -250,6 +250,15 @@ class UserRepository(private val uid: String) {
         awaitClose { registration.remove() }
     }
 
+    /** Mail-Adresse einer Person im selben Paar (zur eindeutigen Zuordnung). */
+    fun emailOf(otherUid: String): Flow<String?> = callbackFlow {
+        val registration = Firebase.firestore.collection("users").document(otherUid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                trySend(snapshot?.getString("email")?.takeIf { it.isNotBlank() })
+            }
+        awaitClose { registration.remove() }
+    }
     /** Profilfoto (Base64) einer Person im selben Paar. */
     fun photoOf(otherUid: String): Flow<String?> = callbackFlow {
         val registration = Firebase.firestore.collection("users").document(otherUid)

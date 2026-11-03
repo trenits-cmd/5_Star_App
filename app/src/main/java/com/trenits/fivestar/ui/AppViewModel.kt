@@ -165,6 +165,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     val partnerName: StateFlow<String?> = localProfileStore.partnerDisplayName.share(null)
 
+    /** Mail-Adresse des Partners, live aus dessen Nutzerdokument. */
+    val partnerEmail: StateFlow<String?> = partnerUid.flatMapLatest { p ->
+        if (p == null) flowOf(null) else userRepository.emailOf(p)
+    }.share(null)
     /** Profilbild des Partners, live aus dem Nutzerdokument des Partners (Firestore). */
     val partnerPhoto: StateFlow<String?> = partnerUid.flatMapLatest { p ->
         if (p == null) flowOf(null) else userRepository.photoOf(p)

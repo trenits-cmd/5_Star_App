@@ -33,7 +33,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,9 +45,10 @@ import com.trenits.fivestar.ui.theme.Amber
 fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
     var email by remember { mutableStateOf("") }
     var inviteCode by remember { mutableStateOf("") }
+    var confirmEmail by remember { mutableStateOf("") }
     val context = LocalContext.current
     val activity = context as Activity
-    val canSubmit = !viewModel.busy && email.isNotBlank() && inviteCode.isNotBlank()
+    val validEmail = android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
 
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -62,7 +62,7 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
                 .background(Brush.linearGradient(listOf(Color(0xFF7C3AED), Color(0xFF4338CA)))),
             contentAlignment = Alignment.Center,
         ) {
-            Text("★", fontSize = 44.sp, color = Amber)
+            Text("?", fontSize = 44.sp, color = Amber)
         }
         Spacer(Modifier.height(16.dp))
         Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium)
@@ -73,42 +73,74 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
         )
         Spacer(Modifier.height(32.dp))
 
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text(stringResource(R.string.login_email)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = inviteCode,
-            onValueChange = { inviteCode = it.uppercase() },
-            label = { Text(stringResource(R.string.pairing_code_label)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                viewModel.signInWithEmailAndCode(email.trim(), inviteCode.trim())
-            },
-            enabled = canSubmit,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.login_sign_in_with_code)) }
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(
-            onClick = {
-                if (inviteCode.isNotBlank()) {
-                    LocalProfileStore(context).savePendingRedeemCode(inviteCode)
-                }
-                viewModel.signInWithGoogle(activity)
-            },
-            enabled = !viewModel.busy,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.login_google)) }
+        if (viewModel.linkNeedsEmail) {
+            Text(
+                stringResource(R.string.login_link_email_needed),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = confirmEmail,
+                onValueChange = { confirmEmail = it },
+                label = { Text(stringResource(R.string.login_email)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = { viewModel.confirmEmailForLink(confirmEmail) },
+                enabled = !viewModel.busy && confirmEmail.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(stringResource(R.string.login_finish)) }
+        } else if (viewModel.linkSentTo != null) {
+            Text(
+                stringResource(R.string.login_link_sent, viewModel.linkSentTo.orEmpty()),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { viewModel.sendLink(email, inviteCode) },
+                enabled = !viewModel.busy && validEmail,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(stringResource(R.string.login_resend_link)) }
+        } else {
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text(stringResource(R.string.login_email)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = inviteCode,
+                onValueChange = { inviteCode = it.uppercase() },
+                label = { Text(stringResource(R.string.pairing_code_label)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = { viewModel.sendLink(email, inviteCode) },
+                enabled = !viewModel.busy && validEmail,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(stringResource(R.string.login_send_link)) }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = {
+                    if (inviteCode.isNotBlank()) {
+                        LocalProfileStore(context).savePendingRedeemCode(inviteCode)
+                    }
+                    viewModel.signInWithGoogle(activity)
+                },
+                enabled = !viewModel.busy,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(stringResource(R.string.login_google)) }
+        }
 
         viewModel.error?.let {
             Spacer(Modifier.height(16.dp))

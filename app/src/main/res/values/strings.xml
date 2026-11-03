@@ -5,6 +5,11 @@
 
     <string name="login_tagline">Reach your goals together</string>
     <string name="login_email">Email</string>
+    <string name="login_send_link">Send sign-in link</string>
+    <string name="login_resend_link">Send link again</string>
+    <string name="login_link_sent">We sent a sign-in link to %1$s. Open it on this phone.</string>
+    <string name="login_link_email_needed">Enter the email address you used to sign in, to finish sign-in.</string>
+    <string name="login_finish">Finish sign-in</string>
     <string name="login_sign_in_with_code">Sign in with Email &amp; Code</string>
     <string name="login_sign_in">Sign in</string>
     <string name="login_create_account">Create account</string>

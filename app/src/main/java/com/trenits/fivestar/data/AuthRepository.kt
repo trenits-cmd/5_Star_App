@@ -6,7 +6,7 @@ import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.Firebase
-import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -14,12 +14,14 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.R
-import com.trenits.fivestar.domain.normalizeInviteCode
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-import java.security.MessageDigest
+
+/** Domain für den Anmeldelink. Android öffnet Links auf dieser Domain direkt in der App (App Links). */
+private const val SIGN_IN_LINK_URL = "https://starapp-99d8e.firebaseapp.com/finishSignIn"
+private const val APP_PACKAGE = "com.trenits.fivestar"
 
 class AuthRepository {
 
@@ -30,47 +32,28 @@ class AuthRepository {
         awaitClose { auth.removeAuthStateListener(listener) }
     }
 
-    private fun derivePassword(email: String): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-            .digest("5Star_Auth_${email.trim().lowercase()}".toByteArray(Charsets.UTF_8))
-        val hex = digest.joinToString("") { "%02x".format(it) }.take(20)
-        return "5S!$hex"
+    /**
+     * Schickt einen Anmeldelink an die Mail-Adresse. Ohne Zugriff auf das Postfach kann niemand
+     * sich anmelden. Der Einladungscode wird vorher lokal gemerkt und nach der Anmeldung eingelöst.
+     */
+    suspend fun sendSignInLink(email: String) {
+        val cleanEmail = email.trim()
+        if (cleanEmail.isBlank()) throw InvalidInviteException()
+        val settings = ActionCodeSettings.newBuilder()
+            .setUrl(SIGN_IN_LINK_URL)
+            .setHandleCodeInApp(true)
+            .setAndroidPackageName(APP_PACKAGE, true, "26")
+            .build()
+        Firebase.auth.sendSignInLinkToEmail(cleanEmail, settings).await()
     }
 
-    /**
-     * Meldet den Nutzer allein mit E-Mail-Adresse und Einladungscode an (ohne separates Passwort):
-     * Erstellt bei Bedarf automatisch das Firebase-Konto, validiert den Einladungscode gegen /invites/{code}
-     * und verknüpft das Paar automatisch.
-     */
-    suspend fun signInWithEmailAndCode(email: String, code: String) {
-        val cleanEmail = email.trim()
-        val cleanCode = normalizeInviteCode(code)
-        if (cleanEmail.isBlank() || cleanCode.isBlank()) throw InvalidInviteException()
+    fun isSignInLink(link: String): Boolean = Firebase.auth.isSignInWithEmailLink(link)
 
-        val derivedPwd = derivePassword(cleanEmail)
-        val codePwd = "${cleanCode}_5Star!"
-        val user = runCatching {
-            Firebase.auth.createUserWithEmailAndPassword(cleanEmail, derivedPwd).await().user
-        }.getOrElse {
-            runCatching {
-                Firebase.auth.signInWithEmailAndPassword(cleanEmail, derivedPwd).await().user
-            }.getOrElse {
-                Firebase.auth.signInWithEmailAndPassword(cleanEmail, codePwd).await().user
-            }
-        } ?: throw InvalidInviteException()
-
+    /** Meldet mit Mail-Adresse und Link an. Lege Konten bei Bedarf an, speichert das Profil. */
+    suspend fun completeSignIn(email: String, link: String) {
+        val user = Firebase.auth.signInWithEmailLink(email.trim(), link).await().user
+            ?: throw InvalidInviteException()
         saveProfile(user)
-        try {
-            UserRepository(user.uid).requestJoin(cleanCode, cleanEmail)
-        } catch (e: InvalidInviteException) {
-            val snap = runCatching {
-                Firebase.firestore.collection("users").document(user.uid).get().await()
-            }.getOrNull()
-            if (snap?.getString("coupleId").isNullOrBlank()) {
-                Firebase.auth.signOut()
-                throw e
-            }
-        }
     }
 
     suspend fun signInWithGoogle(activity: Activity) {
@@ -87,27 +70,13 @@ class AuthRepository {
     }
 
     /**
-     * Löscht das aktuell angemeldete Firebase-Auth-Konto absturzsicher (inkl. automatischer
-     * Re-Authentifizierung bei E-Mail-Konten) und meldet den Nutzer danach garantiert ab.
+     * Löscht das aktuell angemeldete Firebase-Auth-Konto. Schlägt das fehl, weil die Anmeldung zu alt ist,
+     * wird abgemeldet, damit sich der Nutzer neu per Mail-Link anmelden kann.
      */
     suspend fun deleteCurrentUserAndSignOut() {
         val currentUser = Firebase.auth.currentUser
         if (currentUser != null) {
-            val deleted = runCatching {
-                currentUser.delete().await()
-                true
-            }.getOrDefault(false)
-
-            if (!deleted) {
-                val email = currentUser.email?.trim()
-                if (!email.isNullOrBlank()) {
-                    runCatching {
-                        val credential = EmailAuthProvider.getCredential(email, derivePassword(email))
-                        currentUser.reauthenticate(credential).await()
-                        currentUser.delete().await()
-                    }
-                }
-            }
+            runCatching { currentUser.delete().await() }
         }
         runCatching { Firebase.auth.signOut() }
     }

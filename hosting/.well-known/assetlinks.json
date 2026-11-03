@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.trenits.fivestar",
+      "sha256_cert_fingerprints": [
+        "C7:6D:CA:49:31:18:35:CD:ED:EF:65:DC:BA:33:CE:A3:52:1D:C9:89:F3:41:7D:B8:43:10:D5:72:46:42:C9:96"
+      ]
+    }
+  }
+]

@@ -10,5 +10,14 @@
       "enabled": false
     },
     "singleProjectMode": true
+  },
+  "hosting": {
+    "public": "hosting",
+    "rewrites": [
+      {
+        "source": "/finishSignIn",
+        "destination": "/index.html"
+      }
+    ]
   }
 }

@@ -12,8 +12,10 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
 import com.trenits.fivestar.R
+import com.trenits.fivestar.data.AuthLinks
 import com.trenits.fivestar.data.AuthRepository
 import com.trenits.fivestar.data.InvalidInviteException
+import com.trenits.fivestar.data.LocalProfileStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +25,7 @@ import kotlinx.coroutines.launch
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = AuthRepository()
+    private val store = LocalProfileStore(application)
 
     val user: StateFlow<FirebaseUser?> = repository.currentUser
         .stateIn(viewModelScope, SharingStarted.Eagerly, Firebase.auth.currentUser)
@@ -33,8 +36,60 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     var error by mutableStateOf<String?>(null)
         private set
 
-    fun signInWithEmailAndCode(email: String, code: String) = run {
-        repository.signInWithEmailAndCode(email, code)
+    /** Adresse, an die der Anmeldelink gesendet wurde. */
+    var linkSentTo by mutableStateOf<String?>(null)
+        private set
+
+    /** Ein Link kam an, aber die Mailadresse ist auf diesem Gerät nicht bekannt. */
+    var linkNeedsEmail by mutableStateOf(false)
+        private set
+
+    private var incomingLink: String? = null
+
+    init {
+        viewModelScope.launch {
+            AuthLinks.incoming.collect { link ->
+                if (link != null) {
+                    AuthLinks.incoming.value = null
+                    onIncomingLink(link)
+                }
+            }
+        }
+    }
+
+    /** Sendet den Anmeldelink. Der Einladungscode wird gemerkt und nach der Anmeldung eingelöst. */
+    fun sendLink(email: String, inviteCode: String) = run {
+        val clean = email.trim()
+        if (inviteCode.isNotBlank()) store.savePendingRedeemCode(inviteCode)
+        repository.sendSignInLink(clean)
+        store.savePendingEmail(clean)
+        linkSentTo = clean
+    }
+
+    /** Ein Link wurde geöffnet: mit gespeicherter Adresse direkt anmelden, sonst nachfragen. */
+    fun onIncomingLink(link: String) {
+        if (!repository.isSignInLink(link)) return
+        incomingLink = link
+        val email = store.pendingEmail()
+        if (email == null) {
+            linkNeedsEmail = true
+        } else {
+            finishSignIn(email, link)
+        }
+    }
+
+    /** Mailadresse nachtragen, wenn der Link auf einem anderen Gerät geöffnet wurde. */
+    fun confirmEmailForLink(email: String) {
+        val link = incomingLink ?: return
+        finishSignIn(email.trim(), link)
+    }
+
+    private fun finishSignIn(email: String, link: String) = run {
+        repository.completeSignIn(email, link)
+        store.clearPendingEmail()
+        incomingLink = null
+        linkNeedsEmail = false
+        linkSentTo = null
     }
 
     fun signInWithGoogle(activity: Activity) = run { repository.signInWithGoogle(activity) }

@@ -83,6 +83,7 @@ fun SettingsScreen(vm: AppViewModel) {
     val myName by vm.myName.collectAsState()
     val myPhoto by vm.myPhoto.collectAsState()
     val partnerName by vm.partnerName.collectAsState()
+    val partnerAccountEmail by vm.partnerEmail.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
 
     var globalPushEnabled by remember { mutableStateOf(prefs.enabled()) }
@@ -190,6 +191,7 @@ fun SettingsScreen(vm: AppViewModel) {
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(stringResource(R.string.settings_partner_name), style = MaterialTheme.typography.titleMedium)
+                    partnerAccountEmail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     Text(
                         stringResource(R.string.settings_partner_name_hint),
                         style = MaterialTheme.typography.bodySmall,

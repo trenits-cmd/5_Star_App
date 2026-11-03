@@ -210,6 +210,22 @@ fun SettingsScreen(vm: AppViewModel) {
             }
         }
 
+        // 1c. Belohnungen & Strafen als reine Übersicht (nicht bearbeitbar)
+        item {
+            CatalogOverviewCard(ownerLabel = myLabel, items = catalog)
+        }
+        if (partnerUid != null) {
+            val partnerIsRosie = partnerLabel.trim().contains("rosie", ignoreCase = true) ||
+                myLabel.trim().contains("andi", ignoreCase = true) ||
+                !partnerLabel.trim().contains("andi", ignoreCase = true)
+            item {
+                CatalogOverviewCard(
+                    ownerLabel = partnerLabel,
+                    items = vm.canonicalCatalogFor(partnerUid!!, partnerIsRosie),
+                )
+            }
+        }
+
         // 2. Partner per E-Mail einladen & Partner zu Testzwecken löschen
         item {
             Card(modifier = Modifier.fillMaxWidth()) {

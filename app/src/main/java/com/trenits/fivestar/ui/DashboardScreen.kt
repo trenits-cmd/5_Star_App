@@ -1800,7 +1800,7 @@ fun PartnerTodayScreen(vm: AppViewModel) {
 }
 
 @Composable
-private fun CatalogOverviewCard(
+internal fun CatalogOverviewCard(
     ownerLabel: String,
     items: List<CatalogItem>,
 ) {

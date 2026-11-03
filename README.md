@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.03112026_1838)
+## Features (v1.03112026_1844)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,9 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.03112026_1838`** – **Category assignment now affects scoring.** Each category counts only for the people in its `targets` (*Me*, *Partner*, *Both*). Each person rates an assigned category for themselves; "Both" means both rate it. Own categories are assigned in Settings; the partner's view uses the stored assignments. Preset sync no longer overwrites assignments and only archives your own categories.
+- **Latest: `v1.03112026_1844`** – Background reminders: the hourly worker now also sends the **3 h partner confirmation push** and performs the **48 h auto-confirm**, so both work with the app closed. Firestore rules: members can only be added through a valid invite (single-member join) and can only be removed, never added otherwise. Removed hard-coded "Rosie/Andi" texts from the UI and standard rewards/penalties; names are no longer written automatically. Cleanup: removed unused `HistoryScreen` and unused Settings state.
+- **Open:** Role-based presets still select by name. Needs a decision on how `main_user` / `partner` are assigned for existing couples.
+- `v1.03112026_1838` – **Category assignment now affects scoring.** Each category counts only for the people in its `targets` (*Me*, *Partner*, *Both*). Each person rates an assigned category for themselves; "Both" means both rate it. Own categories are assigned in Settings; the partner's view uses the stored assignments. Preset sync no longer overwrites assignments and only archives your own categories.
 - `v1.03112026_1656` – Statistics: new filters **Relationship** (daily relationship score in %) and **Penalties & rewards** (grouped bar chart of counts per period for you and your partner, plus totals). Both are part of the statistics tab alongside the categories.
 - `v1.03112026_1652` – Statistics: **All time** now covers the full period from account creation (or the first entry, if earlier) to today, not only the days with data. Tab order: Today, Partner, Archive, Statistics, Settings.
 - `v1.03112026_1644` – New **Statistics** tab: line chart of daily results (%) for you and your partner, filterable by category (or all) and by period (last week, last month, last 3 months, all time). Points are aggregated so each period stays readable (daily → weekly → 30-day blocks). Tap a point for details. Summary per person: average, best day, days ≥ 80 %.

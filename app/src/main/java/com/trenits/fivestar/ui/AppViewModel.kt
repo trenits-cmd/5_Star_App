@@ -861,13 +861,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             setOf("andi_penalty_0_$uid")
 
     fun applyRosiePreset() {
-        if (myName.value.isNullOrBlank()) {
-            localProfileStore.saveDisplayName("Rosie")
-            userRepository.setDisplayName("Rosie")
-        }
-        if (partnerName.value.isNullOrBlank()) {
-            localProfileStore.savePartnerDisplayName("Andi")
-        }
         val repo = repo() ?: return
         val myTargets = listOf(uid)
         val allowedCategories = rosieCategoryIds(uid)
@@ -971,13 +964,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * - Strafe: Handy-Abgabe an Rosie
      */
     fun applyAndiPreset() {
-        if (myName.value.isNullOrBlank()) {
-            localProfileStore.saveDisplayName("Andi")
-            userRepository.setDisplayName("Andi")
-        }
-        if (partnerName.value.isNullOrBlank()) {
-            localProfileStore.savePartnerDisplayName("Rosie")
-        }
         val repo = repo() ?: return
         val myTargets = listOf(uid)
         val allowedCategories = andiCategoryIds(uid)
@@ -1087,20 +1073,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val trimmed = name.trim()
         localProfileStore.saveDisplayName(trimmed)
         userRepository.setDisplayName(trimmed)
-        when {
-            trimmed.contains("rosie", ignoreCase = true) || trimmed.contains("rosa", ignoreCase = true) -> {
-                if (partnerName.value.isNullOrBlank() || partnerName.value?.contains("rosie", ignoreCase = true) == true) {
-                    localProfileStore.savePartnerDisplayName("Andi")
-                }
-                applyRosiePreset()
-            }
-            trimmed.contains("andi", ignoreCase = true) || trimmed.contains("andreas", ignoreCase = true) -> {
-                if (partnerName.value.isNullOrBlank() || partnerName.value?.contains("andi", ignoreCase = true) == true) {
-                    localProfileStore.savePartnerDisplayName("Rosie")
-                }
-                applyAndiPreset()
-            }
-        }
         toastMessage.value = text(R.string.save_confirmation)
     }
 

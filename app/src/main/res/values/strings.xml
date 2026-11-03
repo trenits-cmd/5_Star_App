@@ -89,7 +89,7 @@
     <string name="score_hint" formatted="false">Missing the daily target (&lt; 80%) triggers a penalty. 7 consecutive days at 80%+ unlocks a reward.</string>
     <string name="percent_value">%1$.0f%%</string>
     <string name="section_categories">Categories of %1$s</string>
-    <string name="categories_empty">Set your name (Rosie or Andi) in Settings to load your categories.</string>
+    <string name="categories_empty">Set your name in Settings to load your categories.</string>
     <string name="weight_label">%1$d× weight</string>
     <string name="weight_with_share">%1$d× weight (%2$s) · %3$d%% of score</string>
     <string name="priority_5">5× · Top Priority</string>
@@ -142,10 +142,6 @@
     <string name="history_partner_categories">Partner\'s categories: %1$s</string>
     <string name="history_task_line">%1$s · %2$s: %3$s (%4$s)</string>
 
-    <string name="settings_presets_title">Quick Start: Presets for Rosie &amp; Andi</string>
-    <string name="settings_presets_hint">Rosie: Water (3×), Alcohol (2×), Alternating tasks (1×), Dinner before 20h (3×), Meals (3×) + 5 Rewards &amp; 4 Penalties. Andi: Sport (3×), Water (2×), Reading (2×), Dinner before 20h (3×) + Rewards &amp; Penalty.</string>
-    <string name="settings_preset_rosie">Load Rosie profile &amp; categories</string>
-    <string name="settings_preset_andi">Load Andi profile &amp; categories</string>
 
     <string name="settings_categories">Categories</string>
     <string name="settings_assignment_hint">Choose who each category applies to. This only changes the assignment; scoring is not affected yet.</string>
@@ -215,23 +211,23 @@
     <string name="delete_account_confirm_message">Are you sure you want to permanently delete your account and all your data on Firebase? This action cannot be undone.</string>
     <string name="delete_account_confirm_yes">Yes, Delete Account</string>
 
-    <!-- Rosie & Andi Rewards and Penalties -->
-    <string name="seed_reward_1">Vinted Budget: Rosie gets 10 € from Andi</string>
-    <string name="seed_reward_2">Flowers: Rosie receives flowers from Andi</string>
+    <!-- Standard rewards and penalties (name-neutral) -->
+    <string name="seed_reward_1">Vinted budget: 10 € from partner</string>
+    <string name="seed_reward_2">Flowers: partner gives you flowers</string>
     <string name="seed_reward_3">Massage for 30 minutes</string>
     <string name="seed_reward_4">Eat out: choose the restaurant</string>
-    <string name="seed_reward_5">Cooking of choice: a dish Rosie loves, prepared by Andi</string>
+    <string name="seed_reward_5">Cooking of choice: a dish you love, prepared by partner</string>
     <string name="seed_reward_andi_1">Cuddling for 30 minutes</string>
     <string name="seed_reward_andi_2">Massage for 30 minutes</string>
     <string name="seed_reward_andi_3">Edging</string>
     <string name="seed_reward_andi_4">Blowjob</string>
     <string name="seed_reward_andi_5">Handjob</string>
     <string name="seed_reward_andi_6">Video</string>
-    <string name="seed_reward_andi_7">Favourite dish: Rosie cooks Andi\'s favourite meal</string>
-    <string name="seed_penalty_1">No orgasm: sex happens, but Rosie has no orgasm</string>
+    <string name="seed_reward_andi_7">Favourite dish: partner cooks your favourite meal</string>
+    <string name="seed_penalty_1">No orgasm: sex happens, but without orgasm</string>
     <string name="seed_penalty_2">No bar for two days</string>
-    <string name="seed_penalty_3">Phone handover: hand over smartphone to Andi for 1 hour to stop distraction</string>
-    <string name="seed_penalty_andi_1">Phone handover: hand over smartphone to Rosie for 1 hour to stop distraction</string>
+    <string name="seed_penalty_3">Phone handover: hand over smartphone to partner for 1 hour to stop distraction</string>
+    <string name="seed_penalty_andi_1">Phone handover: hand over smartphone to partner for 1 hour to stop distraction</string>
 
     <string name="reminder_channel">Category notifications</string>
     <string name="reminder_text">Your rating for today is still missing.</string>
@@ -263,9 +259,9 @@
     <string name="counter_alcohol_goal_hint">0.00 L = 5 ★ · proportionally less above up to %1$.2f L</string>
 
     <string name="settings_display_name">Your own name (used as variable)</string>
-    <string name="settings_display_name_hint">Choose your name (e.g. Rosie or Andi). It will be displayed everywhere for you and your partner.</string>
+    <string name="settings_display_name_hint">Choose your name. It will be displayed everywhere for you and your partner.</string>
     <string name="settings_partner_name">Partner name (used as variable)</string>
-    <string name="settings_partner_name_hint">Choose your partner\'s name (e.g. Rosie or Andi). It will be displayed everywhere for you.</string>
+    <string name="settings_partner_name_hint">Choose your partner\'s name. It will be displayed everywhere for you.</string>
     <string name="settings_no_category_crud">Categories, rewards and penalties are managed in the Partner tab. Here only the assignment (you / partner / both) and the push reminder time can be changed.</string>
     <string name="save_confirmation">Saved and synced.</string>
     <string name="archive_no_entry">No entry available</string>
@@ -307,8 +303,8 @@
     <string name="dinner_rules_hint">Before 20:00 = 5 ★ · Before 21:00 = 1 ★ · Otherwise = 0 ★</string>
     <string name="dinner_time_current">Recorded time: %1$s</string>
     <string name="dinner_time_not_set">No dinner time recorded for today yet</string>
-    <string name="dinner_pick_time">Enter time (Andi)</string>
-    <string name="dinner_tracked_by_andi">Time is entered by Andi and tracked in both apps.</string>
+    <string name="dinner_pick_time">Enter time</string>
+    <string name="dinner_tracked_by_andi">Time is tracked in both apps.</string>
     <string name="dinner_quick_before_20">Before 20h</string>
     <string name="dinner_quick_before_21">Before 21h</string>
     <string name="dinner_quick_after_21">21h+</string>

@@ -110,9 +110,6 @@ fun SettingsScreen(vm: AppViewModel) {
     var partnerEmail by rememberSaveable { mutableStateOf("") }
     var showUnpairDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteAccountDialog by rememberSaveable { mutableStateOf(false) }
-    var catalogTitle by rememberSaveable { mutableStateOf("") }
-    var catalogType by remember { mutableStateOf(TaskType.REWARD) }
-    var catalogAudience by remember { mutableStateOf(Audience.ME) }
 
     LazyColumn(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),

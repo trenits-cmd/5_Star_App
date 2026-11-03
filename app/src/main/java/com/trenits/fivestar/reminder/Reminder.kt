@@ -17,13 +17,19 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.R
+import com.trenits.fivestar.data.LocalProfileStore
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.Task
+import com.trenits.fivestar.domain.TaskStatus
+import com.trenits.fivestar.domain.TaskType
 import com.trenits.fivestar.domain.dayKeyOf
 import com.trenits.fivestar.domain.isWithinQuietHours
+import com.trenits.fivestar.domain.needsPartnerConfirmationReminder
+import com.trenits.fivestar.domain.withAutoConfirmation
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 import java.time.Duration
@@ -127,17 +133,9 @@ object ReminderScheduler {
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
             return
         }
-        val interval = prefs.intervalHours()
-        val request = if (interval > 0) {
-            PeriodicWorkRequestBuilder<ReminderWorker>(interval.toLong().coerceAtLeast(1L), TimeUnit.HOURS)
-                .build()
-        } else {
-            var next = now.toLocalDate().atTime(time).atZone(now.zone)
-            if (!next.isAfter(now)) next = next.plusDays(1)
-            PeriodicWorkRequestBuilder<ReminderWorker>(1, TimeUnit.HOURS)
-                .setInitialDelay(Duration.between(now, next).toMillis().coerceAtMost(3600_000L), TimeUnit.MILLISECONDS)
-                .build()
-        }
+        // Der Worker prüft stündlich: Intervall-Erinnerungen, die 22:00-Erinnerung,
+        // die 3-Stunden-Erinnerung an den Partner und die 48-Stunden-Auto-Bestätigung.
+        val request = PeriodicWorkRequestBuilder<ReminderWorker>(1, TimeUnit.HOURS).build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             WORK_NAME,
             ExistingPeriodicWorkPolicy.UPDATE,
@@ -347,10 +345,60 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                         }
                     }
                 }
+                checkOpenTasks(coupleRef, uid, now)
                 Result.success()
             }
         } catch (_: Exception) {
             Result.success()
+        }
+    }
+
+    /**
+     * Offene Aufgaben (läuft auch bei geschlossener App):
+     * - Nach 48 h ohne Bestätigung automatisch bestätigt (Archiv).
+     * - Nach 3 h Push an den Partner, der bestätigen muss („… wartet auf deine Bestätigung!“).
+     */
+    private suspend fun checkOpenTasks(coupleRef: DocumentReference, uid: String, now: ZonedDateTime) {
+        val prefs = ReminderPrefs(applicationContext)
+        val instant = now.toInstant()
+        val todayKey = dayKeyOf(instant, ZoneId.systemDefault())
+        val docs = coupleRef.collection("tasks")
+            .whereEqualTo("status", TaskStatus.OPEN.name)
+            .get()
+            .await()
+        for (doc in docs.documents) {
+            runCatching {
+                val owner = doc.getString("ownerUid") ?: return@runCatching
+                val type = doc.getString("type")?.let { TaskType.valueOf(it) } ?: return@runCatching
+                val createdAt = doc.getTimestamp("createdAt")
+                    ?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) }
+                    ?: return@runCatching
+                val task = Task(
+                    id = doc.id,
+                    ownerUid = owner,
+                    type = type,
+                    title = doc.getString("title") ?: "",
+                    dayKey = doc.getString("dayKey") ?: "",
+                    status = TaskStatus.OPEN,
+                    createdAt = createdAt,
+                    targets = listOf(owner),
+                    redeemedDayKey = null,
+                )
+                if (task.withAutoConfirmation(instant).status != task.status) {
+                    doc.reference.update(
+                        mapOf("status" to TaskStatus.AUTO_CONFIRMED.name, "redeemedDayKey" to todayKey),
+                    ).await()
+                    return@runCatching
+                }
+                if (owner != uid && task.needsPartnerConfirmationReminder(instant) &&
+                    !prefs.hasNotifiedConfirmForTask(task.id)
+                ) {
+                    val partnerName = LocalProfileStore(applicationContext).partnerDisplayName.value
+                        ?: applicationContext.getString(R.string.who_partner)
+                    ReminderScheduler.sendConfirmationReminderNotification(applicationContext, partnerName, task)
+                    prefs.markNotifiedConfirmForTask(task.id)
+                }
+            }
         }
     }
 }

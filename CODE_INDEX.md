@@ -1,7 +1,7 @@
 # CODE_INDEX.md – AI-Readable Architecture & Code Directory (5 Star App)
 
 > **Purpose for AI Agents & Developers:**  
-> This document is the canonical, structured table of contents and architectural reference for the **5 Star – Daily Synergy & Motivation** Android application (`com.trenits.fivestar`, current release `v1.03112026_1838`, `versionCode = 28`). Keep this file updated whenever source files, UI structure, domain rules, or Firestore schemas change.
+> This document is the canonical, structured table of contents and architectural reference for the **5 Star – Daily Synergy & Motivation** Android application (`com.trenits.fivestar`, current release `v1.03112026_1853`, `versionCode = 30`). Keep this file updated whenever source files, UI structure, domain rules, or Firestore schemas change.
 
 ---
 
@@ -12,7 +12,7 @@
 | `settings.gradle.kts` | Gradle root configuration (`rootProject.name = "5_Star_App"`, module `:app`). |
 | `build.gradle.kts` | Top-level Gradle plugins (`android.application`, `kotlin.android`, `kotlin.compose`, `google.services`). |
 | `gradle/libs.versions.toml` | Version catalog defining AGP, Kotlin, Jetpack Compose BOM, Material 3, Firebase BOM (Auth + Firestore), Credential Manager, and WorkManager versions. |
-| `app/build.gradle.kts` | App module configuration (`namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 28`, `versionName = "1.03112026_1838"`). |
+| `app/build.gradle.kts` | App module configuration (`namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 30`, `versionName = "1.03112026_1853"`). |
 | `app/src/main/res/values/strings.xml` | Single-language (English) string resources for all tabs, cards, categories, rewards, penalties, dialogs, notifications, and status messages. |
 | `firestore.rules` | Cloud Firestore security rules for `/users/{uid}`, `/invites/{code}`, and `/couples/{coupleId}` (`categories`, `catalog`, `days`, `tasks`). |
 | `rules-tests/rules.test.mjs` | Node.js unit tests verifying `firestore.rules` against the Firebase Firestore Emulator. |
@@ -98,9 +98,13 @@
 
 ---
 
-## 3. Canonical Role Profiles (Rosie vs. Andi)
+## 3. Canonical Role Profiles (roles `main_user` and `partner`)
 
-### 3.1 Rosie
+- `main_user` = the person who created the invitation (stored as `presetRole` in `users/{uid}`). Template: sport, water, reading.
+- `partner` = the invited person. Template: water, dinner, meals, alcohol, alternating tasks.
+- Names are only taken from Settings. The role decides the template, not the name.
+
+### 3.1 Role `partner`
 - **Categories (5):**
   1. **Drink water (`3×`, `WATER`):** Min. `2.5 L` (glasses `0.25 L` or decimal `L`); `2.5 L = 5 ★`, below proportionally rounded down.
   2. **Alcohol limit (`2×`, `ALCOHOL`):** `0 L = 5 ★`, benchmark `2.5 L`, counters for `Demi (0.25 L)`, `Pint (0.5 L)`, and decimal `L`.
@@ -110,7 +114,7 @@
 - **Rewards (5):** Vinted Budget (10 € from Andi), Flowers (from Andi), Massage for 30 minutes, Eat out (choose restaurant), Cooking of choice (prepared by Andi).
 - **Penalties (3):** No orgasm (sex happens, but Rosie has no orgasm), No bar for two days, Phone handover (1 hour to Andi).
 
-### 3.2 Andi
+### 3.2 Role `main_user`
 - **Categories (3 only):**
   1. **Sport (`3×`, `SPORT`):** 3 days/week at least `45 min` each; sport duration in minutes entered daily (step size `1`).
   2. **Drink water (`2×`, `WATER`):** Min. `2.5 L` (glasses `0.25 L` or decimal `L`); `2.5 L = 5 ★`, below proportionally rounded down.

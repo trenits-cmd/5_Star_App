@@ -20,6 +20,8 @@ data class UserProfile(
     val activeInviteCode: String? = null,
     /** Einladung, bei der ich als Partner um Beitritt gebeten habe. */
     val pendingInviteCode: String? = null,
+    /** Vorlage für Kategorien: "main_user" (Einlader) oder "partner" (Eingeladener). */
+    val presetRole: String? = null,
 )
 
 /** Zustand einer Einladung. status: open, requested, confirmed oder declined. */
@@ -51,6 +53,7 @@ class UserRepository(private val uid: String) {
                     photoBase64 = snapshot?.getString("photoBase64")?.takeIf { it.isNotBlank() },
                     activeInviteCode = snapshot?.getString("activeInviteCode")?.takeIf { it.isNotBlank() },
                     pendingInviteCode = snapshot?.getString("pendingInviteCode")?.takeIf { it.isNotBlank() },
+                    presetRole = snapshot?.getString("presetRole")?.takeIf { it.isNotBlank() },
                 ),
             )
         }
@@ -60,7 +63,7 @@ class UserRepository(private val uid: String) {
     suspend fun createCouple(): String {
         val ref = Firebase.firestore.collection("couples").document()
         ref.set(mapOf("members" to listOf(uid))).await()
-        user.set(mapOf("coupleId" to ref.id), SetOptions.merge()).await()
+        user.set(mapOf("coupleId" to ref.id, "presetRole" to "main_user"), SetOptions.merge()).await()
         return ref.id
     }
 
@@ -146,7 +149,7 @@ class UserRepository(private val uid: String) {
                 Firebase.firestore.collection("couples").document(coupleId)
                     .update("members", FieldValue.arrayUnion(uid)).await()
             }
-            user.set(mapOf("coupleId" to coupleId, "pendingInviteCode" to FieldValue.delete()), SetOptions.merge()).await()
+            user.set(mapOf("coupleId" to coupleId, "presetRole" to "partner", "pendingInviteCode" to FieldValue.delete()), SetOptions.merge()).await()
             return
         }
         if (status != "open" && status != "requested") throw InvalidInviteException()
@@ -157,7 +160,7 @@ class UserRepository(private val uid: String) {
         invite.reference.update(
             mapOf("status" to "confirmed", "requestedBy" to uid, "requestedEmail" to email),
         ).await()
-        user.set(mapOf("coupleId" to coupleId, "pendingInviteCode" to FieldValue.delete()), SetOptions.merge()).await()
+        user.set(mapOf("coupleId" to coupleId, "presetRole" to "partner", "pendingInviteCode" to FieldValue.delete()), SetOptions.merge()).await()
     }
 
     /** Einlader räumt activeInviteCode nach Erhalt der Benachrichtigung auf (lässt den bestätigten Code für spätere Logins bestehen). */
@@ -184,7 +187,7 @@ class UserRepository(private val uid: String) {
 
     /** Partner übernimmt die bestätigte Einladung und löscht sie danach. */
     suspend fun finishJoin(invite: InviteState) {
-        user.set(mapOf("coupleId" to invite.coupleId, "pendingInviteCode" to FieldValue.delete()), SetOptions.merge())
+        user.set(mapOf("coupleId" to invite.coupleId, "presetRole" to "partner", "pendingInviteCode" to FieldValue.delete()), SetOptions.merge())
             .await()
         Firebase.firestore.collection("invites").document(invite.code).delete().await()
     }
@@ -218,6 +221,10 @@ class UserRepository(private val uid: String) {
 
     fun markCatalogSeeded() {
         user.set(mapOf("catalogSeeded" to true), SetOptions.merge())
+    }
+
+    fun setPresetRole(role: String) {
+        user.set(mapOf("presetRole" to role), SetOptions.merge())
     }
 
     fun setDisplayName(name: String) {

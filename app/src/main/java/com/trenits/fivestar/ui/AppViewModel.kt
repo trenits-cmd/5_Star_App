@@ -82,7 +82,7 @@ import java.time.ZonedDateTime
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val rosieStarterCatalog = listOf(
+    private val partnerStarterCatalog = listOf(
         R.string.seed_reward_1 to TaskType.REWARD,
         R.string.seed_reward_2 to TaskType.REWARD,
         R.string.seed_reward_3 to TaskType.REWARD,
@@ -93,7 +93,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         R.string.seed_penalty_3 to TaskType.PENALTY,
     )
 
-    private val andiStarterCatalog = listOf(
+    private val mainUserStarterCatalog = listOf(
         R.string.seed_reward_andi_1 to TaskType.REWARD,
         R.string.seed_reward_andi_2 to TaskType.REWARD,
         R.string.seed_reward_andi_3 to TaskType.REWARD,
@@ -153,35 +153,42 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     val partnerPhoto: StateFlow<String?> = localProfileStore.partnerPhotoBase64.share(null)
 
+    /**
+     * Rolle für die Kategorie-Vorlage: "main_user" (hat die Einladung erstellt) oder "partner".
+     * Die gespeicherte Rolle im Profil hat Vorrang. Die Namens-Regeln sind nur noch eine einmalige
+     * Übernahme für Paare, die vor der Rollen-Speicherung bestanden.
+     */
     private fun resolveRole(
+        presetRole: String?,
         localName: String?,
         partnerLocalName: String?,
         profileName: String?,
         cats: List<Category>,
-    ): String? {
+    ): String {
+        presetRole?.let { return it }
         val myLower = localName?.trim()?.lowercase().orEmpty()
         val partnerLower = partnerLocalName?.trim()?.lowercase().orEmpty()
         val profLower = profileName?.trim()?.lowercase().orEmpty()
         val authEmail = Firebase.auth.currentUser?.email?.trim()?.lowercase().orEmpty()
         val authName = Firebase.auth.currentUser?.displayName?.trim()?.lowercase().orEmpty()
         return when {
-            myLower.contains("rosie") || myLower.contains("rosa") -> "rosie"
-            myLower.contains("andi") || myLower.contains("andreas") -> "andi"
-            partnerLower.contains("andi") || partnerLower.contains("andreas") -> "rosie"
-            partnerLower.contains("rosie") || partnerLower.contains("rosa") -> "andi"
+            myLower.contains("rosie") || myLower.contains("rosa") -> "partner"
+            myLower.contains("andi") || myLower.contains("andreas") -> "main_user"
+            partnerLower.contains("andi") || partnerLower.contains("andreas") -> "partner"
+            partnerLower.contains("rosie") || partnerLower.contains("rosa") -> "main_user"
             profLower.contains("rosie") || profLower.contains("rosa") ||
-                authName.contains("rosie") || authEmail.contains("rosie") -> "rosie"
+                authName.contains("rosie") || authEmail.contains("rosie") -> "partner"
             profLower.contains("andi") || profLower.contains("andreas") ||
-                authName.contains("andi") || authEmail.contains("andi") || authEmail.contains("trenits") -> "andi"
+                authName.contains("andi") || authEmail.contains("andi") || authEmail.contains("trenits") -> "main_user"
             cats.any { it.id == "preset_sport_$uid" && !it.archived } &&
-                cats.none { it.id == "preset_meals_$uid" && !it.archived } -> "andi"
+                cats.none { it.id == "preset_meals_$uid" && !it.archived } -> "main_user"
             cats.any { it.id == "preset_meals_$uid" && !it.archived } &&
-                cats.none { it.id == "preset_sport_$uid" && !it.archived } -> "rosie"
-            else -> "andi"
+                cats.none { it.id == "preset_sport_$uid" && !it.archived } -> "partner"
+            else -> "main_user"
         }
     }
 
-    fun canonicalAndiCategories(ownerUid: String = uid): List<Category> = listOf(
+    fun canonicalMainUserCategories(ownerUid: String = uid): List<Category> = listOf(
         Category(
             id = "preset_sport_$ownerUid",
             ownerUid = ownerUid,
@@ -222,7 +229,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         ),
     )
 
-    fun canonicalRosieCategories(ownerUid: String = uid): List<Category> = listOf(
+    fun canonicalPartnerCategories(ownerUid: String = uid): List<Category> = listOf(
         Category(
             id = "preset_water_$ownerUid",
             ownerUid = ownerUid,
@@ -285,7 +292,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         ),
     )
 
-    private fun canonicalAndiCatalog(ownerUid: String = uid): List<CatalogItem> {
+    private fun canonicalMainUserCatalog(ownerUid: String = uid): List<CatalogItem> {
         val myTargets = listOf(ownerUid)
         val rewards = listOf(
             text(R.string.seed_reward_andi_1),
@@ -304,7 +311,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         return rewards + penalties
     }
 
-    private fun canonicalRosieCatalog(ownerUid: String = uid): List<CatalogItem> {
+    private fun canonicalPartnerCatalog(ownerUid: String = uid): List<CatalogItem> {
         val myTargets = listOf(ownerUid)
         val rewards = listOf(
             text(R.string.seed_reward_1),
@@ -325,24 +332,29 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         return rewards + penalties
     }
 
-    fun canonicalCatalogFor(ownerUid: String, isRosie: Boolean): List<CatalogItem> =
-        if (isRosie) canonicalRosieCatalog(ownerUid) else canonicalAndiCatalog(ownerUid)
+    fun canonicalCatalogFor(ownerUid: String, isPartnerSet: Boolean): List<CatalogItem> =
+        if (isPartnerSet) canonicalPartnerCatalog(ownerUid) else canonicalMainUserCatalog(ownerUid)
 
     /**
      * Kategorien, die für mich gelten: gespeicherte Zuweisung (targets) bzw. Standard-Rolle,
      * solange für eine Preset-Kategorie noch kein Eintrag existiert.
      */
     val targeted: StateFlow<List<Category>> = combine(categories, myName, partnerName, profile) { list, localName, pName, prof ->
-        val role = resolveRole(localName, pName, prof?.displayName, list.items)
-        effectiveCategories(list.items, uid, role == "rosie")
+        val role = resolveRole(prof?.presetRole, localName, pName, prof?.displayName, list.items)
+        effectiveCategories(list.items, uid, role == "partner")
     }.share(emptyList())
 
-    /** Kategorien einer Person (z. B. Partner) nach Zuweisung, Standard-Rolle als Fallback. */
-    fun categoriesFor(forUid: String, isRosie: Boolean): List<Category> =
-        effectiveCategories(categories.value.items, forUid, isRosie)
+    /** Meine Rolle für die Kategorie-Vorlage: "main_user" oder "partner". */
+    val myPresetRole: StateFlow<String> = combine(profile, myName, partnerName, categories) { p, localName, pName, cats ->
+        resolveRole(p?.presetRole, localName, pName, p?.displayName, cats.items)
+    }.share("main_user")
 
-    private fun effectiveCategories(list: List<Category>, forUid: String, isRosie: Boolean): List<Category> {
-        val canonical = if (isRosie) canonicalRosieCategories(forUid) else canonicalAndiCategories(forUid)
+    /** Kategorien einer Person (z. B. Partner) nach Zuweisung, Standard-Rolle als Fallback. */
+    fun categoriesFor(forUid: String, isPartnerSet: Boolean): List<Category> =
+        effectiveCategories(categories.value.items, forUid, isPartnerSet)
+
+    private fun effectiveCategories(list: List<Category>, forUid: String, isPartnerSet: Boolean): List<Category> {
+        val canonical = if (isPartnerSet) canonicalPartnerCategories(forUid) else canonicalMainUserCategories(forUid)
         val storedIds = list.map { it.id }.toSet()
         return canonical.filter { it.id !in storedIds } + list.filter { it.appliesTo(forUid) }
     }
@@ -360,11 +372,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Katalogeinträge (Belohnungen & Strafen) strikt passend zu meiner Rolle (Rosie vs. Andi). */
     val myCatalog: StateFlow<List<CatalogItem>> = combine(catalog, myName, partnerName, profile) { _, localName, pName, prof ->
-        val role = resolveRole(localName, pName, prof?.displayName, emptyList())
-        if (role == "rosie") {
-            canonicalRosieCatalog(uid)
+        val role = resolveRole(prof?.presetRole, localName, pName, prof?.displayName, emptyList())
+        if (role == "partner") {
+            canonicalPartnerCatalog(uid)
         } else {
-            canonicalAndiCatalog(uid)
+            canonicalMainUserCatalog(uid)
         }
     }.share(emptyList())
 
@@ -503,17 +515,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                             .update("members", com.google.firebase.firestore.FieldValue.arrayUnion(uid))
                     }
                 }
-                val role = resolveRole(localName, pName, p.displayName, cats.items) ?: return@collect
+                val role = resolveRole(p.presetRole, localName, pName, p.displayName, cats.items)
+                if (p.presetRole == null) userRepository.setPresetRole(role)
 
-                val expectedCatIds = if (role == "rosie") rosieCategoryIds(uid) else andiCategoryIds(uid)
-                val expectedCatalogIds = if (role == "rosie") rosieCatalogIds() else andiCatalogIds()
+                val expectedCatIds = if (role == "partner") partnerCategoryIds(uid) else mainUserCategoryIds(uid)
+                val expectedCatalogIds = if (role == "partner") partnerCatalogIds() else mainUserCatalogIds()
                 val hasForeignCats = cats.items.any {
                     it.ownerUid == uid && !it.archived && it.id !in expectedCatIds
                 }
                 val hasMissingCats = expectedCatIds.any { expectedId ->
                     cats.items.none { it.id == expectedId && !it.archived }
                 }
-                val hasOutdatedSportCat = role == "andi" && cats.items.any {
+                val hasOutdatedSportCat = role == "main_user" && cats.items.any {
                     it.id == "preset_sport_$uid" && (it.kind != CategoryKind.SPORT || it.goal != DEFAULT_SPORT_GOAL_MINUTES)
                 }
                 val hasForeignCatalog = catItems.items.any {
@@ -525,10 +538,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
                 if (lastSyncedRole != role || hasForeignCats || hasMissingCats || hasOutdatedSportCat || hasForeignCatalog || hasMissingCatalog) {
                     lastSyncedRole = role
-                    if (role == "rosie") {
-                        applyRosiePreset()
+                    if (role == "partner") {
+                        applyPartnerPreset()
                     } else {
-                        applyAndiPreset()
+                        applyMainUserPreset()
                     }
                     if (!p.catalogSeeded) {
                         userRepository.markCatalogSeeded()
@@ -610,13 +623,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * Für Strafen wird der Pool jeden Sonntagabend nach der Wochenbilanz zurückgesetzt.
      */
     fun availableChoicesFor(task: Task): Pair<List<String>, Int> {
-        val myRole = resolveRole(myName.value, partnerName.value, profile.value?.displayName, categories.value.items)
-        val ownerIsAndi = if (task.ownerUid == uid) {
-            myRole != "rosie"
+        val myRole = resolveRole(profile.value?.presetRole, myName.value, partnerName.value, profile.value?.displayName, categories.value.items)
+        val ownerIsMainUser = if (task.ownerUid == uid) {
+            myRole == "main_user"
         } else {
-            myRole == "rosie"
+            myRole == "partner"
         }
-        val starter = if (ownerIsAndi) andiStarterCatalog else rosieStarterCatalog
+        val starter = if (ownerIsMainUser) mainUserStarterCatalog else partnerStarterCatalog
         val pool = starter
             .filter { (_, t) -> t == task.type }
             .map { (res, _) -> text(res) }
@@ -838,7 +851,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * - Belohnungen: Vinted Budget (10 € von Andi), Blumen, Massage für 30 Minuten, Essen gehen
      * - Strafen: kein Orgasmus, keine Bar
      */
-    fun rosieCategoryIds(ownerUid: String = uid): Set<String> = setOf(
+    fun partnerCategoryIds(ownerUid: String = uid): Set<String> = setOf(
         "preset_meals_$ownerUid",
         "preset_dinner_$ownerUid",
         "preset_water_$ownerUid",
@@ -846,25 +859,25 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         "preset_rotation_$ownerUid",
     )
 
-    fun andiCategoryIds(ownerUid: String = uid): Set<String> = setOf(
+    fun mainUserCategoryIds(ownerUid: String = uid): Set<String> = setOf(
         "preset_sport_$ownerUid",
         "preset_water_$ownerUid",
         "preset_reading_$ownerUid",
     )
 
-    private fun rosieCatalogIds(): Set<String> =
+    private fun partnerCatalogIds(): Set<String> =
         (0..4).map { "rosie_reward_${it}_$uid" }.toSet() +
             (0..2).map { "rosie_penalty_${it}_$uid" }.toSet()
 
-    private fun andiCatalogIds(): Set<String> =
+    private fun mainUserCatalogIds(): Set<String> =
         (0..6).map { "andi_reward_${it}_$uid" }.toSet() +
             setOf("andi_penalty_0_$uid")
 
-    fun applyRosiePreset() {
+    fun applyPartnerPreset() {
         val repo = repo() ?: return
         val myTargets = listOf(uid)
-        val allowedCategories = rosieCategoryIds(uid)
-        val allowedCatalog = rosieCatalogIds()
+        val allowedCategories = partnerCategoryIds(uid)
+        val allowedCatalog = partnerCatalogIds()
 
         categories.value.items
             .filter { it.ownerUid == uid && !it.archived && it.id !in allowedCategories }
@@ -963,11 +976,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * - Belohnungen: Kuscheln, Massage, Edging, Blowjob, Handjob, Video, Lieblingsgericht
      * - Strafe: Handy-Abgabe an Rosie
      */
-    fun applyAndiPreset() {
+    fun applyMainUserPreset() {
         val repo = repo() ?: return
         val myTargets = listOf(uid)
-        val allowedCategories = andiCategoryIds(uid)
-        val allowedCatalog = andiCatalogIds()
+        val allowedCategories = mainUserCategoryIds(uid)
+        val allowedCatalog = mainUserCatalogIds()
 
         categories.value.items
             .filter { it.ownerUid == uid && !it.archived && it.id !in allowedCategories }

@@ -75,6 +75,7 @@ fun SettingsScreen(vm: AppViewModel) {
     val created by vm.created.collectAsState()
     val catalog by vm.myCatalog.collectAsState()
     val storedCategories by vm.categories.collectAsState()
+    val myPresetRole by vm.myPresetRole.collectAsState()
     val myCategories = storedCategories.items.filter { it.ownerUid == vm.uid && !it.archived }
     val days by vm.days.collectAsState()
     val lastSync by vm.lastSync.collectAsState()
@@ -245,12 +246,10 @@ fun SettingsScreen(vm: AppViewModel) {
             CatalogOverviewCard(ownerLabel = myLabel, items = catalog)
         }
         item {
-            val partnerIsRosie = partnerLabel.trim().contains("rosie", ignoreCase = true) ||
-                myLabel.trim().contains("andi", ignoreCase = true) ||
-                !partnerLabel.trim().contains("andi", ignoreCase = true)
+            val partnerIsPartnerSet = myPresetRole == "main_user"
             CatalogOverviewCard(
                 ownerLabel = partnerLabel,
-                items = vm.canonicalCatalogFor(partnerUid ?: "", partnerIsRosie),
+                items = vm.canonicalCatalogFor(partnerUid ?: "", partnerIsPartnerSet),
             )
         }
 

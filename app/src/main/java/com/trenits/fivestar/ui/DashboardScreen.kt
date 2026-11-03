@@ -131,6 +131,7 @@ fun DashboardScreen(vm: AppViewModel) {
     val canEditYesterday by vm.canEditYesterday.collectAsState()
     val editingYesterday by vm.editingYesterday.collectAsState()
     val activeDayKey by vm.activeDayKey.collectAsState()
+    val myPresetRole by vm.myPresetRole.collectAsState()
 
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
@@ -266,9 +267,9 @@ fun DashboardScreen(vm: AppViewModel) {
                     } else {
                         partnerDinnerValues.orEmpty()
                     }
-                    val partnerIsAndi = partnerName?.trim()?.equals("Andi", ignoreCase = true) == true
-                    val iAmRosie = myName?.trim()?.equals("Rosie", ignoreCase = true) == true
-                    val canEditTime = !(iAmRosie && partnerIsAndi)
+                    
+                    // Die Partner-Rolle trägt die Abendessen-Uhrzeit ein; main_user kann sie nicht ändern.
+                    val canEditTime = myPresetRole != "partner"
                     DinnerTimeCard(
                         category = category,
                         sharePercent = sharePercent,
@@ -1663,24 +1664,23 @@ fun PartnerTodayScreen(vm: AppViewModel) {
     val days by vm.days.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
     val allCategories by vm.categories.collectAsState()
+    val myPresetRole by vm.myPresetRole.collectAsState()
     val tasks by vm.tasks.collectAsState()
 
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 
     val pUid = partnerUid ?: partnerToday?.ownerUid ?: vm.uid
-    val partnerIsRosie = partnerLabel.trim().contains("rosie", ignoreCase = true) ||
-        myLabel.trim().contains("andi", ignoreCase = true) ||
-        !partnerLabel.trim().contains("andi", ignoreCase = true)
+    val partnerIsPartnerSet = myPresetRole == "main_user"
     val allCategoriesState by vm.categories.collectAsState()
-    val partnerCategories = remember(pUid, partnerIsRosie, allCategoriesState) {
-        vm.categoriesFor(pUid, partnerIsRosie)
+    val partnerCategories = remember(pUid, partnerIsPartnerSet, allCategoriesState) {
+        vm.categoriesFor(pUid, partnerIsPartnerSet)
     }
     val partnerWeightedList = remember(partnerCategories) {
         partnerCategories.map { WeightedCategory(it.id, it.weight) }
     }
-    val partnerCatalog = remember(pUid, partnerIsRosie) {
-        vm.canonicalCatalogFor(pUid, partnerIsRosie)
+    val partnerCatalog = remember(pUid, partnerIsPartnerSet) {
+        vm.canonicalCatalogFor(pUid, partnerIsPartnerSet)
     }
     val partnerOpenTasks = tasks.items
         .filter { it.status == TaskStatus.OPEN }

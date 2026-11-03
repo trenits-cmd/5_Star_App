@@ -162,7 +162,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     val partnerName: StateFlow<String?> = localProfileStore.partnerDisplayName.share(null)
 
-    val partnerPhoto: StateFlow<String?> = localProfileStore.partnerPhotoBase64.share(null)
+    /** Profilbild des Partners, live aus dem Nutzerdokument des Partners (Firestore). */
+    val partnerPhoto: StateFlow<String?> = partnerUid.flatMapLatest { p ->
+        if (p == null) flowOf(null) else userRepository.photoOf(p)
+    }.share(null)
 
     /**
      * Rolle für die Kategorie-Vorlage: "main_user" (hat die Einladung erstellt) oder "partner".

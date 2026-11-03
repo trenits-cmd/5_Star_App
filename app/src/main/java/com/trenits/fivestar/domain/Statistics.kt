@@ -73,8 +73,9 @@ fun taskCountOf(tasks: List<Task>, type: TaskType): Int = tasks.count { it.type 
  */
 fun categoryPercentOf(record: DayRecord?, category: Category): Double {
     val prefix = categoryIdPrefix(category.kind)
-    val stars = record?.snapshots
-        ?.firstOrNull { it.categoryId == category.id || (prefix != null && it.categoryId.startsWith(prefix)) }
+    val snapshots = record?.snapshots.orEmpty()
+    val stars = (snapshots.firstOrNull { it.categoryId == category.id }
+        ?: snapshots.firstOrNull { prefix != null && it.categoryId.startsWith(prefix) })
         ?.stars ?: 0
     return stars * 100.0 / MAX_STARS
 }

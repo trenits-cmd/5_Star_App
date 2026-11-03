@@ -328,15 +328,24 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun canonicalCatalogFor(ownerUid: String, isRosie: Boolean): List<CatalogItem> =
         if (isRosie) canonicalRosieCatalog(ownerUid) else canonicalAndiCatalog(ownerUid)
 
-    /** Kategorien, die für mich gelten (strikt nach Rolle Rosie vs. Andi). */
+    /**
+     * Kategorien, die für mich gelten: gespeicherte Zuweisung (targets) bzw. Standard-Rolle,
+     * solange für eine Preset-Kategorie noch kein Eintrag existiert.
+     */
     val targeted: StateFlow<List<Category>> = combine(categories, myName, partnerName, profile) { list, localName, pName, prof ->
         val role = resolveRole(localName, pName, prof?.displayName, list.items)
-        if (role == "rosie") {
-            canonicalRosieCategories(uid)
-        } else {
-            canonicalAndiCategories(uid)
-        }
+        effectiveCategories(list.items, uid, role == "rosie")
     }.share(emptyList())
+
+    /** Kategorien einer Person (z. B. Partner) nach Zuweisung, Standard-Rolle als Fallback. */
+    fun categoriesFor(forUid: String, isRosie: Boolean): List<Category> =
+        effectiveCategories(categories.value.items, forUid, isRosie)
+
+    private fun effectiveCategories(list: List<Category>, forUid: String, isRosie: Boolean): List<Category> {
+        val canonical = if (isRosie) canonicalRosieCategories(forUid) else canonicalAndiCategories(forUid)
+        val storedIds = list.map { it.id }.toSet()
+        return canonical.filter { it.id !in storedIds } + list.filter { it.appliesTo(forUid) }
+    }
 
     /** Kategorien, die ich angelegt habe, unabhängig davon, für wen sie gelten. */
     val created: StateFlow<List<Category>> = targeted
@@ -499,7 +508,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val expectedCatIds = if (role == "rosie") rosieCategoryIds(uid) else andiCategoryIds(uid)
                 val expectedCatalogIds = if (role == "rosie") rosieCatalogIds() else andiCatalogIds()
                 val hasForeignCats = cats.items.any {
-                    (it.ownerUid == uid || uid in it.targets) && !it.archived && it.id !in expectedCatIds
+                    it.ownerUid == uid && !it.archived && it.id !in expectedCatIds
                 }
                 val hasMissingCats = expectedCatIds.any { expectedId ->
                     cats.items.none { it.id == expectedId && !it.archived }
@@ -865,7 +874,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val allowedCatalog = rosieCatalogIds()
 
         categories.value.items
-            .filter { (it.ownerUid == uid || uid in it.targets) && !it.archived && it.id !in allowedCategories }
+            .filter { it.ownerUid == uid && !it.archived && it.id !in allowedCategories }
             .forEach { repo.archiveCategory(it.id) }
 
         repo.saveCategory(
@@ -975,7 +984,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val allowedCatalog = andiCatalogIds()
 
         categories.value.items
-            .filter { (it.ownerUid == uid || uid in it.targets) && !it.archived && it.id !in allowedCategories }
+            .filter { it.ownerUid == uid && !it.archived && it.id !in allowedCategories }
             .forEach { repo.archiveCategory(it.id) }
 
         repo.saveCategory(

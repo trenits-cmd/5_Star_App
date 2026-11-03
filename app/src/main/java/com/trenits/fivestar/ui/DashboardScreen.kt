@@ -1672,12 +1672,9 @@ fun PartnerTodayScreen(vm: AppViewModel) {
     val partnerIsRosie = partnerLabel.trim().contains("rosie", ignoreCase = true) ||
         myLabel.trim().contains("andi", ignoreCase = true) ||
         !partnerLabel.trim().contains("andi", ignoreCase = true)
-    val partnerCategories = remember(pUid, partnerIsRosie) {
-        if (partnerIsRosie) {
-            vm.canonicalRosieCategories(pUid)
-        } else {
-            vm.canonicalAndiCategories(pUid)
-        }
+    val allCategoriesState by vm.categories.collectAsState()
+    val partnerCategories = remember(pUid, partnerIsRosie, allCategoriesState) {
+        vm.categoriesFor(pUid, partnerIsRosie)
     }
     val partnerWeightedList = remember(partnerCategories) {
         partnerCategories.map { WeightedCategory(it.id, it.weight) }

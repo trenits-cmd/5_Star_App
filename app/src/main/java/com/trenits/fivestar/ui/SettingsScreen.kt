@@ -74,8 +74,8 @@ fun SettingsScreen(vm: AppViewModel) {
 
     val created by vm.created.collectAsState()
     val catalog by vm.myCatalog.collectAsState()
-    val myCategories by vm.targeted.collectAsState()
     val storedCategories by vm.categories.collectAsState()
+    val myCategories = storedCategories.items.filter { it.ownerUid == vm.uid && !it.archived }
     val days by vm.days.collectAsState()
     val lastSync by vm.lastSync.collectAsState()
     val syncStatus by vm.syncStatus.collectAsState()

@@ -80,22 +80,26 @@ class CoupleRepository(private val coupleId: String) {
         id: String? = null,
     ) {
         val collection = couple.collection("categories")
+        val isPreset = id?.startsWith("preset_") == true
+        val data = mutableMapOf<String, Any>(
+            "ownerUid" to ownerUid,
+            "name" to name,
+            "weight" to weight,
+            "archived" to false,
+            "kind" to kind.name,
+            "goal" to goal,
+            "icon" to icon,
+            "notifications" to notifications,
+            "pushEnabled" to pushEnabled,
+            "pushIntervalHours" to pushIntervalHours,
+            "pushHour" to pushHour,
+            "pushMinute" to pushMinute,
+        )
+        // Preset-Sync darf eine vom Nutzer gewählte Zuweisung nicht überschreiben (targets bleibt erhalten).
+        if (!isPreset) data["targets"] = targets
         collection.document(id ?: collection.document().id).set(
-            mapOf(
-                "ownerUid" to ownerUid,
-                "name" to name,
-                "weight" to weight,
-                "archived" to false,
-                "kind" to kind.name,
-                "targets" to targets,
-                "goal" to goal,
-                "icon" to icon,
-                "notifications" to notifications,
-                "pushEnabled" to pushEnabled,
-                "pushIntervalHours" to pushIntervalHours,
-                "pushHour" to pushHour,
-                "pushMinute" to pushMinute,
-            ),
+            data,
+            com.google.firebase.firestore.SetOptions.merge(),
         )
     }
 

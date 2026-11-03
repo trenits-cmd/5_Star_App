@@ -54,6 +54,20 @@ class StatisticsTest {
     }
 
     @Test
+    fun weeklySumsAddUpCounts() {
+        val days = statsDays(StatsRange.THREE_MONTHS, today, null)
+        val counts = days.indices.map { if (it < 7) 2.0 else 0.0 }
+        val sums = statsSums(StatsRange.THREE_MONTHS, days, counts)
+        assertEquals(14.0, sums.first().value, 1e-9)
+        assertEquals(0.0, sums[1].value, 1e-9)
+    }
+
+    @Test
+    fun missingRelationshipRatingCountsAsZero() {
+        assertEquals(0.0, relationshipPercentOf(null), 1e-9)
+    }
+
+    @Test
     fun missingDayWithoutRecordCountsAsZero() {
         val category = Category(id = "preset_water_u", ownerUid = "u", name = "Water", weight = 3, kind = CategoryKind.WATER)
         assertEquals(0.0, categoryPercentOf(null, category), 1e-9)

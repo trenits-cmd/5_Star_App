@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.03112026_1652)
+## Features (v1.03112026_1656)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.03112026_1652`** – Statistics: **All time** now covers the full period from account creation (or the first entry, if earlier) to today, not only the days with data. Tab order: Today, Partner, Archive, Statistics, Settings.
+- **Latest: `v1.03112026_1656`** – Statistics: new filters **Relationship** (daily relationship score in %) and **Penalties & rewards** (grouped bar chart of counts per period for you and your partner, plus totals). Both are part of the statistics tab alongside the categories.
+- `v1.03112026_1652` – Statistics: **All time** now covers the full period from account creation (or the first entry, if earlier) to today, not only the days with data. Tab order: Today, Partner, Archive, Statistics, Settings.
 - `v1.03112026_1644` – New **Statistics** tab: line chart of daily results (%) for you and your partner, filterable by category (or all) and by period (last week, last month, last 3 months, all time). Points are aggregated so each period stays readable (daily → weekly → 30-day blocks). Tap a point for details. Summary per person: average, best day, days ≥ 80 %.
 - `v1.03112026_1535` – Settings: the rewards & penalties overview for the partner is now always visible (previously only when a partner was connected).
 - `v1.03112026_1510` – Release with APK. Category assignment in Settings, rewards & penalties overview.

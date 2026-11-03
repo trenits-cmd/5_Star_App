@@ -57,6 +57,12 @@
     <string name="stats_range_three_months">Last 3 months</string>
     <string name="stats_range_all">All time</string>
     <string name="stats_category_all">All categories</string>
+    <string name="stats_filter_relationship">Relationship</string>
+    <string name="stats_filter_tasks">Penalties &amp; rewards</string>
+    <string name="stats_chart_title_relationship">Relationship (%)</string>
+    <string name="stats_chart_title_tasks">Penalties &amp; rewards (count per period)</string>
+    <string name="stats_rewards">Rewards</string>
+    <string name="stats_penalties">Penalties</string>
     <string name="stats_chart_title_overall">Daily status (%)</string>
     <string name="stats_chart_title_category">%1$s (%%)</string>
     <string name="stats_point_detail">%1$s: %2$s</string>

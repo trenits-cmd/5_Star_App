@@ -36,16 +36,35 @@ fun statsDays(
  * - Letzte 3 Monate (~13 Punkte): Wochendurchschnitt
  * - Gesamter Zeitraum: Wochendurchschnitt bei bis zu 180 Tagen, sonst 30-Tage-Abschnitte
  */
-fun statsPoints(range: StatsRange, days: List<LocalDate>, values: List<Double>): List<StatsPoint> {
+fun statsPoints(range: StatsRange, days: List<LocalDate>, values: List<Double>): List<StatsPoint> =
+    statsBuckets(range, days, values) { it.average() }
+
+/** Wie [statsPoints], aber mit Summe je Abschnitt (z. B. Anzahl Strafen pro Woche). */
+fun statsSums(range: StatsRange, days: List<LocalDate>, values: List<Double>): List<StatsPoint> =
+    statsBuckets(range, days, values) { it.sum() }
+
+private fun statsBuckets(
+    range: StatsRange,
+    days: List<LocalDate>,
+    values: List<Double>,
+    reduce: (List<Double>) -> Double,
+): List<StatsPoint> {
     val bucket = when (range) {
         StatsRange.WEEK, StatsRange.MONTH -> 1
         StatsRange.THREE_MONTHS -> 7
         StatsRange.ALL -> if (days.size <= 180) 7 else 30
     }
     return days.indices.chunked(bucket).map { idx ->
-        StatsPoint(days[idx.first()], idx.map { values[it] }.average())
+        StatsPoint(days[idx.first()], reduce(idx.map { values[it] }))
     }
 }
+
+/** Beziehungs-Score eines Tages (0–100 %), 0 wenn nichts bewertet wurde. */
+fun relationshipPercentOf(record: DayRecord?): Double =
+    relationshipScorePercent(relationshipStarsOf(record)) ?: 0.0
+
+/** Anzahl Strafen oder Belohnungen einer Person an einem Tag (Zuordnung über den Besitzer). */
+fun taskCountOf(tasks: List<Task>, type: TaskType): Int = tasks.count { it.type == type }
 
 /**
  * Prozentwert eines Tages für eine Kategorie: 0–5 Sterne → 0–100 %. Fehlende Einträge zählen als 0.

@@ -1,6 +1,10 @@
 package com.trenits.fivestar.ui
 
 import android.app.TimePickerDialog
+import android.widget.Toast
+import android.content.Context
+import android.content.ClipboardManager
+import android.content.ClipData
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,6 +60,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trenits.fivestar.R
+import kotlin.math.roundToInt
+import androidx.compose.foundation.shape.CircleShape
+import java.util.Locale
+import java.time.format.TextStyle
+import com.trenits.fivestar.domain.DayOutcome
 import java.time.ZoneId
 import java.time.Duration
 import kotlinx.coroutines.delay
@@ -94,6 +103,7 @@ import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
 import com.trenits.fivestar.domain.WeightedCategory
+import com.trenits.fivestar.domain.DinnerConfirmation
 import com.trenits.fivestar.domain.alcoholLiters
 import com.trenits.fivestar.domain.autoConfirmAt
 import com.trenits.fivestar.domain.availableRotationTasks
@@ -139,6 +149,10 @@ fun DashboardScreen(vm: AppViewModel) {
     val canEditYesterday by vm.canEditYesterday.collectAsState()
     val editingYesterday by vm.editingYesterday.collectAsState()
     val activeDayKey by vm.activeDayKey.collectAsState()
+    val activeDinnerConfirmation by vm.activeDinnerConfirmation.collectAsState()
+    val weekDays by vm.weekDays.collectAsState()
+    val weekOutcomes by vm.weekOutcomes.collectAsState()
+    val currentWeeklyReward by vm.currentWeeklyReward.collectAsState()
     val simulatedToday by vm.simulatedToday.collectAsState()
     val simulatedOffset by vm.simulatedOffset.collectAsState()
     val myPresetRole by vm.myPresetRole.collectAsState()
@@ -147,6 +161,14 @@ fun DashboardScreen(vm: AppViewModel) {
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 
     val stored = myToday?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+    val myScore = remember(myToday, sortedCategories, stored, activeDayKey, vm.uid) {
+        myToday?.scorePercent
+            ?: if (sortedCategories.isNotEmpty()) {
+                buildDayRecord(activeDayKey, vm.uid, sortedCategories, stored, emptyMap()).scorePercent ?: 0.0
+            } else {
+                0.0
+            }
+    }
     val openTasks = tasks.items
         .filter { it.status == TaskStatus.OPEN }
         .sortedWith(compareByDescending<Task> { it.dayKey }.thenByDescending { it.createdAt })
@@ -218,14 +240,7 @@ fun DashboardScreen(vm: AppViewModel) {
 
         // Gesonderte Anzeige 1: Tagesstand
         item {
-            val myScore = remember(myToday, sortedCategories, stored, activeDayKey, vm.uid) {
-                myToday?.scorePercent
-                    ?: if (sortedCategories.isNotEmpty()) {
-                        buildDayRecord(activeDayKey, vm.uid, sortedCategories, stored, emptyMap()).scorePercent ?: 0.0
-                    } else {
-                        0.0
-                    }
-            }
+
             ScoreHero(
                 score = myScore,
                 title = stringResource(R.string.score_for_name, myLabel),
@@ -238,6 +253,12 @@ fun DashboardScreen(vm: AppViewModel) {
             WeeklyStatusBanner(
                 streak = streak,
                 rewardUnlocked = weekRewardUnlocked,
+                weekDays = weekDays,
+                weekOutcomes = weekOutcomes,
+                todayPercent = myScore,
+                reward = currentWeeklyReward,
+                myUid = vm.uid,
+                partnerLabel = partnerLabel,
             )
         }
 
@@ -290,12 +311,16 @@ fun DashboardScreen(vm: AppViewModel) {
                     }
                     
                     // Die Partner-Rolle trägt die Abendessen-Uhrzeit ein; main_user kann sie nicht ändern.
-                    val canEditTime = myPresetRole != "partner"
+                    val canEditTime = myPresetRole == "partner"
                     DinnerTimeCard(
                         category = category,
                         sharePercent = sharePercent,
                         values = effectiveValues,
                         canEditTime = canEditTime,
+                        confirmation = activeDinnerConfirmation,
+                        myUid = vm.uid,
+                        partnerLabel = partnerLabel,
+                        onConfirm = { vm.confirmDinner() },
                         onTimeSelected = { h, m -> vm.setDinnerTime(category.id, h, m) },
                     )
                 }
@@ -660,7 +685,16 @@ private fun ScoreHero(score: Double?, title: String, showCountdown: Boolean = fa
  * Gesonderte Anzeige für den Wochenstand (7-Tage-Serie bis zur Wochenbelohnung).
  */
 @Composable
-private fun WeeklyStatusBanner(streak: Int, rewardUnlocked: Boolean) {
+private fun WeeklyStatusBanner(
+    streak: Int,
+    rewardUnlocked: Boolean,
+    weekDays: List<String>,
+    weekOutcomes: Map<String, DayOutcome>,
+    todayPercent: Double,
+    reward: Task?,
+    myUid: String,
+    partnerLabel: String,
+) {
     val cycleStreak = if (streak > 0 && streak % STREAK_DAYS_FOR_REWARD == 0) {
         STREAK_DAYS_FOR_REWARD
     } else {
@@ -668,6 +702,7 @@ private fun WeeklyStatusBanner(streak: Int, rewardUnlocked: Boolean) {
     }
     val remaining = (STREAK_DAYS_FOR_REWARD - cycleStreak).coerceAtLeast(0)
     val progress = (cycleStreak.toFloat() / STREAK_DAYS_FOR_REWARD.toFloat()).coerceIn(0f, 1f)
+    val onCard = MaterialTheme.colorScheme.onSecondaryContainer
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -678,23 +713,22 @@ private fun WeeklyStatusBanner(streak: Int, rewardUnlocked: Boolean) {
                 .fillMaxWidth()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = "${stringResource(R.string.status_weekly_title)}\n${stringResource(R.string.status_weekly_progress, cycleStreak, STREAK_DAYS_FOR_REWARD)}",
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                color = onCard,
                 textAlign = TextAlign.Center,
                 softWrap = true,
             )
-            Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small),
                 color = Amber,
             )
-            Spacer(Modifier.height(6.dp))
             Text(
                 text = if (rewardUnlocked) {
                     stringResource(R.string.week_reward_unlocked)
@@ -703,9 +737,70 @@ private fun WeeklyStatusBanner(streak: Int, rewardUnlocked: Boolean) {
                 },
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                color = onCard,
                 textAlign = TextAlign.Center,
                 softWrap = true,
+            )
+
+            Text(
+                stringResource(R.string.week_last_seven),
+                style = MaterialTheme.typography.labelLarge,
+                color = onCard,
+            )
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                weekDays.forEach { key ->
+                    val outcome = weekOutcomes[key]
+                    val dot = when (outcome) {
+                        DayOutcome.REWARD -> StatusGreen
+                        DayOutcome.PENALTY -> StatusRed
+                        null -> MaterialTheme.colorScheme.outline
+                    }
+                    val dayName = runCatching { LocalDate.parse(key).dayOfWeek }.getOrNull()
+                        ?.getDisplayName(TextStyle.SHORT, Locale.getDefault())?.take(2).orEmpty()
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(Modifier.size(22.dp).clip(CircleShape).background(dot))
+                        Spacer(Modifier.height(2.dp))
+                        Text(dayName, style = MaterialTheme.typography.labelSmall, color = onCard)
+                    }
+                }
+            }
+
+            val todayText = if (todayPercent >= THRESHOLD_PERCENT) {
+                stringResource(R.string.week_today_reached, formatPercent(todayPercent))
+            } else {
+                stringResource(
+                    R.string.week_today_needed,
+                    formatPercent(todayPercent),
+                    (THRESHOLD_PERCENT - todayPercent).roundToInt(),
+                )
+            }
+            Text(todayText, style = MaterialTheme.typography.bodySmall, color = onCard, textAlign = TextAlign.Center)
+
+            val rewardText = when {
+                reward == null -> stringResource(R.string.week_reward_none)
+                reward.isArchived -> stringResource(R.string.week_reward_redeemed, formatDay(reward.redeemedDayKey ?: reward.dayKey))
+                reward.title.isBlank() -> stringResource(R.string.week_reward_choose)
+                reward.ownerUid == myUid -> stringResource(
+                    R.string.week_reward_waiting_owner,
+                    partnerLabel,
+                    localizedCatalogTitle(reward.title),
+                    formatTime(reward.autoConfirmAt),
+                )
+                else -> stringResource(
+                    R.string.week_reward_confirm,
+                    localizedCatalogTitle(reward.title),
+                    formatTime(reward.autoConfirmAt),
+                )
+            }
+            Text(rewardText, style = MaterialTheme.typography.bodySmall, color = onCard, textAlign = TextAlign.Center)
+            Text(
+                stringResource(R.string.week_evaluation_note),
+                style = MaterialTheme.typography.labelSmall,
+                color = onCard,
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -816,6 +911,7 @@ private fun IncomingRequestCard(vm: AppViewModel, requestedEmail: String) {
 private fun WaitingForPartnerCard(vm: AppViewModel) {
     val context = LocalContext.current
     var partnerEmail by rememberSaveable { mutableStateOf("") }
+    val code = vm.inviteCode
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -823,25 +919,12 @@ private fun WaitingForPartnerCard(vm: AppViewModel) {
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(stringResource(R.string.waiting_partner), style = MaterialTheme.typography.titleMedium)
-            vm.inviteCode?.let {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    it,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-                Text(stringResource(R.string.invite_share), style = MaterialTheme.typography.bodySmall)
-            }
+            Text(
+                stringResource(R.string.invite_partner_removed),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            code?.let { InviteCodeRow(context, it) }
             Spacer(Modifier.height(10.dp))
-            OutlinedButton(onClick = { vm.createInvite() }, enabled = !vm.busy) {
-                Text(
-                    stringResource(
-                        if (vm.inviteCode == null) R.string.invite_create else R.string.invite_new,
-                    ),
-                )
-            }
-            Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = partnerEmail,
                 onValueChange = { partnerEmail = it },
@@ -853,8 +936,8 @@ private fun WaitingForPartnerCard(vm: AppViewModel) {
             Spacer(Modifier.height(6.dp))
             Button(
                 onClick = {
-                    vm.invitePartnerByEmail(partnerEmail) { code ->
-                        launchInviteEmail(context, partnerEmail, code)
+                    vm.createNewInvite(partnerEmail) { newCode ->
+                        launchInviteEmail(context, partnerEmail, newCode)
                     }
                 },
                 enabled = !vm.busy && partnerEmail.isNotBlank(),
@@ -862,8 +945,36 @@ private fun WaitingForPartnerCard(vm: AppViewModel) {
             ) {
                 Text(stringResource(R.string.invite_send_email))
             }
+            Spacer(Modifier.height(6.dp))
+            OutlinedButton(
+                onClick = { vm.createNewInvite() },
+                enabled = !vm.busy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.invite_new_code))
+            }
         }
     }
+}
+
+/** Einladungscode mit Kopierknopf. */
+@Composable
+internal fun InviteCodeRow(context: Context, code: String) {
+    Spacer(Modifier.height(8.dp))
+    Text(
+        code,
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSecondaryContainer,
+    )
+    Text(stringResource(R.string.invite_share), style = MaterialTheme.typography.bodySmall)
+    OutlinedButton(
+        onClick = {
+            val clipboard = context.getSystemService(ClipboardManager::class.java)
+            clipboard?.setPrimaryClip(ClipData.newPlainText("invite", code))
+            Toast.makeText(context, context.getString(R.string.invite_code_copied), Toast.LENGTH_SHORT).show()
+        },
+    ) { Text(stringResource(R.string.invite_copy_code)) }
 }
 
 @Composable
@@ -1427,6 +1538,10 @@ private fun DinnerTimeCard(
     sharePercent: Int,
     values: Map<String, Double>,
     canEditTime: Boolean,
+    confirmation: DinnerConfirmation?,
+    myUid: String,
+    partnerLabel: String,
+    onConfirm: () -> Unit,
     onTimeSelected: (Int, Int) -> Unit,
 ) {
     val context = LocalContext.current
@@ -1465,6 +1580,35 @@ private fun DinnerTimeCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
             )
+            confirmation?.let { dc ->
+                Spacer(Modifier.height(4.dp))
+                when {
+                    dc.isPending && dc.enteredBy != myUid -> {
+                        Text(
+                            stringResource(R.string.task_deadline_dinner, formatTime(dc.deadline)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Button(onClick = onConfirm, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.dinner_confirm_button))
+                        }
+                    }
+                    dc.isPending -> Text(
+                        stringResource(R.string.dinner_waiting, partnerLabel),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    dc.autoConfirmed -> Text(
+                        stringResource(R.string.dinner_auto_confirmed),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    else -> Text(
+                        stringResource(R.string.dinner_confirmed_by, partnerLabel),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
             if (canEditTime) {
                 Spacer(Modifier.height(8.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

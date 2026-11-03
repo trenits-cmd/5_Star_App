@@ -17,12 +17,15 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.R
 import com.trenits.fivestar.data.AppClock
 import com.trenits.fivestar.data.LocalProfileStore
 import com.trenits.fivestar.domain.Category
+import com.trenits.fivestar.domain.DinnerConfirmation
+import com.trenits.fivestar.domain.needsWarning
 import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
@@ -238,6 +241,32 @@ object ReminderScheduler {
     }
 
     /** Frühwarnung: bestaetigen oder "Not yet" waehlen, sonst gilt die Strafe zum Fristende als ausgefuehrt. */
+    /** Push an die bestätigende Person: Abendessen-Uhrzeit bestätigen (oder Frühwarnung). */
+    @SuppressLint("MissingPermission")
+    fun sendDinnerConfirmNotification(context: Context, partnerDisplayName: String, dc: DinnerConfirmation, warning: Boolean) {
+        createChannel(context)
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!allowed) return
+        val time = "%02d:%02d".format(dc.hour, dc.minute)
+        val until = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").withZone(ZoneId.systemDefault()).format(dc.deadline)
+        val title = context.getString(
+            if (warning) R.string.dinner_warn_title else R.string.dinner_confirm_title,
+            partnerDisplayName,
+        )
+        val body = context.getString(R.string.dinner_confirm_body, time, until)
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(BASE_NOTIFICATION_ID + 700 + (dc.dayKey.hashCode() and 0xFF), notification)
+    }
+
+    /** Frühwarnung: bestaetigen oder "Not yet" waehlen, sonst gilt die Strafe zum Fristende als ausgefuehrt. */
     @SuppressLint("MissingPermission")
     fun sendDeadlineWarningNotification(context: Context, partnerDisplayName: String, task: Task, deadline: Instant) {
         createChannel(context)
@@ -379,6 +408,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     }
                 }
                 checkOpenTasks(coupleRef, uid, now)
+                checkDinnerConfirmations(coupleRef, uid, now)
                 Result.success()
             }
         } catch (_: Exception) {
@@ -444,6 +474,46 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                         )
                         prefs.markNotified(key)
                     }
+                }
+            }
+        }
+    }
+
+    /** Abendessen-Uhrzeit: Push an die bestätigende Person, Frühwarnung und Auto-Bestätigung nach 48 h. */
+    private suspend fun checkDinnerConfirmations(coupleRef: DocumentReference, uid: String, now: ZonedDateTime) {
+        val prefs = ReminderPrefs(applicationContext)
+        val instant = now.toInstant()
+        val docs = coupleRef.collection("dinnerConfirmations").get().await()
+        for (doc in docs.documents) {
+            runCatching {
+                val enteredBy = doc.getString("enteredBy") ?: return@runCatching
+                val hour = doc.getLong("hour")?.toInt() ?: return@runCatching
+                val minute = doc.getLong("minute")?.toInt() ?: 0
+                val enteredAt = doc.getTimestamp("enteredAt")
+                    ?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) } ?: return@runCatching
+                val confirmed = doc.getTimestamp("confirmedAt")
+                if (confirmed != null) return@runCatching
+                val dc = DinnerConfirmation(doc.id, enteredBy, hour, minute, enteredAt)
+                if (enteredBy == uid) return@runCatching
+                if (!dc.withAutoConfirmation(instant).isPending) {
+                    doc.reference.update(
+                        mapOf(
+                            "confirmedAt" to Timestamp(instant.epochSecond, instant.nano),
+                            "confirmedBy" to uid,
+                            "autoConfirmed" to true,
+                        ),
+                    ).await()
+                    return@runCatching
+                }
+                val partnerName = LocalProfileStore(applicationContext).partnerDisplayName.value
+                    ?: applicationContext.getString(R.string.who_partner)
+                if (!prefs.hasNotified("dinner_${dc.dayKey}")) {
+                    ReminderScheduler.sendDinnerConfirmNotification(applicationContext, partnerName, dc, warning = false)
+                    prefs.markNotified("dinner_${dc.dayKey}")
+                }
+                if (dc.needsWarning(instant) && !prefs.hasNotified("dinner_warn_${dc.dayKey}")) {
+                    ReminderScheduler.sendDinnerConfirmNotification(applicationContext, partnerName, dc, warning = true)
+                    prefs.markNotified("dinner_warn_${dc.dayKey}")
                 }
             }
         }

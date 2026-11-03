@@ -6,6 +6,7 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.domain.CatalogItem
+import com.trenits.fivestar.domain.DinnerConfirmation
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryKind
 import com.trenits.fivestar.domain.CategorySnapshot
@@ -272,6 +273,43 @@ class CoupleRepository(private val coupleId: String) {
         }
     }
 
+    /** Abendessen-Bestätigungen des Paares (eine pro Tag). */
+    fun dinnerConfirmations(): Flow<Listed<DinnerConfirmation>> = listen(couple.collection("dinnerConfirmations")) { doc ->
+        DinnerConfirmation(
+            dayKey = doc.id,
+            enteredBy = doc.getString("enteredBy") ?: return@listen null,
+            hour = doc.getLong("hour")?.toInt() ?: return@listen null,
+            minute = doc.getLong("minute")?.toInt() ?: 0,
+            enteredAt = doc.getTimestamp("enteredAt")?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) }
+                ?: return@listen null,
+            confirmedAt = doc.getTimestamp("confirmedAt")?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) },
+            confirmedBy = doc.getString("confirmedBy"),
+            autoConfirmed = doc.getBoolean("autoConfirmed") ?: false,
+        )
+    }
+
+    /** Neue Uhrzeit eingetragen: Bestätigung wird (neu) angefordert. */
+    fun saveDinnerEntry(dayKey: String, enteredBy: String, hour: Int, minute: Int, enteredAt: Instant) {
+        couple.collection("dinnerConfirmations").document(dayKey).set(
+            mapOf(
+                "enteredBy" to enteredBy,
+                "hour" to hour,
+                "minute" to minute,
+                "enteredAt" to Timestamp(enteredAt.epochSecond, enteredAt.nano),
+            ),
+        )
+    }
+
+    /** Bestätigung durch die andere Person (oder automatisch nach Ablauf der Frist). */
+    fun confirmDinner(dayKey: String, confirmedBy: String, confirmedAt: Instant, auto: Boolean) {
+        couple.collection("dinnerConfirmations").document(dayKey).update(
+            mapOf(
+                "confirmedAt" to Timestamp(confirmedAt.epochSecond, confirmedAt.nano),
+                "confirmedBy" to confirmedBy,
+                "autoConfirmed" to auto,
+            ),
+        )
+    }
     private fun <T> listen(query: Query, map: (DocumentSnapshot) -> T?): Flow<Listed<T>> = callbackFlow {
         val registration = query.addSnapshotListener { snapshot, error ->
             if (error != null) {

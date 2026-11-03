@@ -24,6 +24,9 @@ import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryIcon
 import com.trenits.fivestar.domain.CategoryKind
+import com.trenits.fivestar.domain.DinnerConfirmation
+import com.trenits.fivestar.domain.needsWarning
+import com.trenits.fivestar.domain.withAutoConfirmation
 import com.trenits.fivestar.domain.DEFAULT_ALCOHOL_LIMIT
 import com.trenits.fivestar.domain.DEFAULT_SPORT_GOAL_MINUTES
 import com.trenits.fivestar.domain.DEFAULT_WATER_GOAL
@@ -151,6 +154,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         simulatedOffset.value = AppClock.offsetDays()
         clock.value = AppClock.now()
     }
+    val dinnerConfirmations = sharedFor { it.dinnerConfirmations() }
+
+    /** Bestätigung der Abendessen-Uhrzeit für den aktiven Tag. */
+    val activeDinnerConfirmation: StateFlow<DinnerConfirmation?> = combine(dinnerConfirmations, activeDayKey) { list, key ->
+        list.items.firstOrNull { it.dayKey == key }
+    }.share(null)
+
+    /** Die andere Person bestätigt die eingetragene Abendessen-Uhrzeit. */
+    fun confirmDinner() {
+        val confirmation = activeDinnerConfirmation.value ?: return
+        if (confirmation.enteredBy == uid) return
+        repo()?.confirmDinner(confirmation.dayKey, uid, AppClock.now(), auto = false)
+        toastMessage.value = text(R.string.save_confirmation)
+    }
+
     val partnerUid: StateFlow<String?> = members
         .map { list -> list.items.firstOrNull { it != uid } }
         .share(null)
@@ -774,6 +792,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val updated = buildDayRecord(dayKey, uid, targeted.value, stored, counters)
             .copy(confirmedAt = current?.confirmedAt)
         saveUpdatedDay(updated, showToast = true)
+        repo()?.saveDinnerEntry(dayKey, uid, hour.coerceIn(0, 23), minute.coerceIn(0, 59), AppClock.now())
     }
 
     /**
@@ -1164,9 +1183,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         inviteCode = userRepository.createInvite(coupleId)
     }
 
+    /** Erzeugt immer einen neuen Einladungscode (z. B. wenn der Partner-Account gelöscht wurde). */
+    fun createNewInvite(email: String? = null, onCodeReady: (String) -> Unit = {}) = action {
+        val coupleId = profile.value?.coupleId ?: userRepository.createCouple()
+        val code = userRepository.createInvite(coupleId, email?.trim()?.takeIf { it.isNotEmpty() }, forceNew = true)
+        inviteCode = code
+        onCodeReady(code)
+    }
+
     fun invitePartnerByEmail(email: String, onCodeReady: (String) -> Unit) = action {
         val coupleId = profile.value?.coupleId ?: userRepository.createCouple()
-        val code = userRepository.createInvite(coupleId, email)
+        val code = userRepository.createInvite(coupleId, email, forceNew = true)
         inviteCode = code
         onCodeReady(code)
     }
@@ -1409,6 +1436,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (task.withAutoConfirmation(now).status != task.status) {
                 repo.autoConfirmTask(task.id, todayKey.value)
+            }
+        }
+        dinnerConfirmations.value.items.forEach { dc ->
+            if (dc.isPending && dc.enteredBy != uid) {
+                if (dc.withAutoConfirmation(now).confirmedAt != null && dc.isPending) {
+                    repo.confirmDinner(dc.dayKey, uid, now, auto = true)
+                    return@forEach
+                }
+                if (dc.needsWarning(now) && !prefs.hasNotified("dinner_warn_${dc.dayKey}")) {
+                    ReminderScheduler.sendDinnerConfirmNotification(getApplication(), partnerDisplay, dc, warning = true)
+                    prefs.markNotified("dinner_warn_${dc.dayKey}")
+                }
+                if (!prefs.hasNotified("dinner_${dc.dayKey}")) {
+                    ReminderScheduler.sendDinnerConfirmNotification(getApplication(), partnerDisplay, dc, warning = false)
+                    prefs.markNotified("dinner_${dc.dayKey}")
+                }
             }
         }
     }

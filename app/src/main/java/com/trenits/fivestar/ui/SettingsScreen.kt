@@ -282,6 +282,7 @@ fun SettingsScreen(vm: AppViewModel) {
                     ) {
                         Text(stringResource(R.string.invite_send_email))
                     }
+                    vm.inviteCode?.let { InviteCodeRow(LocalContext.current, it) }
                     HorizontalDivider(Modifier.padding(vertical = 4.dp))
                     Text(
                         stringResource(R.string.partner_remove_hint),

@@ -68,10 +68,14 @@ class UserRepository(private val uid: String) {
     }
 
     /** Erstellt eine neue Einladung oder verwendet einen bereits offenen Code wieder. */
-    suspend fun createInvite(coupleId: String, invitedEmail: String? = null): String {
+    suspend fun createInvite(coupleId: String, invitedEmail: String? = null, forceNew: Boolean = false): String {
         val userSnap = runCatching { user.get().await() }.getOrNull()
         val existingCode = userSnap?.getString("activeInviteCode")?.trim()?.takeIf { it.isNotEmpty() }
-        if (existingCode != null) {
+        if (forceNew && existingCode != null) {
+            runCatching { Firebase.firestore.collection("invites").document(existingCode).delete().await() }
+            runCatching { user.update(mapOf("activeInviteCode" to FieldValue.delete())).await() }
+        }
+        if (!forceNew && existingCode != null) {
             val existingDoc = runCatching {
                 Firebase.firestore.collection("invites").document(existingCode).get().await()
             }.getOrNull()

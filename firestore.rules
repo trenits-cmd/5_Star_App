@@ -94,6 +94,15 @@ service cloud.firestore {
 
       // Aufgaben: Mitglieder des Paares legen Aufgaben an, wählen den Titel aus dem Dropdown
       // und bestätigen die Einlösung (mit status = CONFIRMED und redeemedDayKey) bzw. Auto-Confirm nach 48h.
+      // Abendessen-Uhrzeit: Eintrag durch die eintragende Person, Bestätigung durch die andere (oder Auto-Bestätigung).
+      match /dinnerConfirmations/{dayId} {
+        allow read: if isMember(coupleId);
+        allow create: if isMember(coupleId) && request.resource.data.enteredBy == request.auth.uid;
+        allow update: if isMember(coupleId)
+          && request.resource.data.enteredBy == resource.data.enteredBy
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmedAt', 'confirmedBy', 'autoConfirmed']);
+        allow delete: if false;
+      }
       match /tasks/{taskId} {
         allow read: if isMember(coupleId);
         allow create: if isMember(coupleId);

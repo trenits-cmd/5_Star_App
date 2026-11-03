@@ -12,7 +12,7 @@
 | `settings.gradle.kts` | Gradle root configuration (`rootProject.name = "5_Star_App"`, module `:app`). |
 | `build.gradle.kts` | Top-level Gradle plugins (`android.application`, `kotlin.android`, `kotlin.compose`, `google.services`). |
 | `gradle/libs.versions.toml` | Version catalog defining AGP, Kotlin, Jetpack Compose BOM, Material 3, Firebase BOM (Auth + Firestore), Credential Manager, and WorkManager versions. |
-| `app/build.gradle.kts` | App module configuration (`namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 37`, `versionName = "1.03112026_2118"`). |
+| `app/build.gradle.kts` | App module configuration (`namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 38`, `versionName = "1.03112026_2147"`). |
 | `app/src/main/res/values/strings.xml` | Single-language (English) string resources for all tabs, cards, categories, rewards, penalties, dialogs, notifications, and status messages. |
 | `firestore.rules` | Cloud Firestore security rules for `/users/{uid}`, `/invites/{code}`, and `/couples/{coupleId}` (`categories`, `catalog`, `days`, `tasks`). |
 | `rules-tests/rules.test.mjs` | Node.js unit tests verifying `firestore.rules` against the Firebase Firestore Emulator. |
@@ -79,6 +79,7 @@
 | `PairingScreen.kt` | `PairingScreen` | Initial couple connection screen: create invitation code, send code via email, or enter partner's code to automatically pair. |
 | `LoginScreen.kt` | `LoginScreen` | Passwordless sign-in screen with **Email + Invitation code** (`Sign in with Email & Code`) and **Google Sign-In**. |
 | `Format.kt` | `localizedCategoryName`, `localizedCategorySnapshotName`, `localizedCatalogTitle`, `translateCatalogTitle`, `UserAvatar`, `encodeAvatarUri`, `launchInviteEmail` | Formatting helpers, English localization of legacy German/French category/catalog titles, avatar bitmap cropping/encoding, and `mailto:` intent launcher. |
+| `DinnerConfirmation.kt` | `DinnerConfirmation`, `needsWarning`, `withAutoConfirmation` | Dinner-time confirmation model: entered by the partner role, confirmed by main_user (48 h auto, 6 h warning). Stored in `couples/{id}/dinnerConfirmations/{dayKey}`. |
 | `StatisticsScreen.kt` | `StatisticsScreen`, `StatsLineChart`, `StatsBarChart`, `StatsSummaryCard`, `StatsCountCard` | **Statistics Tab:** filter chips for period; filter for all, relationship (`FILTER_RELATIONSHIP`), penalties & rewards (`FILTER_TASKS`), or one category. Line chart drawn with `Canvas` (0–100 % y-axis, tap to select a point). Penalties & rewards use a grouped bar chart (counts per period, per person). Partner series is hidden if the partner has no such category. Summary cards: average, best day, days ≥ 80 % or reward/penalty totals. |
 | `CounterSummary.kt` | `CounterSummary` | Compact read-only summary of counter values (Alcohol Demi/Pint/L, Water glasses/L, Rotation task Yes/No, Dinner time, Meals levels, Reading pages, Sport minutes). |
 | `theme/Theme.kt` | `FiveStarTheme`, `Amber` | Material 3 color scheme and typography definitions. |

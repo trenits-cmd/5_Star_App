@@ -148,4 +148,13 @@ class StatisticsTest {
         assertEquals(false, task.needsDeadlineWarning(selected.plusSeconds(41 * 3600)))
         assertEquals(true, task.needsDeadlineWarning(selected.plusSeconds(42 * 3600)))
     }
+
+    @Test
+    fun bedtimeStarsDecreaseAfterMidnight() {
+        assertEquals(5, bedtimeStars(23, 30))
+        assertEquals(4, bedtimeStars(0, 30))
+        assertEquals(3, bedtimeStars(1, 30))
+        assertEquals(2, bedtimeStars(2, 30))
+        assertEquals(0, bedtimeStars(3, 0))
+    }
 }

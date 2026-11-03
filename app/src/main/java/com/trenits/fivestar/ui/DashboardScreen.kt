@@ -85,6 +85,8 @@ import com.trenits.fivestar.domain.CategorySnapshot
 import com.trenits.fivestar.domain.DEFAULT_ALCOHOL_LIMIT
 import com.trenits.fivestar.domain.DEFAULT_WATER_GOAL
 import com.trenits.fivestar.domain.DEMI
+import com.trenits.fivestar.domain.BEDTIME_HOUR
+import com.trenits.fivestar.domain.BEDTIME_MINUTE
 import com.trenits.fivestar.domain.DINNER_HOUR
 import com.trenits.fivestar.domain.DINNER_MINUTE
 import com.trenits.fivestar.domain.DayRecord
@@ -332,6 +334,14 @@ fun DashboardScreen(vm: AppViewModel) {
                         onTimeSelected = { h, m -> vm.setDinnerTime(category.id, h, m) },
                     )
                 }
+                CategoryKind.BEDTIME -> {
+                    BedtimeCategoryCard(
+                        category = category,
+                        sharePercent = sharePercent,
+                        values = values,
+                        onTimeSelected = { h, m -> vm.setBedtime(category.id, h, m) },
+                    )
+                }
                 CategoryKind.MEALS -> {
                     MealsCategoryCard(
                         category = category,
@@ -376,19 +386,6 @@ fun DashboardScreen(vm: AppViewModel) {
             )
         }
         item { SectionTitle(stringResource(R.string.section_open_tasks)) }
-        val hasPenaltyForActiveDay = tasks.items.any {
-            it.ownerUid == vm.uid && it.dayKey == activeDayKey && it.type == TaskType.PENALTY
-        }
-        if ((myToday?.scorePercent ?: 0.0) < THRESHOLD_PERCENT && !hasPenaltyForActiveDay) {
-            item {
-                OutlinedButton(
-                    onClick = { vm.ensurePenaltyTaskForDay(activeDayKey) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.penalty_trigger_now))
-                }
-            }
-        }
         if (openTasks.isEmpty()) {
             item { HintCard(stringResource(R.string.no_open_tasks)) }
         }
@@ -504,6 +501,7 @@ private fun canonicalPrefixFor(kind: CategoryKind): String = when (kind) {
     CategoryKind.ROTATION -> "preset_rotation_"
     CategoryKind.SPORT -> "preset_sport_"
     CategoryKind.READING -> "preset_reading_"
+    CategoryKind.BEDTIME -> "preset_bedtime_"
     CategoryKind.STARS -> "preset_stars_"
 }
 
@@ -558,6 +556,22 @@ private fun PartnerCategorySummaryCard(
                     if (hour >= 0) {
                         Text(
                             stringResource(R.string.dinner_time_current, "%02d:%02d".format(hour, minute)),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.dinner_time_not_set),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                CategoryKind.BEDTIME -> {
+                    val hour = counters[BEDTIME_HOUR]?.toInt() ?: -1
+                    val minute = counters[BEDTIME_MINUTE]?.toInt() ?: 0
+                    if (hour >= 0) {
+                        Text(
+                            stringResource(R.string.bedtime_current, "%02d:%02d".format(hour, minute)),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     } else {
@@ -1669,6 +1683,69 @@ private fun DinnerTimeCard(
     }
 }
 
+/** Schlafenszeit: Uhrzeit eintragen. Vor Mitternacht 5 Sterne, bis 3 Uhr abnehmend, danach 0. */
+@Composable
+private fun BedtimeCategoryCard(
+    category: Category,
+    sharePercent: Int,
+    values: Map<String, Double>,
+    onTimeSelected: (Int, Int) -> Unit,
+) {
+    val context = LocalContext.current
+    val hour = values[BEDTIME_HOUR]?.toInt() ?: -1
+    val minute = values[BEDTIME_MINUTE]?.toInt() ?: 0
+    val stars = counterStars(category, values)
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CategoryImage(category = category, size = 42.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
+                    CategoryWeightSubtitle(category.weight, sharePercent)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.bedtime_rules_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                if (hour >= 0) {
+                    stringResource(R.string.bedtime_current, "%02d:%02d".format(hour, minute))
+                } else {
+                    stringResource(R.string.dinner_time_not_set)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(Modifier.height(8.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { onTimeSelected(23, 30) }) { Text(stringResource(R.string.bedtime_quick_2330)) }
+                OutlinedButton(onClick = { onTimeSelected(0, 30) }) { Text(stringResource(R.string.bedtime_quick_0030)) }
+                OutlinedButton(onClick = { onTimeSelected(1, 30) }) { Text(stringResource(R.string.bedtime_quick_0130)) }
+                OutlinedButton(onClick = { onTimeSelected(2, 30) }) { Text(stringResource(R.string.bedtime_quick_0230)) }
+                Button(
+                    onClick = {
+                        val initH = if (hour >= 0) hour else 23
+                        val initM = if (hour >= 0) minute else 0
+                        TimePickerDialog(context, { _, h, m -> onTimeSelected(h, m) }, initH, initM, true).show()
+                    },
+                ) { Text(stringResource(R.string.dinner_pick_time)) }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.counter_rating, "★".repeat(stars) + "☆".repeat(MAX_STARS - stars), stars),
+                color = Amber,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
 @Composable
 private fun CounterRow(label: String, value: Double, step: Double, onChange: (Double) -> Unit) {
     Row(
@@ -2002,25 +2079,6 @@ internal fun CatalogOverviewCard(
                     Text(stringResource(R.string.catalog_item_empty_rewards), style = MaterialTheme.typography.bodySmall)
                 } else {
                     rewards.forEach { item ->
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text("• ", style = MaterialTheme.typography.bodySmall)
-                            Text(localizedCatalogTitle(item.title), style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                }
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    stringResource(R.string.week_penalty_pool),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.error,
-                )
-                if (penalties.isEmpty()) {
-                    Text(stringResource(R.string.catalog_item_empty_penalties), style = MaterialTheme.typography.bodySmall)
-                } else {
-                    penalties.forEach { item ->
                         Row(
                             Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,

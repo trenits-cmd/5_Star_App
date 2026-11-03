@@ -83,7 +83,7 @@ import kotlin.math.roundToInt
 
 private data class ChartSeries(val name: String, val color: Color, val values: List<Double>)
 
-private enum class StatsGroup { OVERALL, CATEGORIES, RELATIONSHIP, PENALTIES, REWARDS }
+private enum class StatsGroup { OVERALL, CATEGORIES, RELATIONSHIP, REWARDS }
 
 private enum class PersonFilter { ME, PARTNER, BOTH }
 
@@ -123,8 +123,8 @@ fun StatisticsScreen(vm: AppViewModel) {
 
     val category = if (group == StatsGroup.CATEGORIES) targeted.firstOrNull { it.id == sub } else null
     val aspect = if (group == StatsGroup.RELATIONSHIP) RelationshipAspect.entries.firstOrNull { it.name == sub } else null
-    val taskType = if (group == StatsGroup.PENALTIES) TaskType.PENALTY else TaskType.REWARD
-    val isTaskGroup = group == StatsGroup.PENALTIES || group == StatsGroup.REWARDS
+    val taskType = TaskType.REWARD
+    val isTaskGroup = group == StatsGroup.REWARDS
 
     val showMe = person != PersonFilter.PARTNER
     val showPartner = partnerUid != null && person != PersonFilter.ME
@@ -469,7 +469,6 @@ private fun chartTitle(group: StatsGroup, category: Category?, aspect: Relations
         ?: stringResource(R.string.stats_chart_title_categories)
     StatsGroup.RELATIONSHIP -> aspect?.let { stringResource(R.string.stats_chart_title_aspect, relationshipAspectLabel(it)) }
         ?: stringResource(R.string.stats_chart_title_relationship)
-    StatsGroup.PENALTIES -> stringResource(R.string.stats_chart_title_penalties)
     StatsGroup.REWARDS -> stringResource(R.string.stats_chart_title_rewards)
 }
 
@@ -727,7 +726,6 @@ private fun groupLabelRes(group: StatsGroup): Int = when (group) {
     StatsGroup.OVERALL -> R.string.stats_group_overall
     StatsGroup.CATEGORIES -> R.string.stats_group_categories
     StatsGroup.RELATIONSHIP -> R.string.stats_group_relationship
-    StatsGroup.PENALTIES -> R.string.stats_group_penalties
     StatsGroup.REWARDS -> R.string.stats_group_rewards
 }
 

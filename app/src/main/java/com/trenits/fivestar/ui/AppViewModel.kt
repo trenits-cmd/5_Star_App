@@ -59,7 +59,8 @@ import com.trenits.fivestar.domain.needsDeadlineWarning
 import com.trenits.fivestar.domain.postponed
 import com.trenits.fivestar.domain.autoConfirmAt
 import com.trenits.fivestar.domain.needsPartnerConfirmationReminder
-import com.trenits.fivestar.domain.penaltyCycleStartDayKey
+import com.trenits.fivestar.domain.BEDTIME_HOUR
+import com.trenits.fivestar.domain.BEDTIME_MINUTE
 import com.trenits.fivestar.domain.sportDaysInWeek
 import com.trenits.fivestar.domain.weekKeyOf
 import com.trenits.fivestar.domain.withAutoConfirmation
@@ -95,9 +96,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         R.string.seed_reward_3 to TaskType.REWARD,
         R.string.seed_reward_4 to TaskType.REWARD,
         R.string.seed_reward_5 to TaskType.REWARD,
-        R.string.seed_penalty_1 to TaskType.PENALTY,
-        R.string.seed_penalty_2 to TaskType.PENALTY,
-        R.string.seed_penalty_3 to TaskType.PENALTY,
     )
 
     private val mainUserStarterCatalog = listOf(
@@ -108,7 +106,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         R.string.seed_reward_andi_5 to TaskType.REWARD,
         R.string.seed_reward_andi_6 to TaskType.REWARD,
         R.string.seed_reward_andi_7 to TaskType.REWARD,
-        R.string.seed_penalty_andi_1 to TaskType.PENALTY,
     )
 
     val uid: String = Firebase.auth.currentUser?.uid.orEmpty()
@@ -181,7 +178,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     val myPhoto: StateFlow<String?> = localProfileStore.photoBase64.share(null)
 
-    val partnerName: StateFlow<String?> = localProfileStore.partnerDisplayName.share(null)
+    /** Name des Partners, vom Partner selbst eingestellt (Firestore). Lokal nur als Ersatz. */
+    val partnerName: StateFlow<String?> = partnerUid.flatMapLatest { p ->
+        if (p == null) flowOf(null) else userRepository.nameOf(p)
+    }.map { it ?: localProfileStore.partnerDisplayName.value }.share(null)
 
     /** Mail-Adresse des Partners, live aus dessen Nutzerdokument. */
     val partnerEmail: StateFlow<String?> = partnerUid.flatMapLatest { p ->
@@ -256,6 +256,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             pushIntervalHours = 2,
         ),
         Category(
+            id = "preset_bedtime_$ownerUid",
+            ownerUid = ownerUid,
+            name = text(R.string.cat_preset_bedtime),
+            weight = 2,
+            kind = CategoryKind.BEDTIME,
+            targets = listOf(ownerUid),
+            goal = 0.0,
+            icon = CategoryIcon.MIND.name,
+            notifications = listOf("Bedtime before midnight = 5 stars"),
+        ),
+        Category(
             id = "preset_reading_$ownerUid",
             ownerUid = ownerUid,
             name = text(R.string.cat_preset_reading),
@@ -319,6 +330,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             notifications = listOf("0 liters of alcohol = 5 stars ⭐"),
         ),
         Category(
+            id = "preset_bedtime_$ownerUid",
+            ownerUid = ownerUid,
+            name = text(R.string.cat_preset_bedtime),
+            weight = 2,
+            kind = CategoryKind.BEDTIME,
+            targets = listOf(ownerUid),
+            goal = 0.0,
+            icon = CategoryIcon.MIND.name,
+            notifications = listOf("Bedtime before midnight = 5 stars"),
+        ),
+        Category(
             id = "preset_rotation_$ownerUid",
             ownerUid = ownerUid,
             name = text(R.string.cat_preset_rotation),
@@ -344,10 +366,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         ).mapIndexed { idx, title ->
             CatalogItem("andi_reward_${idx}_$ownerUid", ownerUid, TaskType.REWARD, title, myTargets)
         }
-        val penalties = listOf(
-            CatalogItem("andi_penalty_0_$ownerUid", ownerUid, TaskType.PENALTY, text(R.string.seed_penalty_andi_1), myTargets),
-        )
-        return rewards + penalties
+        return rewards
     }
 
     private fun canonicalPartnerCatalog(ownerUid: String = uid): List<CatalogItem> {
@@ -361,14 +380,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         ).mapIndexed { idx, title ->
             CatalogItem("rosie_reward_${idx}_$ownerUid", ownerUid, TaskType.REWARD, title, myTargets)
         }
-        val penalties = listOf(
-            text(R.string.seed_penalty_1),
-            text(R.string.seed_penalty_2),
-            text(R.string.seed_penalty_3),
-        ).mapIndexed { idx, title ->
-            CatalogItem("rosie_penalty_${idx}_$ownerUid", ownerUid, TaskType.PENALTY, title, myTargets)
-        }
-        return rewards + penalties
+        return rewards
     }
 
     fun canonicalCatalogFor(ownerUid: String, isPartnerSet: Boolean): List<CatalogItem> =
@@ -595,7 +607,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             combine(categories, days, tasks, todayKey) { _, _, _, _ -> Unit }.collect {
                 syncSharedDinnerTimeForToday()
-                evaluateYesterday()
                 evaluateStreakReward()
                 checkConfirmationRemindersAndAutoConfirm()
             }
@@ -673,11 +684,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             .filter { (_, t) -> t == task.type }
             .map { (res, _) -> text(res) }
 
-        val cycleStartKey = if (task.type == TaskType.PENALTY) {
-            penaltyCycleStartDayKey(AppClock.now().atZone(zone))
-        } else {
-            ""
-        }
+        val cycleStartKey = ""
 
         val usedChronological = tasks.value.items
             .filter {
@@ -795,6 +802,20 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         repo()?.saveDinnerEntry(dayKey, uid, hour.coerceIn(0, 23), minute.coerceIn(0, 59), AppClock.now())
     }
 
+    /** Speichert die Schlafenszeit (vor Mitternacht bis 3 Uhr). */
+    fun setBedtime(categoryId: String, hour: Int, minute: Int) {
+        val dayKey = activeDayKey.value
+        val current = currentMergedDay(dayKey)
+        val stored = current?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
+        val counters = current?.counters.orEmpty().toMutableMap()
+        counters[categoryId] = counters[categoryId].orEmpty() + mapOf(
+            BEDTIME_HOUR to hour.coerceIn(0, 23).toDouble(),
+            BEDTIME_MINUTE to minute.coerceIn(0, 59).toDouble(),
+        )
+        val updated = buildDayRecord(dayKey, uid, targeted.value, stored, counters)
+            .copy(confirmedAt = current?.confirmedAt)
+        saveUpdatedDay(updated, showToast = true)
+    }
     /**
      * Speichert die Sterne-Bewertung (0..5) für eine der 5 Dimensionen des Beziehungstrackers.
      */
@@ -825,28 +846,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val base = buildDayRecord(dayKey, uid, targeted.value, stored, counters)
             .copy(confirmedAt = if (complete) System.currentTimeMillis() else record?.confirmedAt)
         saveUpdatedDay(base, showToast = true)
-        if (dayOutcomeFor(base, targeted.value) == DayOutcome.PENALTY) {
-            ensurePenaltyTaskForDay(dayKey)
-        }
     }
 
-    /** Legt für [dayKey] eine offene Strafe für den aktuellen Nutzer an, falls noch keine existiert. */
-    fun ensurePenaltyTaskForDay(dayKey: String = activeDayKey.value) {
-        val repo = repo() ?: return
-        if (tasks.value.items.any { it.ownerUid == uid && it.dayKey == dayKey && it.type == TaskType.PENALTY }) return
-        repo.createTask(
-            Task(
-                id = "eval_${dayKey}_$uid",
-                ownerUid = uid,
-                type = TaskType.PENALTY,
-                title = "",
-                dayKey = dayKey,
-                status = TaskStatus.OPEN,
-                createdAt = AppClock.now(),
-                targets = listOf(uid),
-            ),
-        )
-    }
 
     /**
      * Synchronisiert die vom Partner (Andi) eingetragene Abendessen-Uhrzeit automatisch
@@ -897,12 +898,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         "preset_water_$ownerUid",
         "preset_alcohol_$ownerUid",
         "preset_rotation_$ownerUid",
+        "preset_bedtime_$ownerUid",
     )
 
     fun mainUserCategoryIds(ownerUid: String = uid): Set<String> = setOf(
         "preset_sport_$ownerUid",
         "preset_water_$ownerUid",
         "preset_reading_$ownerUid",
+        "preset_bedtime_$ownerUid",
     )
 
     private fun partnerCatalogIds(): Set<String> =
@@ -971,6 +974,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             icon = CategoryIcon.ALCOHOL.name,
             notifications = listOf("0 liters of alcohol = 5 stars ⭐"),
             id = "preset_alcohol_$uid",
+        )
+        repo.saveCategory(
+            ownerUid = uid,
+            name = text(R.string.cat_preset_bedtime),
+            weight = 2,
+            kind = CategoryKind.BEDTIME,
+            targets = myTargets,
+            goal = 0.0,
+            icon = CategoryIcon.MIND.name,
+            notifications = listOf("Bedtime before midnight = 5 stars"),
+            id = "preset_bedtime_$uid",
         )
         repo.saveCategory(
             ownerUid = uid,
@@ -1052,6 +1066,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             pushEnabled = true,
             pushIntervalHours = 2,
             id = "preset_water_$uid",
+        )
+        repo.saveCategory(
+            ownerUid = uid,
+            name = text(R.string.cat_preset_bedtime),
+            weight = 2,
+            kind = CategoryKind.BEDTIME,
+            targets = myTargets,
+            goal = 0.0,
+            icon = CategoryIcon.MIND.name,
+            notifications = listOf("Bedtime before midnight = 5 stars"),
+            id = "preset_bedtime_$uid",
         )
         repo.saveCategory(
             ownerUid = uid,
@@ -1319,34 +1344,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun text(resId: Int): String = getApplication<Application>().getString(resId)
 
-    /**
-     * Tagesziel-Prüfung für gestern:
-     * Beim Verfehlen des Tagesziels (< 80 %) entsteht eine Strafe (Auswahl per Dropdown durch den Nutzer).
-     */
-    private fun evaluateYesterday() {
-        val repo = repo() ?: return
-        if (targeted.value.isEmpty()) return
-        val nowHour = AppClock.now().atZone(zone).toLocalTime().hour
-        val yesterday = dayKeyOf(AppClock.now().minus(Duration.ofDays(1)), zone)
-        if (tasks.value.items.any { it.ownerUid == uid && it.dayKey == yesterday && it.type == TaskType.PENALTY }) return
-        val record = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == yesterday }
-        if (record == null && nowHour < 6) return
-        val outcome = dayOutcomeFor(record, targeted.value) ?: return
-        if (outcome == DayOutcome.PENALTY) {
-            repo.createTask(
-                Task(
-                    id = "eval_${yesterday}_$uid",
-                    ownerUid = uid,
-                    type = TaskType.PENALTY,
-                    title = "",
-                    dayKey = yesterday,
-                    status = TaskStatus.OPEN,
-                    createdAt = AppClock.now(),
-                    targets = listOf(uid),
-                ),
-            )
-        }
-    }
 
     /**
      * Deadline-Mechanismus:

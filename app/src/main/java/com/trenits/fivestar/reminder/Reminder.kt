@@ -433,7 +433,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
         for (doc in docs.documents) {
             runCatching {
                 val owner = doc.getString("ownerUid") ?: return@runCatching
-                val type = doc.getString("type")?.let { TaskType.valueOf(it) } ?: return@runCatching
+                val type = doc.getString("type")?.let { TaskType.valueOf(it) }?.takeIf { it == TaskType.REWARD } ?: return@runCatching
                 val createdAt = doc.getTimestamp("createdAt")
                     ?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) }
                     ?: return@runCatching

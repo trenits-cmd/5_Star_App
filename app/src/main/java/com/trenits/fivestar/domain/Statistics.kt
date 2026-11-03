@@ -99,6 +99,7 @@ private fun categoryIdPrefix(kind: CategoryKind): String? = when (kind) {
     CategoryKind.ROTATION -> "preset_rotation_"
     CategoryKind.SPORT -> "preset_sport_"
     CategoryKind.READING -> "preset_reading_"
+    CategoryKind.BEDTIME -> "preset_bedtime_"
     CategoryKind.STARS -> null
 }
 

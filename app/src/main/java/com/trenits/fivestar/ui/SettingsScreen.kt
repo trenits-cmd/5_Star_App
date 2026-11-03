@@ -183,35 +183,29 @@ fun SettingsScreen(vm: AppViewModel) {
             }
         }
 
-        // 1b. Partner name (chosen by the user, shown as variable everywhere)
+        // 1b. Partner-Informationen (vom Partner selbst eingestellt, nur Anzeige)
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Text(stringResource(R.string.settings_partner_name), style = MaterialTheme.typography.titleMedium)
-                    partnerAccountEmail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    Text(stringResource(R.string.settings_partner_info), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        stringResource(R.string.settings_partner_name_hint),
+                        stringResource(R.string.settings_partner_name_value, partnerLabel),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    partnerAccountEmail?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Text(
+                        stringResource(R.string.settings_partner_info_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    OutlinedTextField(
-                        value = partnerNameInput,
-                        onValueChange = { partnerNameInput = it },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Button(
-                        onClick = { vm.savePartnerDisplayName(partnerNameInput) },
-                        enabled = partnerNameInput.isNotBlank() && !vm.busy,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text(stringResource(R.string.settings_save)) }
                 }
             }
         }
-
         // 1a. Zuweisung der Kategorien (nur ich / Partner / beide). Keine Bearbeitung der Kategorien selbst.
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -690,6 +684,7 @@ private fun defaultGoal(kind: CategoryKind): String = when (kind) {
     CategoryKind.MEALS -> ""
     CategoryKind.READING -> "50"
     CategoryKind.SPORT -> "45"
+    CategoryKind.BEDTIME -> ""
 }
 
 @Composable
@@ -703,6 +698,7 @@ private fun kindLabel(kind: CategoryKind): String = stringResource(
         CategoryKind.MEALS -> R.string.kind_meals
         CategoryKind.READING -> R.string.kind_reading
         CategoryKind.SPORT -> R.string.kind_sport
+        CategoryKind.BEDTIME -> R.string.kind_bedtime
     },
 )
 

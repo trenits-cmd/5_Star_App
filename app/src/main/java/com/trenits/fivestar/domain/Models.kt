@@ -19,6 +19,7 @@ enum class CategoryKind {
     MEALS,
     READING,
     SPORT,
+    BEDTIME,
 }
 
 /**
@@ -197,6 +198,7 @@ fun missingCategoryIds(categories: List<Category>, record: DayRecord?): List<Str
             CategoryKind.WATER -> counters.containsKey(GLASSES) || counters.containsKey(LITERS)
             CategoryKind.ROTATION -> counters.containsKey(ROTATION_STARS)
             CategoryKind.DINNER_TIME -> counters.containsKey(DINNER_HOUR)
+        CategoryKind.BEDTIME -> counters.containsKey(BEDTIME_HOUR)
             CategoryKind.MEALS -> counters.containsKey(MEAL_BREAKFAST) &&
                 counters.containsKey(MEAL_LUNCH) && counters.containsKey(MEAL_DINNER)
             CategoryKind.READING -> counters.containsKey(PAGES)
@@ -219,7 +221,7 @@ const val DEFAULT_ALCOHOL_LIMIT = 2.5
 const val DEFAULT_SPORT_GOAL_MINUTES = 45.0
 const val SPORT_WEEKLY_DAYS_GOAL = 3
 
-const val STREAK_DAYS_FOR_REWARD = 7
+const val STREAK_DAYS_FOR_REWARD = 3
 
 data class CatalogItem(
     val id: String,
@@ -296,6 +298,23 @@ fun waterStars(liters: Double, goal: Double = DEFAULT_WATER_GOAL): Int {
  * - Vor 21:00 Uhr (20:00–20:59) = 1 Stern
  * - Ab 21:00 Uhr = 0 Sterne
  */
+const val BEDTIME_HOUR = "bedtimeHour"
+const val BEDTIME_MINUTE = "bedtimeMinute"
+
+/**
+ * Schlafenszeit: vor Mitternacht = 5 Sterne, 0:00-0:59 = 4, 1:00-1:59 = 3, 2:00-2:59 = 2, sonst 0.
+ */
+fun bedtimeStars(hour: Int, minute: Int = 0): Int {
+    if (hour < 0) return 0
+    return when {
+        hour in 12..23 -> MAX_STARS
+        hour == 0 -> 4
+        hour == 1 -> 3
+        hour == 2 -> 2
+        else -> 0
+    }
+}
+
 fun dinnerStars(hour: Int, minute: Int = 0): Int {
     if (hour < 0 || minute < 0) return 0
     return when {
@@ -455,6 +474,11 @@ private const val EPSILON = 1e-9
 /** Sterne einer Zähler-/Spezialkategorie aus ihren Zählerwerten. */
 fun counterStars(category: Category, values: Map<String, Double>): Int = when (category.kind) {
     CategoryKind.STARS -> 0
+    CategoryKind.BEDTIME -> {
+        val hour = values[BEDTIME_HOUR]?.toInt() ?: -1
+        val minute = values[BEDTIME_MINUTE]?.toInt() ?: 0
+        if (hour < 0) 0 else bedtimeStars(hour, minute)
+    }
     CategoryKind.ALCOHOL -> {
         val limit = if (category.goal > 0.0) category.goal else DEFAULT_ALCOHOL_LIMIT
         alcoholStars(alcoholLiters(values), limit)

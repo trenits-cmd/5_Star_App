@@ -105,7 +105,7 @@
     <string name="countdown_almost">Almost there. A little more and you reach 100 %!</string>
     <string name="countdown_perfect">Perfect day. Everything is at 100 %!</string>
     <string name="status_daily_below">Below 80%% – missing the target triggers a daily penalty</string>
-    <string name="status_weekly_title">Weekly Status (7-Day Streak)</string>
+    <string name="status_weekly_title">Weekly Status (3-Day Streak)</string>
     <string name="status_weekly_progress">%1$d / %2$d consecutive days ≥ 80%%</string>
     <string name="status_relationship_title">Relationship Mood Today</string>
     <string name="status_relationship_summary">Avg %1$.1f / 5 ★ (%2$s)</string>
@@ -235,7 +235,7 @@
     <string name="waiting_dinner_you">You confirm the dinner time %1$s · counts as confirmed at %2$s</string>
     <string name="waiting_dinner_partner">Waiting for %1$s to confirm the dinner time %2$s · counts as confirmed at %3$s</string>    <string name="week_title">Daily &amp; Weekly Status / Archive</string>
     <string name="week_streak">Weekly status:\n%1$d of %2$d days in a row (≥ 80%%)</string>
-    <string name="week_reward_unlocked">7 days in a row achieved – Reward unlocked!</string>
+    <string name="week_reward_unlocked">3 successful days in a row – reward unlocked!</string>
     <string name="week_no_reward">%1$d more consecutive day(s) until the next reward.</string>
     <string name="week_no_data">No ratings for the last 7 days yet.</string>
     <string name="week_successful_days">Daily status – Last 7 days</string>
@@ -289,6 +289,17 @@
     <string name="kind_dinner">Dinner before 20h (time)</string>
     <string name="kind_meals">Meals (breakfast, lunch, dinner)</string>
     <string name="kind_reading">Reading (page count)</string>
+    <string name="kind_bedtime">Bedtime (before midnight to 3 a.m.)</string>
+    <string name="bedtime_rules_hint">Before midnight = 5 stars. 0:00–0:59 = 4, 1:00–1:59 = 3, 2:00–2:59 = 2, later = 0.</string>
+    <string name="bedtime_current">Bedtime: %1$s</string>
+    <string name="bedtime_quick_2330">23:30</string>
+    <string name="bedtime_quick_0030">00:30</string>
+    <string name="bedtime_quick_0130">01:30</string>
+    <string name="bedtime_quick_0230">02:30</string>
+    <string name="cat_preset_bedtime">Bedtime</string>
+    <string name="settings_partner_info">Partner</string>
+    <string name="settings_partner_name_value">Name: %1$s</string>
+    <string name="settings_partner_info_hint">Set by your partner in their own settings. Read only here.</string>
     <string name="kind_sport">Sport (3×/week 45 min, daily time)</string>
 
     <string name="target_me">For %1$s</string>

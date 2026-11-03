@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.03112026_1535)
+## Features (v1.03112026_1644)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.03112026_1535`** – Settings: the rewards & penalties overview for the partner is now always visible (previously only when a partner was connected).
+- **Latest: `v1.03112026_1644`** – New **Statistics** tab: line chart of daily results (%) for you and your partner, filterable by category (or all) and by period (last week, last month, last 3 months, all time). Points are aggregated so each period stays readable (daily → weekly → 30-day blocks). Tap a point for details. Summary per person: average, best day, days ≥ 80 %.
+- `v1.03112026_1535` – Settings: the rewards & penalties overview for the partner is now always visible (previously only when a partner was connected).
 - `v1.03112026_1510` – Release with APK. Category assignment in Settings, rewards & penalties overview.
 - `v1.03112026_1410` – **Settings:** category **assignment** (only me / partner / both) is saved to Firestore (`categories.targets`) and shown per category. It is display/storage only and does **not** change scoring yet. Preset sync no longer resets assignments. Read-only overview of rewards & penalties for you and your partner (`CatalogOverviewCard`). No category or catalog create/edit/delete.
 - `v1.03112026_1400` – **Settings** read-only rewards & penalties overview (`CatalogOverviewCard`).

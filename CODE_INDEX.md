@@ -1,7 +1,7 @@
 # CODE_INDEX.md – AI-Readable Architecture & Code Directory (5 Star App)
 
 > **Purpose for AI Agents & Developers:**  
-> This document is the canonical, structured table of contents and architectural reference for the **5 Star – Daily Synergy & Motivation** Android application (`com.trenits.fivestar`, current release `v1.03112026_1535`, `versionCode = 24`). Keep this file updated whenever source files, UI structure, domain rules, or Firestore schemas change.
+> This document is the canonical, structured table of contents and architectural reference for the **5 Star – Daily Synergy & Motivation** Android application (`com.trenits.fivestar`, current release `v1.03112026_1644`, `versionCode = 25`). Keep this file updated whenever source files, UI structure, domain rules, or Firestore schemas change.
 
 ---
 
@@ -12,7 +12,7 @@
 | `settings.gradle.kts` | Gradle root configuration (`rootProject.name = "5_Star_App"`, module `:app`). |
 | `build.gradle.kts` | Top-level Gradle plugins (`android.application`, `kotlin.android`, `kotlin.compose`, `google.services`). |
 | `gradle/libs.versions.toml` | Version catalog defining AGP, Kotlin, Jetpack Compose BOM, Material 3, Firebase BOM (Auth + Firestore), Credential Manager, and WorkManager versions. |
-| `app/build.gradle.kts` | App module configuration (`namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 24`, `versionName = "1.03112026_1535"`). |
+| `app/build.gradle.kts` | App module configuration (`namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 25`, `versionName = "1.03112026_1644"`). |
 | `app/src/main/res/values/strings.xml` | Single-language (English) string resources for all tabs, cards, categories, rewards, penalties, dialogs, notifications, and status messages. |
 | `firestore.rules` | Cloud Firestore security rules for `/users/{uid}`, `/invites/{code}`, and `/couples/{coupleId}` (`categories`, `catalog`, `days`, `tasks`). |
 | `rules-tests/rules.test.mjs` | Node.js unit tests verifying `firestore.rules` against the Firebase Firestore Emulator. |
@@ -40,6 +40,7 @@
 | `DayRecord.kt` | `DayRecord`, `CategorySnapshot`, `Counters` | Immutable snapshot of one user's daily category ratings, counter values, weighted score percent, and optional confirmation timestamp (`confirmedAt`). |
 | `Evaluation.kt` | `Period`, `dayOutcomeFor` | Evaluates a `DayRecord` against active categories; missing days default to `0 ★` (`DayOutcome.PENALTY`). |
 | `Task.kt` | `Task`, `TaskType` (`REWARD`, `PENALTY`), `TaskStatus` (`OPEN`, `CONFIRMED`, `AUTO_CONFIRMED`), `availablePoolOptions`, `penaltyCycleStartDayKey`, `needsPartnerConfirmationReminder`, `withAutoConfirmation` | Reward & Penalty lifecycle:<br>• Dropdown pool excludes already-used options in the current cycle until all options have been used.<br>• Penalty pool resets every Sunday evening after the weekly review.<br>• Partner confirmation reminder push triggers **3 hours** after selection (`needsPartnerConfirmationReminder`).<br>• Automatic confirmation (`AUTO_CONFIRMED`) triggers **48 hours** after creation (`withAutoConfirmation`).<br>• Tracks both creation/penalty date (`dayKey`) and redemption date (`redeemedDayKey`). |
+| `Statistics.kt` | `StatsRange` (`WEEK`, `MONTH`, `THREE_MONTHS`, `ALL`), `StatsPoint`, `statsDays`, `statsPoints`, `categoryPercentOf`, `overallPercentOf`, `hasCategoryOfKind` | Pure logic for the Statistics tab: builds the calendar days of a period (missing days count as 0), aggregates them into chart points (1 day for week/month, 7 days for 3 months, 7 or 30 days for all time), and converts stars to % (5 ★ = 100 %). Category match uses exact id or kind prefix (`preset_<kind>_`). |
 | `Pairing.kt` | `generateInviteCode`, `normalizeInviteCode` | Generates and normalizes 6-character alphanumeric invitation codes for connecting two partner accounts. |
 
 ---
@@ -78,6 +79,7 @@
 | `PairingScreen.kt` | `PairingScreen` | Initial couple connection screen: create invitation code, send code via email, or enter partner's code to automatically pair. |
 | `LoginScreen.kt` | `LoginScreen` | Passwordless sign-in screen with **Email + Invitation code** (`Sign in with Email & Code`) and **Google Sign-In**. |
 | `Format.kt` | `localizedCategoryName`, `localizedCategorySnapshotName`, `localizedCatalogTitle`, `translateCatalogTitle`, `UserAvatar`, `encodeAvatarUri`, `launchInviteEmail` | Formatting helpers, English localization of legacy German/French category/catalog titles, avatar bitmap cropping/encoding, and `mailto:` intent launcher. |
+| `StatisticsScreen.kt` | `StatisticsScreen`, `StatsLineChart`, `StatsSummaryCard` | **Statistics Tab:** filter chips for period and category (or all). Line chart drawn with `Canvas` (0–100 % y-axis, period-dependent x-labels, tap to select a point and show values). One line per person (partner line hidden if the partner has no such category). Summary cards: average, best day, days ≥ 80 %. |
 | `CounterSummary.kt` | `CounterSummary` | Compact read-only summary of counter values (Alcohol Demi/Pint/L, Water glasses/L, Rotation task Yes/No, Dinner time, Meals levels, Reading pages, Sport minutes). |
 | `theme/Theme.kt` | `FiveStarTheme`, `Amber` | Material 3 color scheme and typography definitions. |
 
@@ -93,6 +95,7 @@
 | `EvaluationTest.kt` | Daily outcome evaluation and consecutive 7-day streak calculation. |
 | `ScoreTest.kt` | Weighted percentage calculation and 80 % threshold boundary tests. |
 | `TaskTest.kt` | Reward/Penalty dropdown pool filtering, weekly Sunday reset, 3h reminder check, and 48h auto-confirmation. |
+| `StatisticsTest.kt` | Period day ranges (week 7, month 30, 3 months → weekly buckets, all time from first record), bucket averages, missing days = 0 %. |
 
 ---
 

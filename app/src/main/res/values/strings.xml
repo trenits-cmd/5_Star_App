@@ -50,6 +50,21 @@
     <string name="tab_history">History</string>
     <string name="tab_settings">Settings</string>
     <string name="tab_partner">Partner</string>
+    <string name="tab_statistics">Statistics</string>
+    <string name="stats_title">Statistics</string>
+    <string name="stats_range_week">Last week</string>
+    <string name="stats_range_month">Last month</string>
+    <string name="stats_range_three_months">Last 3 months</string>
+    <string name="stats_range_all">All time</string>
+    <string name="stats_category_all">All categories</string>
+    <string name="stats_chart_title_overall">Daily status (%)</string>
+    <string name="stats_chart_title_category">%1$s (%%)</string>
+    <string name="stats_point_detail">%1$s: %2$s</string>
+    <string name="stats_partner_missing">%1$s has no \'%2$s\' category.</string>
+    <string name="stats_no_data">No data for this period yet.</string>
+    <string name="stats_average">Average</string>
+    <string name="stats_best">Best day</string>
+    <string name="stats_goal_days">Days ≥ 80 %</string>
     <string name="tab_me">Me</string>
 
     <string name="score_yours">Your score</string>

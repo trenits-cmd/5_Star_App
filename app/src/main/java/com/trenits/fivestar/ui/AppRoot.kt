@@ -35,7 +35,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -56,10 +59,23 @@ fun AppRoot(viewModel: AppViewModel) {
     }
 }
 
+private val StatisticsIcon: ImageVector = ImageVector.Builder(
+    name = "Statistics",
+    defaultWidth = 24.dp,
+    defaultHeight = 24.dp,
+    viewportWidth = 24f,
+    viewportHeight = 24f,
+).path(fill = SolidColor(Color.Black)) {
+    moveTo(4f, 20f); lineTo(4f, 12f); lineTo(8f, 12f); lineTo(8f, 20f); close()
+    moveTo(10f, 20f); lineTo(10f, 4f); lineTo(14f, 4f); lineTo(14f, 20f); close()
+    moveTo(16f, 20f); lineTo(16f, 9f); lineTo(20f, 9f); lineTo(20f, 20f); close()
+}.build()
+
 private enum class Tab(val labelRes: Int, val icon: ImageVector) {
     TODAY(R.string.tab_today, Icons.Filled.Home),
     WEEK(R.string.tab_week, Icons.Filled.DateRange),
     PARTNER(R.string.tab_partner, Icons.Filled.Person),
+    STATISTICS(R.string.tab_statistics, StatisticsIcon),
     SETTINGS(R.string.tab_settings, Icons.Filled.Settings),
 }
 
@@ -92,7 +108,7 @@ private fun MainTabs(viewModel: AppViewModel) {
         if (!granted) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
-    val visibleTabs = listOf(Tab.TODAY, Tab.WEEK, Tab.PARTNER, Tab.SETTINGS)
+    val visibleTabs = listOf(Tab.TODAY, Tab.WEEK, Tab.PARTNER, Tab.STATISTICS, Tab.SETTINGS)
 
     Scaffold(
         topBar = {
@@ -142,6 +158,7 @@ private fun MainTabs(viewModel: AppViewModel) {
                 Tab.TODAY -> DashboardScreen(viewModel)
                 Tab.WEEK -> WeeklyScreen(viewModel)
                 Tab.PARTNER -> PartnerTodayScreen(viewModel)
+                Tab.STATISTICS -> StatisticsScreen(viewModel)
                 Tab.SETTINGS -> SettingsScreen(viewModel)
             }
         }

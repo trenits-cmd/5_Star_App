@@ -74,6 +74,8 @@ fun SettingsScreen(vm: AppViewModel) {
 
     val created by vm.created.collectAsState()
     val catalog by vm.myCatalog.collectAsState()
+    val myCategories by vm.targeted.collectAsState()
+    val storedCategories by vm.categories.collectAsState()
     val days by vm.days.collectAsState()
     val lastSync by vm.lastSync.collectAsState()
     val syncStatus by vm.syncStatus.collectAsState()
@@ -206,6 +208,37 @@ fun SettingsScreen(vm: AppViewModel) {
                         enabled = partnerNameInput.isNotBlank() && !vm.busy,
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text(stringResource(R.string.settings_save)) }
+                }
+            }
+        }
+
+        // 1a. Zuweisung der Kategorien (nur ich / Partner / beide). Keine Bearbeitung der Kategorien selbst.
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(stringResource(R.string.settings_categories), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.settings_assignment_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    myCategories.forEach { category ->
+                        val currentTargets = storedCategories.items.firstOrNull { it.id == category.id }?.targets
+                            ?: listOf(vm.uid)
+                        Text(localizedCategoryName(category), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                        AudienceSelector(
+                            audience = audienceFromTargets(currentTargets, vm.uid),
+                            hasPartner = partnerUid != null,
+                            myLabel = myLabel,
+                            partnerLabel = partnerLabel,
+                            onSelect = { audience ->
+                                vm.setCategoryTargets(
+                                    category.id,
+                                    targetsForAudience(audience, vm.uid, partnerUid),
+                                )
+                            },
+                        )
+                    }
                 }
             }
         }

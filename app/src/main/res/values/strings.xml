@@ -127,6 +127,7 @@
     <string name="settings_preset_andi">Load Andi profile &amp; categories</string>
 
     <string name="settings_categories">Categories</string>
+    <string name="settings_assignment_hint">Choose who each category applies to. This only changes the assignment; scoring is not affected yet.</string>
     <string name="settings_categories_hint">Weights flow into the daily &amp; weekly target (e.g. Meals 3×, Water 3×, Alcohol 2×, Alternating tasks 1×).</string>
     <string name="settings_archive">Archive</string>
     <string name="settings_new_category">New category</string>

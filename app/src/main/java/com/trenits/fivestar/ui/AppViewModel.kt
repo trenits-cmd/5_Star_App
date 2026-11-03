@@ -499,8 +499,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val expectedCatIds = if (role == "rosie") rosieCategoryIds(uid) else andiCategoryIds(uid)
                 val expectedCatalogIds = if (role == "rosie") rosieCatalogIds() else andiCatalogIds()
                 val hasForeignCats = cats.items.any {
-                    ((it.ownerUid == uid || uid in it.targets) && !it.archived && it.id !in expectedCatIds) ||
-                        (it.ownerUid == uid && it.targets != listOf(uid))
+                    (it.ownerUid == uid || uid in it.targets) && !it.archived && it.id !in expectedCatIds
                 }
                 val hasMissingCats = expectedCatIds.any { expectedId ->
                     cats.items.none { it.id == expectedId && !it.archived }
@@ -1105,6 +1104,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         localProfileStore.savePhotoBase64(base64)
         userRepository.setPhotoBase64(base64)
         toastMessage.value = text(R.string.save_confirmation)
+    }
+
+    /** Speichert nur die Zuweisung (nur ich / Partner / beide). Die Punkteberechnung bleibt unverändert. */
+    fun setCategoryTargets(id: String, targets: List<String>) {
+        repo()?.setCategoryTargets(id, targets)
     }
 
     fun archiveCategory(id: String) {

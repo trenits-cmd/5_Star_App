@@ -103,6 +103,10 @@ class CoupleRepository(private val coupleId: String) {
         couple.collection("categories").document(id).update("pushEnabled", enabled)
     }
 
+    fun setCategoryTargets(id: String, targets: List<String>) {
+        couple.collection("categories").document(id).update("targets", targets)
+    }
+
     fun archiveCategory(id: String) {
         couple.collection("categories").document(id).update("archived", true)
     }

@@ -384,7 +384,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }.share(null)
 
     val partnerToday: StateFlow<DayRecord?> = combine(days, activeDayKey, partnerUid) { list, key, partner ->
-        list.items.firstOrNull { it.ownerUid == partner && it.dayKey == key }
+        if (partner != null) {
+            list.items.firstOrNull { it.ownerUid == partner && it.dayKey == key }
+        } else {
+            list.items.firstOrNull { it.ownerUid != uid && it.dayKey == key }
+        }
     }.share(null)
 
     /** Schlüssel der aktuellen Woche, z. B. "2026-W44". */

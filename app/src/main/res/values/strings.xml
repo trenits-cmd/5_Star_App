@@ -268,7 +268,7 @@
     <string name="seed_reward_andi_1">Cuddling for 30 minutes</string>
     <string name="seed_reward_andi_2">Massage for 30 minutes</string>
     <string name="seed_reward_andi_3">Edging</string>
-    <string name="seed_reward_andi_4">Blowjob</string>
+    <string name="seed_reward_andi_4">Blowjob / Handjob</string>
     <string name="seed_reward_andi_5">Handjob</string>
     <string name="seed_reward_andi_6">Video</string>
     <string name="seed_reward_andi_7">Favourite dish: partner cooks your favourite meal</string>
@@ -300,6 +300,8 @@
     <string name="settings_partner_info">Partner</string>
     <string name="settings_partner_name_value">Name: %1$s</string>
     <string name="settings_partner_info_hint">Set by your partner in their own settings. Read only here.</string>
+    <string name="reward_tier_label">Category %1$d</string>
+    <string name="reward_tiers_hint">Rewards: day 3 = category 3, day 4 = category 2, day 7 = category 1. After you choose a reward, counting starts again at day 0.</string>
     <string name="kind_sport">Sport (3×/week 45 min, daily time)</string>
 
     <string name="target_me">For %1$s</string>

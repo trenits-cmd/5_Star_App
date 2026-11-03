@@ -157,4 +157,23 @@ class StatisticsTest {
         assertEquals(2, bedtimeStars(2, 30))
         assertEquals(0, bedtimeStars(3, 0))
     }
+
+    @Test
+    fun rewardTiersFollowStreakMilestones() {
+        assertEquals(3, rewardTierForStreak(3))
+        assertEquals(2, rewardTierForStreak(4))
+        assertEquals(1, rewardTierForStreak(7))
+        assertEquals(null, rewardTierForStreak(5))
+    }
+
+    @Test
+    fun streakRestartsAfterBaseline() {
+        val cats = listOf(Category(id = "c", ownerUid = "u", name = "C", weight = 1, kind = CategoryKind.STARS, targets = listOf("u")))
+        val records = (1..5).associate { d ->
+            val key = today.minusDays(d.toLong()).toString()
+            key to DayRecord(dayKey = key, ownerUid = "u", snapshots = listOf(CategorySnapshot("c", "C", 1, 5)))
+        }
+        assertEquals(5, consecutiveSuccessDays(today.minusDays(1), records, cats))
+        assertEquals(2, consecutiveSuccessDays(today.minusDays(1), records, cats, notBefore = today.minusDays(3)))
+    }
 }

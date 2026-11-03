@@ -828,6 +828,12 @@ private fun WeeklyStatusBanner(
             }
             Text(rewardText, style = MaterialTheme.typography.bodySmall, color = onCard, textAlign = TextAlign.Center)
             Text(
+                stringResource(R.string.reward_tiers_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = onCard,
+                textAlign = TextAlign.Center,
+            )
+            Text(
                 stringResource(R.string.week_evaluation_note),
                 style = MaterialTheme.typography.labelSmall,
                 color = onCard,
@@ -2155,6 +2161,13 @@ internal fun TaskCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (task.tier > 0) {
+                Text(
+                    stringResource(R.string.reward_tier_label, task.tier),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             Spacer(Modifier.height(8.dp))
 
             if (task.title.isEmpty() && !isMine) {

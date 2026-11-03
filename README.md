@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.03112026_2328)
+## Features (v1.03112026_2347)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.03112026_2328`** – (1) Penalties removed completely. Reward after 3 successful days (was 7). (2) New category **Bedtime** for both partners, weight 2: before midnight 5 stars, 0:00–0:59 4, 1:00–1:59 3, 2:00–2:59 2, otherwise 0. (3) The partner's name comes from the partner's own profile; in Settings the partner's information is read-only. (4) Statistics: penalties group removed.
+- **Latest: `v1.03112026_2347`** – Tiered rewards: day 3 = category 3, day 4 = category 2, day 7 = category 1. Choosing a reward restarts counting at day 0. Partner rewards and main_user rewards have their own list with categories (Vinted 3, Flowers 1, Massage 3, Eat out 2, Cooking 2 / Cuddling 2, Massage 2, Edging 1, Blowjob/Handjob 3, Video 1, Favourite dish 1). All rewards are confirmed by the other person. Old open rewards without a category are not shown.
+- `v1.03112026_2328` (1) Penalties removed completely. Reward after 3 successful days (was 7). (2) New category **Bedtime** for both partners, weight 2: before midnight 5 stars, 0:00–0:59 4, 1:00–1:59 3, 2:00–2:59 2, otherwise 0. (3) The partner's name comes from the partner's own profile; in Settings the partner's information is read-only. (4) Statistics: penalties group removed.
 - `v1.03112026_2306` Fix: the main_user could not confirm the dinner time, because the dinner card only exists in the partner's category list. The confirmation is now also a button in the 'Waiting for confirmation' card on the dashboard, and it works for any pending day.
 - `v1.03112026_2252` Top bar title is '5 Star App'. The logout button is hidden on the main_user's Today tab (sign-out stays in Settings). Partner tab is read-only with hint; dashboard shows what waits for confirmation in both directions.
 - `v1.03112026_2244` Partner tab is read-only: tapping shows a hint, open penalties/rewards are summaries without buttons. Dashboard shows a card 'Waiting for confirmation' in both directions (what you confirm and what waits for your partner), including the dinner time.

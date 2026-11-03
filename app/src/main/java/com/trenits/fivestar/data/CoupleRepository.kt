@@ -125,6 +125,7 @@ class CoupleRepository(private val coupleId: String) {
             type = doc.getString("type")?.let { TaskType.valueOf(it) }?.takeIf { it == TaskType.REWARD } ?: return@listen null,
             title = doc.getString("title") ?: "",
             targets = if (targets.isNullOrEmpty()) listOf(owner) else targets,
+            tier = doc.getLong("tier")?.toInt() ?: 0,
         )
     }
 
@@ -136,6 +137,7 @@ class CoupleRepository(private val coupleId: String) {
                 "type" to item.type.name,
                 "title" to item.title,
                 "targets" to item.targets,
+                "tier" to item.tier,
             ),
         )
     }
@@ -193,6 +195,10 @@ class CoupleRepository(private val coupleId: String) {
 
     fun tasks(): Flow<Listed<Task>> = listen(couple.collection("tasks")) { doc ->
         val owner = doc.getString("ownerUid") ?: return@listen null
+        // Alte Belohnungen ohne Stufe (7-Tage-Regel) werden nicht mehr übernommen, solange sie offen sind.
+        if (doc.getString("type") == TaskType.REWARD.name && (doc.getLong("tier") ?: 0L) == 0L &&
+            doc.getString("status").let { it == null || it == TaskStatus.OPEN.name }
+        ) return@listen null
         val targets = (doc.get("targets") as? List<*>)?.filterIsInstance<String>()
         Task(
             id = doc.id,
@@ -208,6 +214,7 @@ class CoupleRepository(private val coupleId: String) {
             selectedAt = doc.getTimestamp("selectedAt")?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) },
             deadlineAt = doc.getTimestamp("deadlineAt")?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) },
             postponeCount = doc.getLong("postponeCount")?.toInt() ?: 0,
+            tier = doc.getLong("tier")?.toInt() ?: 0,
         )
     }
 
@@ -222,6 +229,7 @@ class CoupleRepository(private val coupleId: String) {
                 "status" to task.status.name,
                 "createdAt" to Timestamp(task.createdAt.epochSecond, task.createdAt.nano),
                 "targets" to task.targets,
+                "tier" to task.tier,
                 "redeemedDayKey" to (task.redeemedDayKey ?: ""),
             ),
         )

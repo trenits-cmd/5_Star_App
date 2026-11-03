@@ -22,6 +22,8 @@ data class UserProfile(
     val pendingInviteCode: String? = null,
     /** Vorlage für Kategorien: "main_user" (Einlader) oder "partner" (Eingeladener). */
     val presetRole: String? = null,
+    /** Tag, ab dem die Serie für Belohnungen zählt (nach jeder Auswahl neu). */
+    val rewardBaseline: String? = null,
 )
 
 /** Zustand einer Einladung. status: open, requested, confirmed oder declined. */
@@ -54,6 +56,7 @@ class UserRepository(private val uid: String) {
                     activeInviteCode = snapshot?.getString("activeInviteCode")?.takeIf { it.isNotBlank() },
                     pendingInviteCode = snapshot?.getString("pendingInviteCode")?.takeIf { it.isNotBlank() },
                     presetRole = snapshot?.getString("presetRole")?.takeIf { it.isNotBlank() },
+                    rewardBaseline = snapshot?.getString("rewardBaseline")?.takeIf { it.isNotBlank() },
                 ),
             )
         }
@@ -225,6 +228,10 @@ class UserRepository(private val uid: String) {
 
     fun markCatalogSeeded() {
         user.set(mapOf("catalogSeeded" to true), SetOptions.merge())
+    }
+
+    fun setRewardBaseline(dayKey: String) {
+        user.set(mapOf("rewardBaseline" to dayKey), SetOptions.merge())
     }
 
     fun setPresetRole(role: String) {

@@ -25,6 +25,8 @@ data class Task(
     val deadlineAt: Instant? = null,
     /** Wie oft der Partner „Not yet“ gewählt hat. */
     val postponeCount: Int = 0,
+    /** Belohnungsstufe (1–3); 0 = ohne Stufe (alt). */
+    val tier: Int = 0,
 ) {
     /** Gilt die Aufgabe für diese Person? */
     fun appliesTo(uid: String): Boolean = uid in targets

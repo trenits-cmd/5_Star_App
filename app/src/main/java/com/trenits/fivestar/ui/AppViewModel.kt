@@ -45,6 +45,7 @@ import com.trenits.fivestar.domain.SPORT_MINUTES
 import com.trenits.fivestar.domain.SPORT_REST_DAY_OK
 import com.trenits.fivestar.domain.SPORT_WEEKLY_DAYS_GOAL
 import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
+import com.trenits.fivestar.domain.rewardTierForStreak
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
@@ -90,24 +91,23 @@ import java.time.ZonedDateTime
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val partnerStarterCatalog = listOf(
-        R.string.seed_reward_1 to TaskType.REWARD,
-        R.string.seed_reward_2 to TaskType.REWARD,
-        R.string.seed_reward_3 to TaskType.REWARD,
-        R.string.seed_reward_4 to TaskType.REWARD,
-        R.string.seed_reward_5 to TaskType.REWARD,
+    /** Belohnungen je Rolle mit Stufe: 3 = nach 3 Tagen, 2 = nach 4 Tagen, 1 = nach 7 Tagen. */
+    private val partnerRewardSeeds = listOf(
+        R.string.seed_reward_1 to 3,
+        R.string.seed_reward_2 to 1,
+        R.string.seed_reward_3 to 3,
+        R.string.seed_reward_4 to 2,
+        R.string.seed_reward_5 to 2,
     )
 
-    private val mainUserStarterCatalog = listOf(
-        R.string.seed_reward_andi_1 to TaskType.REWARD,
-        R.string.seed_reward_andi_2 to TaskType.REWARD,
-        R.string.seed_reward_andi_3 to TaskType.REWARD,
-        R.string.seed_reward_andi_4 to TaskType.REWARD,
-        R.string.seed_reward_andi_5 to TaskType.REWARD,
-        R.string.seed_reward_andi_6 to TaskType.REWARD,
-        R.string.seed_reward_andi_7 to TaskType.REWARD,
+    private val mainUserRewardSeeds = listOf(
+        R.string.seed_reward_andi_1 to 2,
+        R.string.seed_reward_andi_2 to 2,
+        R.string.seed_reward_andi_3 to 1,
+        R.string.seed_reward_andi_4 to 3,
+        R.string.seed_reward_andi_6 to 1,
+        R.string.seed_reward_andi_7 to 1,
     )
-
     val uid: String = Firebase.auth.currentUser?.uid.orEmpty()
     private val zone = ZoneId.systemDefault()
     private val userRepository = UserRepository(uid)
@@ -353,35 +353,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         ),
     )
 
-    private fun canonicalMainUserCatalog(ownerUid: String = uid): List<CatalogItem> {
-        val myTargets = listOf(ownerUid)
-        val rewards = listOf(
-            text(R.string.seed_reward_andi_1),
-            text(R.string.seed_reward_andi_2),
-            text(R.string.seed_reward_andi_3),
-            text(R.string.seed_reward_andi_4),
-            text(R.string.seed_reward_andi_5),
-            text(R.string.seed_reward_andi_6),
-            text(R.string.seed_reward_andi_7),
-        ).mapIndexed { idx, title ->
-            CatalogItem("andi_reward_${idx}_$ownerUid", ownerUid, TaskType.REWARD, title, myTargets)
+    private fun canonicalMainUserCatalog(ownerUid: String = uid): List<CatalogItem> =
+        mainUserRewardSeeds.mapIndexed { idx, seed ->
+            CatalogItem("andi_reward_${idx}_$ownerUid", ownerUid, TaskType.REWARD, text(seed.first), listOf(ownerUid), seed.second)
         }
-        return rewards
-    }
 
-    private fun canonicalPartnerCatalog(ownerUid: String = uid): List<CatalogItem> {
-        val myTargets = listOf(ownerUid)
-        val rewards = listOf(
-            text(R.string.seed_reward_1),
-            text(R.string.seed_reward_2),
-            text(R.string.seed_reward_3),
-            text(R.string.seed_reward_4),
-            text(R.string.seed_reward_5),
-        ).mapIndexed { idx, title ->
-            CatalogItem("rosie_reward_${idx}_$ownerUid", ownerUid, TaskType.REWARD, title, myTargets)
+    private fun canonicalPartnerCatalog(ownerUid: String = uid): List<CatalogItem> =
+        partnerRewardSeeds.mapIndexed { idx, seed ->
+            CatalogItem("rosie_reward_${idx}_$ownerUid", ownerUid, TaskType.REWARD, text(seed.first), listOf(ownerUid), seed.second)
         }
-        return rewards
-    }
 
     fun canonicalCatalogFor(ownerUid: String, isPartnerSet: Boolean): List<CatalogItem> =
         if (isPartnerSet) canonicalPartnerCatalog(ownerUid) else canonicalMainUserCatalog(ownerUid)
@@ -494,14 +474,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }.share(emptyMap())
 
     /** Aktuelle Serie aufeinanderfolgender erfolgreicher Tage (≥ 80 %). */
-    val weekSuccessfulDays: StateFlow<Int> = combine(days, targeted, clock) { list, cats, now ->
+    val weekSuccessfulDays: StateFlow<Int> = combine(days, targeted, clock, profile) { list, cats, now, prof ->
         val today = now.atZone(zone).toLocalDate()
         val byDay = list.items.filter { it.ownerUid == uid }.associateBy { it.dayKey }
+        val baseline = prof?.rewardBaseline?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         val todayRecord = byDay[today.toString()]
         if (todayRecord != null && dayOutcomeFor(todayRecord, cats) == DayOutcome.REWARD) {
-            consecutiveSuccessDays(today, byDay, cats)
+            consecutiveSuccessDays(today, byDay, cats, notBefore = baseline)
         } else {
-            consecutiveSuccessDays(today.minusDays(1), byDay, cats)
+            consecutiveSuccessDays(today.minusDays(1), byDay, cats, notBefore = baseline)
         }
     }.share(0)
 
@@ -679,10 +660,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         } else {
             myRole == "partner"
         }
-        val starter = if (ownerIsMainUser) mainUserStarterCatalog else partnerStarterCatalog
-        val pool = starter
-            .filter { (_, t) -> t == task.type }
-            .map { (res, _) -> text(res) }
+        val seeds = if (ownerIsMainUser) mainUserRewardSeeds else partnerRewardSeeds
+        val pool = seeds
+            .filter { task.tier == 0 || it.second == task.tier }
+            .map { text(it.first) }
 
         val cycleStartKey = ""
 
@@ -690,6 +671,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             .filter {
                 it.ownerUid == task.ownerUid &&
                     it.type == task.type &&
+                    it.tier == task.tier &&
                     it.id != task.id &&
                     it.title.isNotBlank() &&
                     (cycleStartKey.isEmpty() || it.dayKey >= cycleStartKey)
@@ -909,12 +891,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     private fun partnerCatalogIds(): Set<String> =
-        (0..4).map { "rosie_reward_${it}_$uid" }.toSet() +
-            (0..2).map { "rosie_penalty_${it}_$uid" }.toSet()
+        (0 until partnerRewardSeeds.size).map { "rosie_reward_${it}_$uid" }.toSet()
 
     private fun mainUserCatalogIds(): Set<String> =
-        (0..6).map { "andi_reward_${it}_$uid" }.toSet() +
-            setOf("andi_penalty_0_$uid")
+        (0 until mainUserRewardSeeds.size).map { "andi_reward_${it}_$uid" }.toSet()
 
     fun applyPartnerPreset() {
         val repo = repo() ?: return
@@ -998,23 +978,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             id = "preset_rotation_$uid",
         )
 
-        val rosieRewards = listOf(
-            text(R.string.seed_reward_1),
-            text(R.string.seed_reward_2),
-            text(R.string.seed_reward_3),
-            text(R.string.seed_reward_4),
-            text(R.string.seed_reward_5),
-        )
-        rosieRewards.forEachIndexed { idx, title ->
-            repo.saveCatalogItem(CatalogItem("rosie_reward_${idx}_$uid", uid, TaskType.REWARD, title, myTargets))
-        }
-        val rosiePenalties = listOf(
-            text(R.string.seed_penalty_1),
-            text(R.string.seed_penalty_2),
-            text(R.string.seed_penalty_3),
-        )
-        rosiePenalties.forEachIndexed { idx, title ->
-            repo.saveCatalogItem(CatalogItem("rosie_penalty_${idx}_$uid", uid, TaskType.PENALTY, title, myTargets))
+        partnerRewardSeeds.forEachIndexed { idx, seed ->
+            repo.saveCatalogItem(CatalogItem("rosie_reward_${idx}_$uid", uid, TaskType.REWARD, text(seed.first), myTargets, seed.second))
         }
 
         catalog.value.items
@@ -1090,21 +1055,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             id = "preset_reading_$uid",
         )
 
-        val andiRewards = listOf(
-            text(R.string.seed_reward_andi_1),
-            text(R.string.seed_reward_andi_2),
-            text(R.string.seed_reward_andi_3),
-            text(R.string.seed_reward_andi_4),
-            text(R.string.seed_reward_andi_5),
-            text(R.string.seed_reward_andi_6),
-            text(R.string.seed_reward_andi_7),
-        )
-        andiRewards.forEachIndexed { idx, title ->
-            repo.saveCatalogItem(CatalogItem("andi_reward_${idx}_$uid", uid, TaskType.REWARD, title, myTargets))
+        mainUserRewardSeeds.forEachIndexed { idx, seed ->
+            repo.saveCatalogItem(CatalogItem("andi_reward_${idx}_$uid", uid, TaskType.REWARD, text(seed.first), myTargets, seed.second))
         }
-        repo.saveCatalogItem(
-            CatalogItem("andi_penalty_0_$uid", uid, TaskType.PENALTY, text(R.string.seed_penalty_andi_1), myTargets),
-        )
 
         catalog.value.items
             .filter { it.ownerUid == uid && it.id !in allowedCatalog }
@@ -1188,6 +1141,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val task = tasks.value.items.firstOrNull { it.id == taskId } ?: return
         if (task.ownerUid != uid) return
         repo()?.setTaskTitle(taskId, title)
+        userRepository.setRewardBaseline(todayKey.value)
         toastMessage.value = text(R.string.save_confirmation)
     }
 
@@ -1366,6 +1320,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * Wochenziel / Streak-Prüfung:
      * Beim Erreichen von 7 Tagen am Stück (≥ 80 %) wird eine Belohnung freigeschaltet.
      */
+    /** Belohnungen nach Serie: Tag 3 = Stufe 3, Tag 4 = Stufe 2, Tag 7 = Stufe 1. Die Zählung startet nach jeder Auswahl neu. */
     private fun evaluateStreakReward() {
         val repo = repo() ?: return
         if (targeted.value.isEmpty()) return
@@ -1373,29 +1328,29 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val today = AppClock.now().atZone(zone).toLocalDate()
         val byDay = days.value.items.filter { it.ownerUid == uid }.associateBy { it.dayKey }
         val cats = targeted.value
+        val baseline = profile.value?.rewardBaseline?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
 
-        val candidateEndDays = listOf(today.minusDays(1), today)
-        for (endDay in candidateEndDays) {
-            val streak = consecutiveSuccessDays(endDay, byDay, cats)
-            if (streak >= STREAK_DAYS_FOR_REWARD && streak % STREAK_DAYS_FOR_REWARD == 0) {
-                val endKey = endDay.toString()
-                val alreadyExists = tasks.value.items.any {
-                    it.ownerUid == uid && it.dayKey == endKey && it.type == TaskType.REWARD
-                }
-                if (!alreadyExists) {
-                    repo.createTask(
-                        Task(
-                            id = "streak_${endKey}_$uid",
-                            ownerUid = uid,
-                            type = TaskType.REWARD,
-                            title = "",
-                            dayKey = endKey,
-                            status = TaskStatus.OPEN,
-                            createdAt = AppClock.now(),
-                            targets = listOf(uid),
-                        ),
-                    )
-                }
+        for (endDay in listOf(today.minusDays(1), today)) {
+            val streak = consecutiveSuccessDays(endDay, byDay, cats, notBefore = baseline)
+            val tier = rewardTierForStreak(streak) ?: continue
+            val endKey = endDay.toString()
+            val alreadyExists = tasks.value.items.any {
+                it.ownerUid == uid && it.dayKey == endKey && it.type == TaskType.REWARD && it.tier == tier
+            }
+            if (!alreadyExists) {
+                repo.createTask(
+                    Task(
+                        id = "streak_${endKey}_${uid}_$tier",
+                        ownerUid = uid,
+                        type = TaskType.REWARD,
+                        title = "",
+                        dayKey = endKey,
+                        status = TaskStatus.OPEN,
+                        createdAt = AppClock.now(),
+                        targets = listOf(uid),
+                        tier = tier,
+                    ),
+                )
             }
         }
     }

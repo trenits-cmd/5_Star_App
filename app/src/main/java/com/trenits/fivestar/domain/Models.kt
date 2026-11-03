@@ -229,6 +229,8 @@ data class CatalogItem(
     val type: TaskType,
     val title: String,
     val targets: List<String> = listOf(ownerUid),
+    /** Belohnungsstufe (1–3). */
+    val tier: Int = 0,
 ) {
     fun appliesTo(uid: String): Boolean = uid in targets
 }
@@ -447,17 +449,25 @@ fun weekOutcomeFor(
  * Zählt, wie viele Tage am Stück (rückwärts ab [endDay]) die Person ihr Tagesziel (≥ 80 %)
  * erreicht hat. Sobald ein Tag fehlt oder unter 80 % liegt, endet die Serie.
  */
+/** Belohnungsstufen je Serienlänge: Tag 3 = Stufe 3, Tag 4 = Stufe 2, Tag 7 = Stufe 1. */
+val REWARD_TIER_BY_STREAK: Map<Int, Int> = mapOf(3 to 3, 4 to 2, 7 to 1)
+
+fun rewardTierForStreak(streak: Int): Int? = REWARD_TIER_BY_STREAK[streak]
+
 fun consecutiveSuccessDays(
     endDay: LocalDate,
     recordsByDay: Map<String, DayRecord>,
     categories: List<Category>,
     maxLookbackDays: Int = 365,
+    notBefore: LocalDate? = null,
 ): Int {
     val activeCategories = categories.filter { !it.archived && it.weight > 0 }
     if (activeCategories.isEmpty()) return 0
     var count = 0
     for (offset in 0 until maxLookbackDays) {
-        val key = endDay.minusDays(offset.toLong()).toString()
+        val day = endDay.minusDays(offset.toLong())
+        if (notBefore != null && !day.isAfter(notBefore)) break
+        val key = day.toString()
         val record = recordsByDay[key] ?: break
         val outcome = dayOutcomeFor(record, activeCategories)
         if (outcome == DayOutcome.REWARD) {

@@ -36,6 +36,9 @@
     <string name="invite_declined">Your partner declined the connection request.</string>
     <string name="partner_remove_button">Remove partner / Unpair (Test)</string>
     <string name="partner_remove_hint">Disconnects the current partner for testing purposes so you can invite again.</string>
+    <string name="partner_remove_confirm_title">Remove partner?</string>
+    <string name="partner_remove_confirm_message">Are you sure you want to remove your partner? This will disconnect your shared status and couple records.</string>
+    <string name="partner_remove_confirm_yes">Yes, Remove</string>
 
     <string name="profile_photo_title">Your profile picture (icon)</string>
     <string name="profile_photo_upload">Choose / upload photo</string>
@@ -160,6 +163,8 @@
     <string name="sync_last">Last sync: %1$s</string>
     <string name="sync_never">not yet</string>
     <string name="sync_now">Sync now</string>
+    <string name="sync_status_success">Synced successfully</string>
+    <string name="sync_status_nothing">Nothing to update</string>
 
     <!-- Week / Streak & Archive -->
     <string name="week_title">Daily &amp; Weekly Status / Archive</string>

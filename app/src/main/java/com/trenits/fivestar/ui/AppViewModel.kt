@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.R
 import com.trenits.fivestar.data.CoupleRepository
@@ -448,6 +449,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }.share(emptyList())
 
     val lastSync = MutableStateFlow<Instant?>(null)
+
+    /** Statusmeldung für den manuellen Sync-Vorgang in den Einstellungen. */
+    val syncStatus = MutableStateFlow<String?>(null)
 
     /** Kurze Rückmeldung nach einem erfolgreichen Speichervorgang (Toast-Text). */
     val toastMessage = MutableStateFlow<String?>(null)
@@ -1154,9 +1158,63 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun syncNow() = action {
+        val beforeDays = days.value.items
+        val beforeTasks = tasks.value.items
+        val beforeCategories = categories.value.items
+        val beforeCatalog = catalog.value.items
+        val beforeMembers = members.value.items
+        val wasFromCache = days.value.fromCache || tasks.value.fromCache
+        val hadPendingLocal = localDayRecords.value.any { (dayKey, localRecord) ->
+            days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == dayKey } != localRecord
+        }
+
+        val r = repo()
+        if (r != null) {
+            localDayRecords.value.values.forEach { pendingRecord ->
+                r.saveDay(pendingRecord)
+            }
+        }
+
         val db = Firebase.firestore
-        db.disableNetwork().await()
         db.enableNetwork().await()
+        db.waitForPendingWrites().await()
+
+        val coupleId = profile.value?.coupleId
+        if (coupleId != null) {
+            val coupleDoc = db.collection("couples").document(coupleId)
+            runCatching {
+                coupleDoc.get(Source.SERVER).await()
+                coupleDoc.collection("days").get(Source.SERVER).await()
+                coupleDoc.collection("tasks").get(Source.SERVER).await()
+                coupleDoc.collection("categories").get(Source.SERVER).await()
+                coupleDoc.collection("catalog").get(Source.SERVER).await()
+            }.onFailure {
+                db.disableNetwork().await()
+                db.enableNetwork().await()
+            }
+        } else {
+            db.disableNetwork().await()
+            db.enableNetwork().await()
+        }
+
+        delay(100)
+
+        val changed = hadPendingLocal ||
+            (wasFromCache && !days.value.fromCache) ||
+            days.value.items != beforeDays ||
+            tasks.value.items != beforeTasks ||
+            categories.value.items != beforeCategories ||
+            catalog.value.items != beforeCatalog ||
+            members.value.items != beforeMembers
+
+        lastSync.value = Instant.now()
+        val message = if (changed) {
+            text(R.string.sync_status_success)
+        } else {
+            text(R.string.sync_status_nothing)
+        }
+        syncStatus.value = message
+        toastMessage.value = message
     }
 
     fun signOut() {

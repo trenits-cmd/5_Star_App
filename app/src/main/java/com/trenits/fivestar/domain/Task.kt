@@ -19,6 +19,8 @@ data class Task(
     val createdAt: Instant,
     val targets: List<String> = listOf(ownerUid),
     val redeemedDayKey: String? = null,
+    /** Zeitpunkt, an dem der Besitzer die Strafe/Belohnung gewählt hat. Frist (3 h / 48 h) läuft ab hier. */
+    val selectedAt: Instant? = null,
 ) {
     /** Gilt die Aufgabe für diese Person? */
     fun appliesTo(uid: String): Boolean = uid in targets
@@ -38,12 +40,16 @@ val AUTO_CONFIRM_AFTER: Duration = Duration.ofHours(48)
 fun Task.needsPartnerConfirmationReminder(now: Instant): Boolean =
     status == TaskStatus.OPEN &&
         title.isNotBlank() &&
-        !now.isBefore(createdAt.plus(CONFIRM_REMINDER_AFTER)) &&
-        now.isBefore(createdAt.plus(AUTO_CONFIRM_AFTER))
+        !now.isBefore(timerStart.plus(CONFIRM_REMINDER_AFTER)) &&
+        now.isBefore(timerStart.plus(AUTO_CONFIRM_AFTER))
 
-/** Ohne Bestätigung gilt eine offene Aufgabe 48 Stunden nach Erstellung automatisch als bestätigt. */
+/** Start der Fristen: Auswahl der Aktion, ältere Einträge ohne Auswahl ab Erstellung. */
+val Task.timerStart: Instant
+    get() = selectedAt ?: createdAt
+
+/** Ohne Bestätigung gilt eine offene Aufgabe 48 Stunden nach Auswahl (bzw. Erstellung) als erfüllt. */
 fun Task.withAutoConfirmation(now: Instant): Task =
-    if (status == TaskStatus.OPEN && !now.isBefore(createdAt.plus(AUTO_CONFIRM_AFTER))) {
+    if (status == TaskStatus.OPEN && !now.isBefore(timerStart.plus(AUTO_CONFIRM_AFTER))) {
         copy(status = TaskStatus.AUTO_CONFIRMED)
     } else {
         this

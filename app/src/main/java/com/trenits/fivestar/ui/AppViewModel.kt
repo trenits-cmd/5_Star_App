@@ -1129,13 +1129,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         repo()?.deleteCatalogItem(id)
     }
 
+    /** Nur der Besitzer der Strafe/Belohnung wählt die Aktion; die Frist (3 h / 48 h) startet hier. */
     fun chooseTaskTitle(taskId: String, title: String) {
+        val task = tasks.value.items.firstOrNull { it.id == taskId } ?: return
+        if (task.ownerUid != uid) return
         repo()?.setTaskTitle(taskId, title)
         toastMessage.value = text(R.string.save_confirmation)
     }
 
-    /** Partner bestätigt die Einlösung; hält das heutige Datum als Tag der Einlösung fest. */
+    /** Nur der Partner (nicht der Besitzer) bestätigt die Einlösung; hält das heutige Datum fest. */
     fun confirmTask(taskId: String, selectedTitle: String? = null) {
+        val task = tasks.value.items.firstOrNull { it.id == taskId } ?: return
+        if (task.ownerUid == uid) return
         repo()?.confirmTask(taskId, todayKey.value, selectedTitle)
         toastMessage.value = text(R.string.save_confirmation)
     }

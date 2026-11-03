@@ -384,6 +384,8 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     createdAt = createdAt,
                     targets = listOf(owner),
                     redeemedDayKey = null,
+                    selectedAt = doc.getTimestamp("selectedAt")
+                        ?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) },
                 )
                 if (task.withAutoConfirmation(instant).status != task.status) {
                     doc.reference.update(

@@ -101,3 +101,23 @@ private fun categoryIdPrefix(kind: CategoryKind): String? = when (kind) {
     CategoryKind.READING -> "preset_reading_"
     CategoryKind.STARS -> null
 }
+
+/** Prozentwert eines Beziehungs-Aspekts an einem Tag (0–5 Sterne → 0–100 %). */
+fun relationshipAspectPercentOf(record: DayRecord?, aspect: RelationshipAspect): Double =
+    (relationshipStarsOf(record)[aspect] ?: 0) * 100.0 / MAX_STARS
+
+/** Summe Sterne × Gewicht eines Tages (für eine Kategorie oder alle). Fehlende Einträge zählen als 0. */
+fun weightedStarsOf(record: DayRecord?, category: Category?): Int {
+    val snapshots = record?.snapshots.orEmpty()
+    if (category == null) return snapshots.sumOf { it.weight * it.stars }
+    val prefix = categoryIdPrefix(category.kind)
+    val snapshot = snapshots.firstOrNull { it.categoryId == category.id }
+        ?: snapshots.firstOrNull { prefix != null && it.categoryId.startsWith(prefix) }
+    return snapshot?.let { it.weight * it.stars } ?: 0
+}
+
+/** Summe der Beziehungs-Sterne eines Tages (ein Aspekt oder alle 5). */
+fun relationshipStarsSum(record: DayRecord?, aspect: RelationshipAspect?): Int {
+    val stars = relationshipStarsOf(record)
+    return if (aspect == null) stars.values.sum() else stars[aspect] ?: 0
+}

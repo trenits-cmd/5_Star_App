@@ -1951,7 +1951,12 @@ internal fun TaskCard(
             )
             Spacer(Modifier.height(8.dp))
 
-            if (task.title.isEmpty()) {
+            if (task.title.isEmpty() && !isMine) {
+                Text(
+                    stringResource(R.string.task_partner_chooses, partnerLabel),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            } else if (task.title.isEmpty()) {
                 Text(
                     stringResource(R.string.task_choose_action),
                     style = MaterialTheme.typography.bodyMedium,
@@ -2011,18 +2016,6 @@ internal fun TaskCard(
                     ) {
                         Text(stringResource(R.string.task_select_confirm))
                     }
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedButton(
-                        onClick = {
-                            if (selectedOption.isNotBlank()) {
-                                vm.confirmTask(task.id, selectedOption)
-                            }
-                        },
-                        enabled = selectedOption.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(stringResource(R.string.task_confirm))
-                    }
                 }
             } else {
                 Text(
@@ -2037,12 +2030,14 @@ internal fun TaskCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Spacer(Modifier.height(8.dp))
-                Button(
-                    onClick = { vm.confirmTask(task.id, task.title) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.task_confirm))
+                if (!isMine) {
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = { vm.confirmTask(task.id, task.title) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.task_confirm))
+                    }
                 }
             }
         }

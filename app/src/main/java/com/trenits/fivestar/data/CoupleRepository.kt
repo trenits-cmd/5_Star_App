@@ -204,6 +204,7 @@ class CoupleRepository(private val coupleId: String) {
                 ?: return@listen null,
             targets = if (targets.isNullOrEmpty()) listOf(owner) else targets,
             redeemedDayKey = doc.getString("redeemedDayKey")?.takeIf { it.isNotEmpty() },
+            selectedAt = doc.getTimestamp("selectedAt")?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) },
         )
     }
 
@@ -225,7 +226,10 @@ class CoupleRepository(private val coupleId: String) {
 
     /** Der Besitzer wählt die Aktion aus dem eigenen Katalog / Dropdown. */
     fun setTaskTitle(id: String, title: String) {
-        couple.collection("tasks").document(id).update("title", title)
+        val now = AppClock.now()
+        couple.collection("tasks").document(id).update(
+            mapOf("title" to title, "selectedAt" to Timestamp(now.epochSecond, now.nano)),
+        )
     }
 
     /** Partner bestätigt die Einlösung. Speichert Status CONFIRMED und den Tag der Einlösung. */

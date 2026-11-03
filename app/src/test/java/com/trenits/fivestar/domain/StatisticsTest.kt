@@ -78,4 +78,46 @@ class StatisticsTest {
         )
         assertEquals(80.0, categoryPercentOf(record, category), 1e-9)
     }
+
+    @Test
+    fun weightedStarsMultiplyWeightByStars() {
+        val record = DayRecord(
+            dayKey = "2026-11-03",
+            ownerUid = "u",
+            snapshots = listOf(
+                CategorySnapshot("a", "A", 3, 4),
+                CategorySnapshot("b", "B", 2, 5),
+            ),
+        )
+        assertEquals(22, weightedStarsOf(record, null))
+        assertEquals(0, weightedStarsOf(null, null))
+    }
+
+    @Test
+    fun relationshipAspectPercentIsStarsOfFive() {
+        val record = DayRecord(
+            dayKey = "2026-11-03",
+            ownerUid = "u",
+            snapshots = emptyList(),
+            counters = mapOf(RELATIONSHIP_COUNTER_KEY to mapOf(RelationshipAspect.SEX.key to 4.0)),
+        )
+        assertEquals(80.0, relationshipAspectPercentOf(record, RelationshipAspect.SEX), 1e-9)
+        assertEquals(0.0, relationshipAspectPercentOf(record, RelationshipAspect.INTIMACY), 1e-9)
+    }
+
+    @Test
+    fun penaltyTimersStartAtSelection() {
+        val created = java.time.Instant.parse("2026-11-01T10:00:00Z")
+        val selected = java.time.Instant.parse("2026-11-03T10:00:00Z")
+        val task = Task(
+            id = "t", ownerUid = "u", type = TaskType.PENALTY, title = "Phone handover",
+            dayKey = "2026-11-01", status = TaskStatus.OPEN, createdAt = created, selectedAt = selected,
+        )
+        // 48 h nach Auswahl, nicht nach Erstellung
+        assertEquals(TaskStatus.OPEN, task.withAutoConfirmation(selected.plusSeconds(47 * 3600)).status)
+        assertEquals(TaskStatus.AUTO_CONFIRMED, task.withAutoConfirmation(selected.plusSeconds(48 * 3600)).status)
+        // 3 h nach Auswahl erinnern
+        assertEquals(false, task.needsPartnerConfirmationReminder(selected.plusSeconds(2 * 3600)))
+        assertEquals(true, task.needsPartnerConfirmationReminder(selected.plusSeconds(3 * 3600)))
+    }
 }

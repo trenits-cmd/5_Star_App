@@ -100,7 +100,7 @@ service cloud.firestore {
         allow update: if isMember(coupleId)
           && (
             (resource.data.status == 'OPEN'
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title']))
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'selectedAt']))
             ||
             (resource.data.status == 'OPEN'
               && request.resource.data.status == 'CONFIRMED'

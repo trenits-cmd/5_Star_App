@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
@@ -57,6 +58,7 @@ import com.trenits.fivestar.R
 import com.trenits.fivestar.data.AppClock
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.DayRecord
+import com.trenits.fivestar.domain.RelationshipAspect
 import com.trenits.fivestar.domain.StatsRange
 import com.trenits.fivestar.domain.THRESHOLD_PERCENT
 import com.trenits.fivestar.domain.Task
@@ -64,11 +66,13 @@ import com.trenits.fivestar.domain.TaskType
 import com.trenits.fivestar.domain.categoryPercentOf
 import com.trenits.fivestar.domain.hasCategoryOfKind
 import com.trenits.fivestar.domain.overallPercentOf
+import com.trenits.fivestar.domain.relationshipAspectPercentOf
 import com.trenits.fivestar.domain.relationshipPercentOf
+import com.trenits.fivestar.domain.relationshipStarsSum
 import com.trenits.fivestar.domain.statsDays
 import com.trenits.fivestar.domain.statsPoints
 import com.trenits.fivestar.domain.statsSums
-import com.trenits.fivestar.domain.taskCountOf
+import com.trenits.fivestar.domain.weightedStarsOf
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -79,11 +83,9 @@ import kotlin.math.roundToInt
 
 private data class ChartSeries(val name: String, val color: Color, val values: List<Double>)
 
-private data class BarSeries(val name: String, val color: Color, val values: List<Double>)
+private enum class StatsGroup { OVERALL, CATEGORIES, RELATIONSHIP, PENALTIES, REWARDS }
 
-/** Sonderfilter neben den Kategorien (keine echte Kategorie-ID). */
-private const val FILTER_RELATIONSHIP = "__relationship__"
-private const val FILTER_TASKS = "__tasks__"
+private enum class PersonFilter { ME, PARTNER, BOTH }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -98,21 +100,15 @@ fun StatisticsScreen(vm: AppViewModel) {
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 
     var range by rememberSaveable { mutableStateOf(StatsRange.WEEK) }
-    var filterId by rememberSaveable { mutableStateOf<String?>(null) }
+    var group by rememberSaveable { mutableStateOf(StatsGroup.OVERALL) }
+    var sub by rememberSaveable { mutableStateOf<String?>(null) }
+    var person by rememberSaveable { mutableStateOf(PersonFilter.ME) }
     var selected by rememberSaveable { mutableStateOf<Int?>(null) }
-
-    val isTasks = filterId == FILTER_TASKS
-    val isRelationship = filterId == FILTER_RELATIONSHIP
-    val category = if (isTasks || isRelationship) null else targeted.firstOrNull { it.id == filterId }
 
     val today = AppClock.today()
     val myRecords = remember(days.items, vm.uid) { recordsByDate(days.items.filter { it.ownerUid == vm.uid }) }
     val partnerRecords = remember(days.items, partnerUid) {
         recordsByDate(days.items.filter { partnerUid != null && it.ownerUid == partnerUid })
-    }
-    val myTasks = remember(tasks.items, vm.uid) { tasks.items.filter { it.ownerUid == vm.uid }.groupBy { it.dayKey } }
-    val partnerTasks = remember(tasks.items, partnerUid) {
-        tasks.items.filter { partnerUid != null && it.ownerUid == partnerUid }.groupBy { it.dayKey }
     }
     val firstRecorded = (myRecords.keys + partnerRecords.keys).minOrNull()
     val accountStart = remember {
@@ -121,49 +117,63 @@ fun StatisticsScreen(vm: AppViewModel) {
         }
     }
     val periodDays = statsDays(range, today, firstRecorded, accountStart)
-    val labels = statsPoints(range, periodDays, List(periodDays.size) { 0.0 }).map { chartLabel(range, it.start) }
+    val periodKeys = periodDays.map { it.toString() }.toSet()
+    val points = statsPoints(range, periodDays, List(periodDays.size) { 0.0 })
+    val labels = points.map { chartLabel(range, it.start) }
 
-    val partnerAvailable = partnerUid != null &&
-        (isTasks || isRelationship || category == null || hasCategoryOfKind(partnerRecords.values, category))
+    val category = if (group == StatsGroup.CATEGORIES) targeted.firstOrNull { it.id == sub } else null
+    val aspect = if (group == StatsGroup.RELATIONSHIP) RelationshipAspect.entries.firstOrNull { it.name == sub } else null
+    val taskType = if (group == StatsGroup.PENALTIES) TaskType.PENALTY else TaskType.REWARD
+    val isTaskGroup = group == StatsGroup.PENALTIES || group == StatsGroup.REWARDS
 
-    fun valueOf(record: DayRecord?): Double = when {
-        isRelationship -> relationshipPercentOf(record)
-        category != null -> categoryPercentOf(record, category)
+    val showMe = person != PersonFilter.PARTNER
+    val showPartner = partnerUid != null && person != PersonFilter.ME
+    val partnerHasCategory = category == null || hasCategoryOfKind(partnerRecords.values, category)
+
+    fun percentOf(record: DayRecord?): Double = when (group) {
+        StatsGroup.RELATIONSHIP -> if (aspect == null) relationshipPercentOf(record) else relationshipAspectPercentOf(record, aspect)
+        StatsGroup.CATEGORIES -> if (category == null) overallPercentOf(record) else categoryPercentOf(record, category)
         else -> overallPercentOf(record)
     }
 
-    val myDailyValues = periodDays.map { valueOf(myRecords[it]) }
-    val partnerDailyValues = periodDays.map { valueOf(partnerRecords[it]) }
-    val myTasksDaily = periodDays.map { d -> myTasks[d.toString()].orEmpty() }
-    val partnerTasksDaily = periodDays.map { d -> partnerTasks[d.toString()].orEmpty() }
+    val myTasksByDay = remember(tasks.items, vm.uid) { tasks.items.filter { it.ownerUid == vm.uid }.groupBy { it.dayKey } }
+    val partnerTasksByDay = remember(tasks.items, partnerUid) {
+        tasks.items.filter { partnerUid != null && it.ownerUid == partnerUid }.groupBy { it.dayKey }
+    }
+    fun matchesTask(t: Task) = t.type == taskType && (sub == null || t.title == sub)
+    val meCounts = periodDays.map { d -> myTasksByDay[d.toString()].orEmpty().count { matchesTask(it) }.toDouble() }
+    val partnerCounts = periodDays.map { d -> partnerTasksByDay[d.toString()].orEmpty().count { matchesTask(it) }.toDouble() }
+
+    val taskTitles = tasks.items
+        .filter { it.type == taskType && it.dayKey in periodKeys }
+        .map { it.title }
+        .distinct()
 
     val lineSeries = buildList {
-        add(ChartSeries(myLabel, MaterialTheme.colorScheme.primary, statsPoints(range, periodDays, myDailyValues).map { it.value }))
-        if (partnerAvailable) {
-            add(ChartSeries(partnerLabel, MaterialTheme.colorScheme.tertiary, statsPoints(range, periodDays, partnerDailyValues).map { it.value }))
+        if (showMe) {
+            add(ChartSeries(myLabel, MaterialTheme.colorScheme.primary,
+                statsPoints(range, periodDays, periodDays.map { percentOf(myRecords[it]) }).map { it.value }))
+        }
+        if (showPartner && partnerHasCategory) {
+            add(ChartSeries(partnerLabel, MaterialTheme.colorScheme.tertiary,
+                statsPoints(range, periodDays, periodDays.map { percentOf(partnerRecords[it]) }).map { it.value }))
         }
     }
     val barSeries = buildList {
-        fun sums(list: List<List<Task>>, type: TaskType) =
-            statsSums(range, periodDays, list.map { taskCountOf(it, type).toDouble() }).map { it.value }
-        add(BarSeries("$myLabel · ${stringResource(R.string.stats_rewards)}", MaterialTheme.colorScheme.primary, sums(myTasksDaily, TaskType.REWARD)))
-        add(BarSeries("$myLabel · ${stringResource(R.string.stats_penalties)}", MaterialTheme.colorScheme.error, sums(myTasksDaily, TaskType.PENALTY)))
-        if (partnerAvailable) {
-            add(BarSeries("$partnerLabel · ${stringResource(R.string.stats_rewards)}", MaterialTheme.colorScheme.tertiary, sums(partnerTasksDaily, TaskType.REWARD)))
-            add(BarSeries("$partnerLabel · ${stringResource(R.string.stats_penalties)}", MaterialTheme.colorScheme.error.copy(alpha = 0.5f), sums(partnerTasksDaily, TaskType.PENALTY)))
+        if (showMe) {
+            add(ChartSeries(myLabel, MaterialTheme.colorScheme.primary, statsSums(range, periodDays, meCounts).map { it.value }))
+        }
+        if (showPartner) {
+            add(ChartSeries(partnerLabel, MaterialTheme.colorScheme.tertiary, statsSums(range, periodDays, partnerCounts).map { it.value }))
         }
     }
-    val points = statsPoints(range, periodDays, List(periodDays.size) { 0.0 })
 
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Text(
-                stringResource(R.string.stats_title),
-                style = MaterialTheme.typography.headlineMedium,
-            )
+            Text(stringResource(R.string.stats_title), style = MaterialTheme.typography.headlineMedium)
         }
 
         item {
@@ -185,40 +195,83 @@ fun StatisticsScreen(vm: AppViewModel) {
                         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        FilterChip(
-                            selected = filterId == null,
-                            onClick = {
-                                filterId = null
-                                selected = null
-                            },
-                            label = { Text(stringResource(R.string.stats_category_all)) },
-                        )
-                        FilterChip(
-                            selected = isRelationship,
-                            onClick = {
-                                filterId = FILTER_RELATIONSHIP
-                                selected = null
-                            },
-                            label = { Text(stringResource(R.string.stats_filter_relationship)) },
-                        )
-                        FilterChip(
-                            selected = isTasks,
-                            onClick = {
-                                filterId = FILTER_TASKS
-                                selected = null
-                            },
-                            label = { Text(stringResource(R.string.stats_filter_tasks)) },
-                        )
-                        targeted.forEach { cat ->
+                        StatsGroup.entries.forEach { g ->
                             FilterChip(
-                                selected = category?.id == cat.id,
+                                selected = group == g,
                                 onClick = {
-                                    filterId = cat.id
+                                    group = g
+                                    sub = null
                                     selected = null
                                 },
-                                label = { Text(localizedCategoryName(cat)) },
+                                label = { Text(stringResource(groupLabelRes(g))) },
                             )
                         }
+                    }
+                    if (group != StatsGroup.OVERALL) {
+                        Row(
+                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            FilterChip(
+                                selected = sub == null,
+                                onClick = {
+                                    sub = null
+                                    selected = null
+                                },
+                                label = { Text(stringResource(R.string.stats_all)) },
+                            )
+                            when (group) {
+                                StatsGroup.CATEGORIES -> targeted.forEach { cat ->
+                                    FilterChip(
+                                        selected = sub == cat.id,
+                                        onClick = {
+                                            sub = cat.id
+                                            selected = null
+                                        },
+                                        label = { Text(localizedCategoryName(cat)) },
+                                    )
+                                }
+                                StatsGroup.RELATIONSHIP -> RelationshipAspect.entries.forEach { a ->
+                                    FilterChip(
+                                        selected = sub == a.name,
+                                        onClick = {
+                                            sub = a.name
+                                            selected = null
+                                        },
+                                        label = { Text(relationshipAspectLabel(a)) },
+                                    )
+                                }
+                                else -> taskTitles.forEach { title ->
+                                    FilterChip(
+                                        selected = sub == title,
+                                        onClick = {
+                                            sub = title
+                                            selected = null
+                                        },
+                                        label = { Text(taskTitleLabel(title)) },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FilterChip(
+                            selected = person == PersonFilter.ME,
+                            onClick = { person = PersonFilter.ME },
+                            label = { Text(myLabel) },
+                        )
+                        FilterChip(
+                            selected = person == PersonFilter.PARTNER,
+                            onClick = { person = PersonFilter.PARTNER },
+                            enabled = partnerUid != null,
+                            label = { Text(partnerLabel) },
+                        )
+                        FilterChip(
+                            selected = person == PersonFilter.BOTH,
+                            onClick = { person = PersonFilter.BOTH },
+                            enabled = partnerUid != null,
+                            label = { Text(stringResource(R.string.stats_person_both)) },
+                        )
                     }
                 }
             }
@@ -228,12 +281,7 @@ fun StatisticsScreen(vm: AppViewModel) {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        when {
-                            isTasks -> stringResource(R.string.stats_chart_title_tasks)
-                            isRelationship -> stringResource(R.string.stats_chart_title_relationship)
-                            category != null -> stringResource(R.string.stats_chart_title_category, localizedCategoryName(category))
-                            else -> stringResource(R.string.stats_chart_title_overall)
-                        },
+                        chartTitle(group, category, aspect),
                         style = MaterialTheme.typography.titleSmall,
                     )
                     if (myRecords.isEmpty() && partnerRecords.isEmpty() && days.items.isEmpty() && tasks.items.isEmpty()) {
@@ -243,12 +291,8 @@ fun StatisticsScreen(vm: AppViewModel) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    if (isTasks) {
-                        StatsBarChart(
-                            labels = labels,
-                            series = barSeries,
-                            maxLabels = if (range == StatsRange.WEEK) 7 else 6,
-                        )
+                    if (isTaskGroup) {
+                        StatsBarChart(labels = labels, series = barSeries, maxLabels = if (range == StatsRange.WEEK) 7 else 6)
                         Legend(barSeries.map { it.name to it.color })
                     } else {
                         StatsLineChart(
@@ -275,7 +319,14 @@ fun StatisticsScreen(vm: AppViewModel) {
                             )
                         }
                     }
-                    if (partnerUid != null && category != null && !partnerAvailable) {
+                    if (partnerUid == null && person != PersonFilter.ME) {
+                        Text(
+                            stringResource(R.string.stats_no_partner),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (showPartner && !partnerHasCategory && category != null) {
                         Text(
                             stringResource(R.string.stats_partner_missing, partnerLabel, localizedCategoryName(category)),
                             style = MaterialTheme.typography.bodySmall,
@@ -286,45 +337,163 @@ fun StatisticsScreen(vm: AppViewModel) {
             }
         }
 
-        if (isTasks) {
-            item {
-                StatsCountCard(
-                    name = myLabel,
-                    color = MaterialTheme.colorScheme.primary,
-                    rewards = myTasksDaily.sumOf { taskCountOf(it, TaskType.REWARD) },
-                    penalties = myTasksDaily.sumOf { taskCountOf(it, TaskType.PENALTY) },
-                )
-            }
-            if (partnerAvailable) {
+        // Gesamtsummen je Person
+        if (isTaskGroup) {
+            if (showMe) {
                 item {
-                    StatsCountCard(
+                    StatsTotalCard(
+                        name = myLabel,
+                        color = MaterialTheme.colorScheme.primary,
+                        total = meCounts.sum().toInt(),
+                        totalLabel = stringResource(R.string.stats_total_count),
+                    )
+                }
+            }
+            if (showPartner) {
+                item {
+                    StatsTotalCard(
                         name = partnerLabel,
                         color = MaterialTheme.colorScheme.tertiary,
-                        rewards = partnerTasksDaily.sumOf { taskCountOf(it, TaskType.REWARD) },
-                        penalties = partnerTasksDaily.sumOf { taskCountOf(it, TaskType.PENALTY) },
+                        total = partnerCounts.sum().toInt(),
+                        totalLabel = stringResource(R.string.stats_total_count),
                     )
                 }
             }
         } else {
-            item {
-                StatsSummaryCard(
-                    name = myLabel,
-                    color = MaterialTheme.colorScheme.primary,
-                    values = periodDays.filter { myRecords.containsKey(it) }.map { valueOf(myRecords[it]) },
-                )
+            if (showMe) {
+                item {
+                    StatsSummaryCard(
+                        name = myLabel,
+                        color = MaterialTheme.colorScheme.primary,
+                        values = periodDays.filter { myRecords.containsKey(it) }.map { percentOf(myRecords[it]) },
+                        total = periodDays.sumOf { totalOf(group, category, aspect, myRecords[it]) },
+                        totalLabel = totalLabel(group),
+                    )
+                }
             }
-            if (partnerAvailable) {
+            if (showPartner && partnerHasCategory) {
                 item {
                     StatsSummaryCard(
                         name = partnerLabel,
                         color = MaterialTheme.colorScheme.tertiary,
-                        values = periodDays.filter { partnerRecords.containsKey(it) }.map { valueOf(partnerRecords[it]) },
+                        values = periodDays.filter { partnerRecords.containsKey(it) }.map { percentOf(partnerRecords[it]) },
+                        total = periodDays.sumOf { totalOf(group, category, aspect, partnerRecords[it]) },
+                        totalLabel = totalLabel(group),
                     )
+                }
+            }
+        }
+
+        // Details unter der Grafik
+        item {
+            Text(stringResource(R.string.stats_details_title), style = MaterialTheme.typography.titleMedium)
+        }
+        if (isTaskGroup) {
+            val rows = buildList {
+                if (showMe) addAll(myTasksByDay.values.flatten())
+                if (showPartner) addAll(partnerTasksByDay.values.flatten())
+            }
+                .filter { it.dayKey in periodKeys && matchesTask(it) }
+                .sortedWith(compareByDescending<Task> { it.dayKey }.thenByDescending { it.createdAt })
+            if (rows.isEmpty()) {
+                item {
+                    Text(
+                        stringResource(R.string.stats_no_tasks),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            items(rows, key = { it.id }) { task ->
+                val who = if (task.ownerUid == vm.uid) myLabel else partnerLabel
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text(
+                            "${formatDay(task.dayKey)} · $who · ${taskTitleLabel(task.title)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Text(
+                            statusLabel(task.status),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        } else {
+            val dayRows = periodDays.reversed().filter { d ->
+                (showMe && myRecords.containsKey(d)) || (showPartner && partnerHasCategory && partnerRecords.containsKey(d))
+            }
+            if (dayRows.isEmpty()) {
+                item {
+                    Text(
+                        stringResource(R.string.stats_no_data),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            items(dayRows, key = { it.toString() }) { d ->
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(formatDay(d.toString()), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                        if (showMe && myRecords.containsKey(d)) {
+                            Text(
+                                "$myLabel: ${formatPercent(percentOf(myRecords[d]))}" +
+                                    detailExtra(group, category, aspect, myRecords[d]),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        if (showPartner && partnerHasCategory && partnerRecords.containsKey(d)) {
+                            Text(
+                                "$partnerLabel: ${formatPercent(percentOf(partnerRecords[d]))}" +
+                                    detailExtra(group, category, aspect, partnerRecords[d]),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+private fun partnerCategoryPresent(has: Boolean): Boolean = has
+
+@Composable
+private fun chartTitle(group: StatsGroup, category: Category?, aspect: RelationshipAspect?): String = when (group) {
+    StatsGroup.OVERALL -> stringResource(R.string.stats_chart_title_overall)
+    StatsGroup.CATEGORIES -> category?.let { stringResource(R.string.stats_chart_title_category, localizedCategoryName(it)) }
+        ?: stringResource(R.string.stats_chart_title_categories)
+    StatsGroup.RELATIONSHIP -> aspect?.let { stringResource(R.string.stats_chart_title_aspect, relationshipAspectLabel(it)) }
+        ?: stringResource(R.string.stats_chart_title_relationship)
+    StatsGroup.PENALTIES -> stringResource(R.string.stats_chart_title_penalties)
+    StatsGroup.REWARDS -> stringResource(R.string.stats_chart_title_rewards)
+}
+
+private fun totalOf(group: StatsGroup, category: Category?, aspect: RelationshipAspect?, record: DayRecord?): Int = when (group) {
+    StatsGroup.RELATIONSHIP -> relationshipStarsSum(record, aspect)
+    StatsGroup.CATEGORIES -> weightedStarsOf(record, category)
+    else -> weightedStarsOf(record, null)
+}
+
+@Composable
+private fun totalLabel(group: StatsGroup): String = when (group) {
+    StatsGroup.RELATIONSHIP -> stringResource(R.string.stats_total_stars)
+    else -> stringResource(R.string.stats_total_weighted)
+}
+
+@Composable
+private fun detailExtra(group: StatsGroup, category: Category?, aspect: RelationshipAspect?, record: DayRecord?): String {
+    val stars = totalOf(group, category, aspect, record)
+    return " · ${stringResource(R.string.stats_total_short, stars)}"
+}
+
+@Composable
+private fun taskTitleLabel(title: String): String =
+    if (title.isBlank()) stringResource(R.string.no_action_chosen) else localizedCatalogTitle(title)
 
 @Composable
 private fun StatsLineChart(
@@ -421,7 +590,7 @@ private fun StatsLineChart(
 @Composable
 private fun StatsBarChart(
     labels: List<String>,
-    series: List<BarSeries>,
+    series: List<ChartSeries>,
     maxLabels: Int,
 ) {
     val density = LocalDensity.current
@@ -497,7 +666,7 @@ private fun Legend(items: List<Pair<String, Color>>) {
 }
 
 @Composable
-private fun StatsSummaryCard(name: String, color: Color, values: List<Double>) {
+private fun StatsSummaryCard(name: String, color: Color, values: List<Double>, total: Int, totalLabel: String) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(name, style = MaterialTheme.typography.titleSmall, color = color, fontWeight = FontWeight.Bold)
@@ -511,10 +680,8 @@ private fun StatsSummaryCard(name: String, color: Color, values: List<Double>) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     StatBox(stringResource(R.string.stats_average), formatPercent(values.average()))
                     StatBox(stringResource(R.string.stats_best), formatPercent(values.max()))
-                    StatBox(
-                        stringResource(R.string.stats_goal_days),
-                        values.count { it >= THRESHOLD_PERCENT }.toString(),
-                    )
+                    StatBox(stringResource(R.string.stats_goal_days), values.count { it >= THRESHOLD_PERCENT }.toString())
+                    StatBox(totalLabel, total.toString())
                 }
             }
         }
@@ -522,13 +689,12 @@ private fun StatsSummaryCard(name: String, color: Color, values: List<Double>) {
 }
 
 @Composable
-private fun StatsCountCard(name: String, color: Color, rewards: Int, penalties: Int) {
+private fun StatsTotalCard(name: String, color: Color, total: Int, totalLabel: String) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(name, style = MaterialTheme.typography.titleSmall, color = color, fontWeight = FontWeight.Bold)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                StatBox(stringResource(R.string.stats_rewards), rewards.toString())
-                StatBox(stringResource(R.string.stats_penalties), penalties.toString())
+                StatBox(totalLabel, total.toString())
             }
         }
     }
@@ -555,6 +721,14 @@ private fun rangeLabelRes(range: StatsRange): Int = when (range) {
     StatsRange.MONTH -> R.string.stats_range_month
     StatsRange.THREE_MONTHS -> R.string.stats_range_three_months
     StatsRange.ALL -> R.string.stats_range_all
+}
+
+private fun groupLabelRes(group: StatsGroup): Int = when (group) {
+    StatsGroup.OVERALL -> R.string.stats_group_overall
+    StatsGroup.CATEGORIES -> R.string.stats_group_categories
+    StatsGroup.RELATIONSHIP -> R.string.stats_group_relationship
+    StatsGroup.PENALTIES -> R.string.stats_group_penalties
+    StatsGroup.REWARDS -> R.string.stats_group_rewards
 }
 
 private fun chartLabel(range: StatsRange, start: LocalDate): String = when (range) {

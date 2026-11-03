@@ -1853,39 +1853,23 @@ fun PartnerTodayScreen(vm: AppViewModel) {
     val partnerOpenTasks = tasks.items
         .filter { it.status == TaskStatus.OPEN }
         .sortedWith(compareByDescending<Task> { it.dayKey }.thenByDescending { it.createdAt })
-    val partnerStored = partnerToday?.snapshots?.takeIf { it.isNotEmpty() }
-        ?: myToday?.snapshots.orEmpty()
-    val myCounters = myToday?.counters.orEmpty()
-    val myDinnerCounters = myCounters.values.firstOrNull { it.containsKey(DINNER_HOUR) }
+    // Nur der Tageseintrag des Partners zählt. Ohne Eintrag bleibt die Anzeige bei 0 % (nie die eigenen Werte).
+    val partnerStored = partnerToday?.snapshots.orEmpty()
     val rawPartnerCounters = partnerToday?.counters.orEmpty()
-    val partnerCounters = remember(rawPartnerCounters, myCounters, myDinnerCounters, partnerCategories, partnerToday) {
+    val partnerCounters = remember(rawPartnerCounters, partnerCategories) {
         val mutable = mutableMapOf<String, Map<String, Double>>()
         partnerCategories.forEach { cat ->
             val prefix = canonicalPrefixFor(cat.kind)
             val fromPartner = rawPartnerCounters[cat.id]
                 ?: rawPartnerCounters.entries.firstOrNull { it.key.startsWith(prefix) }?.value
-            val fromSameDeviceFallback = if (partnerToday == null) {
-                myCounters[cat.id]
-                    ?: myCounters.entries.firstOrNull { it.key.startsWith(prefix) }?.value
-            } else {
-                null
-            }
-            val existing = fromPartner ?: fromSameDeviceFallback
-            if (existing != null) {
-                mutable[cat.id] = existing
-            }
-        }
-        if (myDinnerCounters != null) {
-            partnerCategories.filter { it.kind == CategoryKind.DINNER_TIME }.forEach { dinnerCat ->
-                if (mutable[dinnerCat.id]?.containsKey(DINNER_HOUR) != true) {
-                    mutable[dinnerCat.id] = mutable[dinnerCat.id].orEmpty() + myDinnerCounters
-                }
-            }
+            if (fromPartner != null) mutable[cat.id] = fromPartner
         }
         mutable
     }
-    val partnerScore = remember(partnerToday, myToday, partnerStored, partnerCategories, partnerCounters, pUid) {
-        if (partnerCategories.isNotEmpty()) {
+    val partnerScore = remember(partnerToday, partnerStored, partnerCategories, partnerCounters, pUid) {
+        if (partnerToday == null || partnerCategories.isEmpty()) {
+            0.0
+        } else {
             val storedMap = partnerCategories.associate { cat ->
                 val prefix = canonicalPrefixFor(cat.kind)
                 val snap = partnerStored.firstOrNull { it.categoryId == cat.id }
@@ -1893,14 +1877,12 @@ fun PartnerTodayScreen(vm: AppViewModel) {
                 cat.id to (snap?.stars ?: 0)
             }
             buildDayRecord(
-                dayKey = partnerToday?.dayKey ?: myToday?.dayKey ?: "",
+                dayKey = partnerToday?.dayKey ?: "",
                 ownerUid = pUid,
                 categories = partnerCategories,
                 stars = storedMap,
                 counters = partnerCounters,
-            ).scorePercent ?: 0.0
-        } else {
-            partnerToday?.scorePercent ?: 0.0
+            ).scorePercent
         }
     }
 

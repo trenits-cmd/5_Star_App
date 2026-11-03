@@ -46,7 +46,7 @@
 
     <string name="tab_today">Today</string>
     <string name="tab_relationship">Relationship</string>
-    <string name="tab_week">Streak / Archive</string>
+    <string name="tab_week">Archive</string>
     <string name="tab_history">History</string>
     <string name="tab_settings">Settings</string>
     <string name="tab_partner">Partner</string>

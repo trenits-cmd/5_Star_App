@@ -20,6 +20,7 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.R
+import com.trenits.fivestar.data.AppClock
 import com.trenits.fivestar.data.LocalProfileStore
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryKind
@@ -127,7 +128,7 @@ object ReminderScheduler {
      * Plant den periodischen Check für tägliche Uhrzeiten und mehrstündige Intervalle
      * (z. B. alle 2 Std. fürs Wassertrinken unter Beachtung der Ruhepause 23:00–09:00 Uhr).
      */
-    fun schedule(context: Context, time: LocalTime, now: ZonedDateTime = ZonedDateTime.now()) {
+    fun schedule(context: Context, time: LocalTime, now: ZonedDateTime = AppClock.now().atZone(ZoneId.systemDefault())) {
         val prefs = ReminderPrefs(context)
         if (!prefs.enabled()) {
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
@@ -263,7 +264,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
         val prefs = ReminderPrefs(applicationContext)
         if (!prefs.enabled()) return Result.success()
 
-        val now = ZonedDateTime.now()
+        val now = AppClock.now().atZone(ZoneId.systemDefault())
         if (prefs.quietHoursEnabled() &&
             isWithinQuietHours(now.toLocalTime(), prefs.quietStart(), prefs.quietEnd())
         ) {
@@ -277,7 +278,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
             withTimeout(15_000) {
                 val coupleId = db.collection("users").document(uid).get().await().getString("coupleId")
                     ?: return@withTimeout Result.success()
-                val today = dayKeyOf(Instant.now(), ZoneId.systemDefault())
+                val today = dayKeyOf(AppClock.now(), ZoneId.systemDefault())
                 val coupleRef = db.collection("couples").document(coupleId)
 
                 val catDocs = coupleRef.collection("categories").get().await()
@@ -313,7 +314,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     .mapNotNull { it["categoryId"] as? String }
                     .toSet()
 
-                val currentEpochHour = Instant.now().epochSecond / 3600L
+                val currentEpochHour = AppClock.now().epochSecond / 3600L
                 val dueCategories = myCategories.filter { cat ->
                     if (cat.id in fullStarIds) return@filter false
                     val lastHour = prefs.lastNotifiedEpochHour(cat.id)

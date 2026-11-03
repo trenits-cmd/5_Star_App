@@ -1,7 +1,7 @@
 # CODE_INDEX.md – AI-Readable Architecture & Code Directory (5 Star App)
 
 > **Purpose for AI Agents & Developers:**  
-> This document is the canonical, structured table of contents and architectural reference for the **5 Star – Daily Synergy & Motivation** Android application (`com.trenits.fivestar`, current release `v1.03112026_1853`, `versionCode = 30`). Keep this file updated whenever source files, UI structure, domain rules, or Firestore schemas change.
+> This document is the canonical, structured table of contents and architectural reference for the **5 Star – Daily Synergy & Motivation** Android application (`com.trenits.fivestar`, current release `v1.03112026_1900`, `versionCode = 31`). Keep this file updated whenever source files, UI structure, domain rules, or Firestore schemas change.
 
 ---
 
@@ -12,7 +12,7 @@
 | `settings.gradle.kts` | Gradle root configuration (`rootProject.name = "5_Star_App"`, module `:app`). |
 | `build.gradle.kts` | Top-level Gradle plugins (`android.application`, `kotlin.android`, `kotlin.compose`, `google.services`). |
 | `gradle/libs.versions.toml` | Version catalog defining AGP, Kotlin, Jetpack Compose BOM, Material 3, Firebase BOM (Auth + Firestore), Credential Manager, and WorkManager versions. |
-| `app/build.gradle.kts` | App module configuration (`namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 30`, `versionName = "1.03112026_1853"`). |
+| `app/build.gradle.kts` | App module configuration (`namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 31`, `versionName = "1.03112026_1900"`). |
 | `app/src/main/res/values/strings.xml` | Single-language (English) string resources for all tabs, cards, categories, rewards, penalties, dialogs, notifications, and status messages. |
 | `firestore.rules` | Cloud Firestore security rules for `/users/{uid}`, `/invites/{code}`, and `/couples/{coupleId}` (`categories`, `catalog`, `days`, `tasks`). |
 | `rules-tests/rules.test.mjs` | Node.js unit tests verifying `firestore.rules` against the Firebase Firestore Emulator. |
@@ -52,6 +52,7 @@
 | `AuthRepository.kt` | `AuthRepository` | Firebase Authentication via passwordless **Email + Invitation Code** (`signInWithEmailAndCode`) and **Google Credential Manager** (`GetSignInWithGoogleOption`). |
 | `UserRepository.kt` | `UserRepository`, `UserProfile`, `InviteState`, `InvalidInviteException` | Manages `/users/{uid}` and `/invites/{code}` in Firestore:<br>• Automatic partner pairing: inviter creates/reuses code (and sends via email); invitee enters code during login (`LoginScreen`) or on `PairingScreen` (`requestJoin(code, email)`), which validates `/invites/{code}`, adds the partner to `couples/{coupleId}.members`, and sets `status = "confirmed"`. The inviter's app detects `status == "confirmed"`, sends a push notification & toast (`sendPartnerJoinedNotification`), and cleans up the invite.<br>• Supports `removePartner` for testing/unpairing. |
 | `CoupleRepository.kt` | `CoupleRepository`, `Listed<T>` | Real-time Firestore listeners and writes for `/couples/{coupleId}` subcollections: `categories`, `catalog`, `days`, and `tasks` (including `confirmTask` and `autoConfirmTask` with `redeemedDayKey`). |
+| `AppClock.kt` | `AppClock` (`now()`, `today()`, `setOffsetDays`) | Central clock for all app time. Standard = system time. Test-only date simulator: a stored day offset shifts all time (used by AppViewModel, DashboardScreen, StatisticsScreen and the reminder worker). Remove for release builds. |
 | `LocalProfileStore.kt` | `LocalProfileStore` | Local `SharedPreferences` + `StateFlow` store for the user's own display name (`Rosie` / `Andi`), partner display name, Base64 avatar photos, and pending invitation code entered on `LoginScreen`. |
 
 ---

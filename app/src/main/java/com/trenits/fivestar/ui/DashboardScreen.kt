@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trenits.fivestar.R
+import com.trenits.fivestar.data.AppClock
 import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryKind
@@ -131,6 +132,8 @@ fun DashboardScreen(vm: AppViewModel) {
     val canEditYesterday by vm.canEditYesterday.collectAsState()
     val editingYesterday by vm.editingYesterday.collectAsState()
     val activeDayKey by vm.activeDayKey.collectAsState()
+    val simulatedToday by vm.simulatedToday.collectAsState()
+    val simulatedOffset by vm.simulatedOffset.collectAsState()
     val myPresetRole by vm.myPresetRole.collectAsState()
 
     val myLabel = myName ?: stringResource(R.string.who_you)
@@ -158,10 +161,22 @@ fun DashboardScreen(vm: AppViewModel) {
                         style = MaterialTheme.typography.headlineMedium,
                     )
                     Text(
-                        dateHeader(runCatching { LocalDate.parse(activeDayKey) }.getOrDefault(LocalDate.now())),
+                        formatDay(simulatedToday.toString()),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (myPresetRole == "main_user") {
+                        Spacer(Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = { vm.shiftSimulatedDays(-1) }) { Text("−") }
+                            Text(
+                                "TEST ${if (simulatedOffset >= 0) "+" else ""}$simulatedOffset d",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            OutlinedButton(onClick = { vm.shiftSimulatedDays(1) }) { Text("+") }
+                        }
+                    }
                     if (partnerUid != null) {
                         Text(
                             stringResource(R.string.connected_with, partnerLabel),
@@ -1325,7 +1340,7 @@ private fun RotationCategoryCard(
         rotationCountsInWeek(category.id, weekRecordsBeforeToday)
     }
     val suggested = remember(available) {
-        suggestedRotationTask(LocalDate.now().dayOfWeek, available)
+        suggestedRotationTask(AppClock.today().dayOfWeek, available)
     }
     val selectedTask = values[ROTATION_TASK_INDEX]?.toInt()?.let { RotationTask.fromIndex(it) } ?: suggested
     val stars = (values[ROTATION_STARS]?.toInt() ?: 0).coerceIn(0, MAX_STARS)

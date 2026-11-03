@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.trenits.fivestar.R
+import com.trenits.fivestar.data.AppClock
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.DayRecord
 import com.trenits.fivestar.domain.StatsRange
@@ -104,7 +105,7 @@ fun StatisticsScreen(vm: AppViewModel) {
     val isRelationship = filterId == FILTER_RELATIONSHIP
     val category = if (isTasks || isRelationship) null else targeted.firstOrNull { it.id == filterId }
 
-    val today = LocalDate.now()
+    val today = AppClock.today()
     val myRecords = remember(days.items, vm.uid) { recordsByDate(days.items.filter { it.ownerUid == vm.uid }) }
     val partnerRecords = remember(days.items, partnerUid) {
         recordsByDate(days.items.filter { partnerUid != null && it.ownerUid == partnerUid })

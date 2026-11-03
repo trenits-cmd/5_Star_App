@@ -12,6 +12,7 @@ import com.trenits.fivestar.reminder.ReminderScheduler
 class FiveStarApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        com.trenits.fivestar.data.AppClock.init(this)
 
         // Standardsprache Englisch bei Erstinstallation
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)

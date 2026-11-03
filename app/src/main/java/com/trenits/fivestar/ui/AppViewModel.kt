@@ -11,6 +11,7 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.firestore
 import com.trenits.fivestar.R
+import com.trenits.fivestar.data.AppClock
 import com.trenits.fivestar.data.AuthRepository
 import com.trenits.fivestar.data.CoupleRepository
 import com.trenits.fivestar.data.InviteState
@@ -108,7 +109,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val zone = ZoneId.systemDefault()
     private val userRepository = UserRepository(uid)
     private val localProfileStore = LocalProfileStore(getApplication())
-    private val clock = MutableStateFlow(Instant.now())
+    private val clock = MutableStateFlow(AppClock.now())
 
     val profile: StateFlow<UserProfile?> = userRepository.profile().share(null)
 
@@ -129,7 +130,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     /** Bis 06:00 Uhr morgens darf die Bewertung des Vortags noch eingegeben werden. */
     val canEditYesterday: StateFlow<Boolean> = clock.map {
         it.atZone(zone).toLocalTime().hour < 6
-    }.share(LocalTime.now(zone).hour < 6)
+    }.share(AppClock.now().atZone(zone).toLocalTime().hour < 6)
 
     val editingYesterday = MutableStateFlow(false)
 
@@ -137,6 +138,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         if (canYesterday && useYesterday) yesterday else today
     }.share(todayKey.value)
 
+    /** Datums-Simulator (Testzweck): simuliertes heutiges Datum und Versatz in Tagen. */
+    val simulatedToday: StateFlow<LocalDate> = clock.map { it.atZone(zone).toLocalDate() }.share(AppClock.today(zone))
+
+    val simulatedOffset = MutableStateFlow(AppClock.offsetDays())
+
+    fun shiftSimulatedDays(delta: Long) {
+        AppClock.setOffsetDays(AppClock.offsetDays() + delta)
+        simulatedOffset.value = AppClock.offsetDays()
+        clock.value = AppClock.now()
+    }
     val partnerUid: StateFlow<String?> = members
         .map { list -> list.items.firstOrNull { it != uid } }
         .share(null)
@@ -493,7 +504,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            days.collect { if (!it.fromCache) lastSync.value = Instant.now() }
+            days.collect { if (!it.fromCache) lastSync.value = AppClock.now() }
         }
         viewModelScope.launch {
             var lastSyncedRole: String? = null
@@ -609,7 +620,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             while (true) {
-                clock.value = Instant.now()
+                clock.value = AppClock.now()
                 checkConfirmationRemindersAndAutoConfirm()
                 delay(60_000)
             }
@@ -635,7 +646,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             .map { (res, _) -> text(res) }
 
         val cycleStartKey = if (task.type == TaskType.PENALTY) {
-            penaltyCycleStartDayKey(ZonedDateTime.now(zone))
+            penaltyCycleStartDayKey(AppClock.now().atZone(zone))
         } else {
             ""
         }
@@ -709,7 +720,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val stored = current?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
         val counters = current?.counters.orEmpty().toMutableMap()
         val doneDaysBeforeToday = sportDaysInWeek(categoryId, isoWeekRecordsBeforeToday.value)
-        val remainingDaysAfterToday = (7 - LocalDate.now(zone).dayOfWeek.value).coerceAtLeast(0)
+        val remainingDaysAfterToday = (7 - AppClock.today(zone).dayOfWeek.value).coerceAtLeast(0)
         val restDayOk = if (doneDaysBeforeToday + remainingDaysAfterToday >= SPORT_WEEKLY_DAYS_GOAL) 1.0 else 0.0
         counters[categoryId] = counters[categoryId].orEmpty() + mapOf(
             SPORT_MINUTES to minutes.coerceAtLeast(0).toDouble(),
@@ -802,7 +813,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 title = "",
                 dayKey = dayKey,
                 status = TaskStatus.OPEN,
-                createdAt = Instant.now(),
+                createdAt = AppClock.now(),
                 targets = listOf(uid),
             ),
         )
@@ -1216,7 +1227,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             catalog.value.items != beforeCatalog ||
             members.value.items != beforeMembers
 
-        lastSync.value = Instant.now()
+        lastSync.value = AppClock.now()
         val message = if (changed) {
             text(R.string.sync_status_success)
         } else {
@@ -1273,8 +1284,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private fun evaluateYesterday() {
         val repo = repo() ?: return
         if (targeted.value.isEmpty()) return
-        val nowHour = LocalTime.now(zone).hour
-        val yesterday = dayKeyOf(Instant.now().minus(Duration.ofDays(1)), zone)
+        val nowHour = AppClock.now().atZone(zone).toLocalTime().hour
+        val yesterday = dayKeyOf(AppClock.now().minus(Duration.ofDays(1)), zone)
         if (tasks.value.items.any { it.ownerUid == uid && it.dayKey == yesterday && it.type == TaskType.PENALTY }) return
         val record = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == yesterday }
         if (record == null && nowHour < 6) return
@@ -1288,7 +1299,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     title = "",
                     dayKey = yesterday,
                     status = TaskStatus.OPEN,
-                    createdAt = Instant.now(),
+                    createdAt = AppClock.now(),
                     targets = listOf(uid),
                 ),
             )
@@ -1301,11 +1312,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * wird ein Auto-Eintrag mit 0 Sternen für alle Kategorien erstellt.
      */
     private fun fillDeadline() {
-        val now = LocalTime.now(ZoneId.systemDefault())
+        val now = AppClock.now().atZone(ZoneId.systemDefault()).toLocalTime()
         if (now.hour < 6) return
         val repo = repo() ?: return
         if (days.value.fromCache && days.value.items.isEmpty()) return
-        val yesterday = LocalDate.now(zone).minusDays(1).toString()
+        val yesterday = AppClock.today(zone).minusDays(1).toString()
         val myYesterday = days.value.items.firstOrNull { it.ownerUid == uid && it.dayKey == yesterday }
         if (myYesterday != null) return
         val yesterdayRecord = buildDayRecord(yesterday, uid, targeted.value, emptyMap(), emptyMap())
@@ -1320,7 +1331,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val repo = repo() ?: return
         if (targeted.value.isEmpty()) return
 
-        val today = Instant.now().atZone(zone).toLocalDate()
+        val today = AppClock.now().atZone(zone).toLocalDate()
         val byDay = days.value.items.filter { it.ownerUid == uid }.associateBy { it.dayKey }
         val cats = targeted.value
 
@@ -1341,7 +1352,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                             title = "",
                             dayKey = endKey,
                             status = TaskStatus.OPEN,
-                            createdAt = Instant.now(),
+                            createdAt = AppClock.now(),
                             targets = listOf(uid),
                         ),
                     )
@@ -1357,7 +1368,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun checkConfirmationRemindersAndAutoConfirm() {
         val repo = repo() ?: return
-        val now = Instant.now()
+        val now = AppClock.now()
         val prefs = ReminderPrefs(getApplication())
         val partnerDisplay = partnerName.value ?: text(R.string.who_partner)
 

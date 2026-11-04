@@ -108,6 +108,10 @@ class CoupleRepository(private val coupleId: String) {
         couple.collection("categories").document(id).update("pushEnabled", enabled)
     }
 
+    fun deleteCategory(id: String) {
+        couple.collection("categories").document(id).delete()
+    }
+
     fun setCategoryPushInterval(id: String, hours: Int) {
         couple.collection("categories").document(id).update("pushIntervalHours", hours)
     }

@@ -99,7 +99,6 @@ private fun MainTabs(viewModel: AppViewModel) {
         val day = dinnerDay ?: return@LaunchedEffect
         viewModel.focusDay(day)
         tab = Tab.TODAY
-        NotificationTargets.dinnerDay.value = null
     }
 
     LaunchedEffect(toast) {

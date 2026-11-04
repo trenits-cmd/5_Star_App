@@ -452,6 +452,9 @@ fun weekOutcomeFor(
 /** Belohnungsstufen je Serienlänge: Tag 3 = Stufe 3, Tag 5 = Stufe 2, Tag 7 = Stufe 1. */
 val REWARD_TIER_BY_STREAK: Map<Int, Int> = mapOf(3 to 3, 5 to 2, 7 to 1)
 
+/** Tage in Folge, die für eine Stufe nötig sind (Stufe 2 = 5 Tage). 0, wenn unbekannt. */
+fun rewardDaysForTier(tier: Int): Int = REWARD_TIER_BY_STREAK.entries.firstOrNull { it.value == tier }?.key ?: 0
+
 fun rewardTierForStreak(streak: Int): Int? = REWARD_TIER_BY_STREAK[streak]
 
 fun consecutiveSuccessDays(

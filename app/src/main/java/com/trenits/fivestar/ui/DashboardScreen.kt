@@ -106,6 +106,9 @@ import com.trenits.fivestar.domain.RotationTask
 import com.trenits.fivestar.domain.SPORT_MINUTES
 import com.trenits.fivestar.domain.SPORT_WEEKLY_DAYS_GOAL
 import com.trenits.fivestar.domain.REWARD_TIER_BY_STREAK
+import com.trenits.fivestar.domain.rewardDaysForTier
+import com.trenits.fivestar.data.NotificationTargets
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
 import com.trenits.fivestar.domain.THRESHOLD_PERCENT
 import com.trenits.fivestar.domain.Task
@@ -184,7 +187,19 @@ fun DashboardScreen(vm: AppViewModel) {
         .filter { it.status == TaskStatus.OPEN }
         .sortedWith(compareByDescending<Task> { it.dayKey }.thenByDescending { it.createdAt })
 
+    val listState = rememberLazyListState()
+    val dinnerFocus by NotificationTargets.dinnerDay.collectAsState()
+    LaunchedEffect(dinnerFocus) {
+        if (dinnerFocus == null) return@LaunchedEffect
+        val incomingShown = incomingRequest?.takeIf { it.status == "requested" && partnerUid == null } != null
+        val waitingShown = !members.fromCache && partnerUid == null
+        val emptyPlaceholder = if (sortedCategories.isEmpty()) 1 else 0
+        val waitingCardIndex = 5 + (if (incomingShown) 1 else 0) + (if (waitingShown) 1 else 0) + emptyPlaceholder + sortedCategories.size
+        listState.animateScrollToItem(waitingCardIndex)
+        NotificationTargets.dinnerDay.value = null
+    }
     LazyColumn(
+        state = listState,
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -2122,7 +2137,7 @@ internal fun CatalogOverviewCard(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text("• ", style = MaterialTheme.typography.bodySmall)
-                            Text(localizedCatalogTitle(item.title), style = MaterialTheme.typography.bodySmall)
+                            Text(localizedCatalogTitle(item.title) + if (item.tier > 0) " · " + stringResource(R.string.reward_tier_label, item.tier, rewardDaysForTier(item.tier)) else "", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
@@ -2192,7 +2207,7 @@ internal fun TaskCard(
             )
             if (task.tier > 0) {
                 Text(
-                    stringResource(R.string.reward_tier_label, task.tier),
+                    stringResource(R.string.reward_tier_label, task.tier, rewardDaysForTier(task.tier)),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )

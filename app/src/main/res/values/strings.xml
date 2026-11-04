@@ -285,7 +285,7 @@
     <string name="settings_partner_info">Partner</string>
     <string name="settings_partner_name_value">Name: %1$s</string>
     <string name="settings_partner_info_hint">Set by your partner in their own settings. Read only here.</string>
-    <string name="reward_tier_label">Category %1$d</string>
+    <string name="reward_tier_label">Category %1$d, after %2$d days in a row</string>
     <string name="settings_category_push">Push reminders per category</string>
     <string name="settings_category_push_hint">Each category has its own reminder. Quiet hours (23:00–09:00) still apply. "Global" uses the setting above.</string>
     <string name="push_category_global">Global</string>

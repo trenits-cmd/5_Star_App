@@ -910,6 +910,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         (0 until mainUserRewardSeeds.size).map { "andi_reward_${it}_$uid" }.toSet()
 
     fun applyPartnerPreset() {
+        repo()?.deleteCategory("preset_rotation_$uid")
         val repo = repo() ?: return
         val myTargets = listOf(uid)
         val allowedCategories = partnerCategoryIds(uid)

@@ -358,12 +358,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private fun canonicalMainUserCatalog(ownerUid: String = uid): List<CatalogItem> =
         mainUserRewardSeeds.mapIndexed { idx, seed ->
             CatalogItem("andi_reward_${idx}_$ownerUid", ownerUid, TaskType.REWARD, text(seed.first), listOf(ownerUid), seed.second)
-        }
+        }.sortedByDescending { it.tier }
 
     private fun canonicalPartnerCatalog(ownerUid: String = uid): List<CatalogItem> =
         partnerRewardSeeds.mapIndexed { idx, seed ->
             CatalogItem("rosie_reward_${idx}_$ownerUid", ownerUid, TaskType.REWARD, text(seed.first), listOf(ownerUid), seed.second)
-        }
+        }.sortedByDescending { it.tier }
 
     fun canonicalCatalogFor(ownerUid: String, isPartnerSet: Boolean): List<CatalogItem> =
         if (isPartnerSet) canonicalPartnerCatalog(ownerUid) else canonicalMainUserCatalog(ownerUid)
@@ -664,6 +664,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
         val seeds = if (ownerIsMainUser) mainUserRewardSeeds else partnerRewardSeeds
         val pool = seeds
+            .sortedByDescending { it.second }
             .filter { task.tier == 0 || it.second == task.tier }
             .map { text(it.first) }
 

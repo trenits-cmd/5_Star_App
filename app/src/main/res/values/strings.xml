@@ -117,7 +117,7 @@
     <string name="section_categories">Categories of %1$s</string>
     <string name="categories_empty">Set your name in Settings to load your categories.</string>
     <string name="weight_label">%1$d× weight</string>
-    <string name="weight_with_share">%1$d× weight (%2$s) · %3$d%% of score</string>
+    <string name="weight_with_share">%1$d× weight · %2$d%% of score</string>
     <string name="priority_5">5× · Top Priority</string>
     <string name="priority_4">4× · Very Important</string>
     <string name="priority_3">3× · High (Food/Water/Sport)</string>
@@ -278,10 +278,11 @@
     <string name="kind_bedtime">Bedtime (before midnight to 3 a.m.)</string>
     <string name="bedtime_rules_hint">Before midnight = 5 stars. 0:00–0:59 = 4, 1:00–1:59 = 3, 2:00–2:59 = 2, later = 0.</string>
     <string name="bedtime_current">Bedtime: %1$s</string>
-    <string name="bedtime_quick_2330">23:30</string>
-    <string name="bedtime_quick_0030">00:30</string>
-    <string name="bedtime_quick_0130">01:30</string>
-    <string name="bedtime_quick_0230">02:30</string>
+    <string name="bedtime_quick_2330">Before midnight</string>
+    <string name="bedtime_quick_0030">Before 1</string>
+    <string name="bedtime_quick_0130">Before 2</string>
+    <string name="bedtime_quick_0230">Before 3</string>
+    <string name="bedtime_quick_after3">After 3</string>
     <string name="cat_preset_bedtime">Bedtime</string>
     <string name="settings_partner_info">Partner</string>
     <string name="settings_partner_name_value">Name: %1$s</string>

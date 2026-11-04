@@ -726,7 +726,7 @@ private fun RotationSummaryRow(counters: Map<String, Double>) {
 @Composable
 private fun CategoryWeightSubtitle(weight: Int, sharePercent: Int) {
     Text(
-        stringResource(R.string.weight_with_share, weight, priorityLabel(weight), sharePercent),
+        stringResource(R.string.weight_with_share, weight, sharePercent),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -1862,6 +1862,12 @@ private fun BedtimeCategoryCard(
                     colors = blueChipColors(),
                     onClick = { onTimeSelected(2, 30); selectedBedtime = Pair(2, 30) },
                     label = { Text(stringResource(R.string.bedtime_quick_0230)) },
+                )
+                FilterChip(
+                    selected = selectedBedtime == Pair(3, 30),
+                    colors = blueChipColors(),
+                    onClick = { onTimeSelected(3, 30); selectedBedtime = Pair(3, 30) },
+                    label = { Text(stringResource(R.string.bedtime_quick_after3)) },
                 )
                 Button(
                     onClick = {

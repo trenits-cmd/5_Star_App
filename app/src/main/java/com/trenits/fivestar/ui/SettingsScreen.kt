@@ -606,6 +606,7 @@ private fun PushScheduleSelector(
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         FilterChip(
             selected = intervalHours == 0,
+            colors = blueChipColors(),
             onClick = onDailySelected,
             label = {
                 Text(stringResource(R.string.push_mode_daily, "%02d:%02d".format(hour, minute)))
@@ -614,6 +615,7 @@ private fun PushScheduleSelector(
         INTERVAL_OPTIONS.forEach { h ->
             FilterChip(
                 selected = intervalHours == h,
+                colors = blueChipColors(),
                 onClick = { onIntervalSelected(h) },
                 label = { Text(stringResource(R.string.push_mode_interval, h)) },
             )
@@ -627,12 +629,14 @@ private fun CategoryPushIntervalSelector(intervalHours: Int, onSelected: (Int) -
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         FilterChip(
             selected = intervalHours == 0,
+            colors = blueChipColors(),
             onClick = { onSelected(0) },
             label = { Text(stringResource(R.string.push_category_global)) },
         )
         INTERVAL_OPTIONS.forEach { h ->
             FilterChip(
                 selected = intervalHours == h,
+                colors = blueChipColors(),
                 onClick = { onSelected(h) },
                 label = { Text(stringResource(R.string.push_mode_interval, h)) },
             )
@@ -647,6 +651,7 @@ private fun IconSelector(selected: CategoryIcon, onSelect: (CategoryIcon) -> Uni
         CategoryIcon.entries.forEach { icon ->
             FilterChip(
                 selected = selected == icon,
+                colors = blueChipColors(),
                 onClick = { onSelect(icon) },
                 leadingIcon = {
                     Image(
@@ -673,17 +678,20 @@ private fun AudienceSelector(
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         FilterChip(
             selected = audience == Audience.ME,
+            colors = blueChipColors(),
             onClick = { onSelect(Audience.ME) },
             label = { Text(stringResource(R.string.target_me, myLabel)) },
         )
         if (hasPartner) {
             FilterChip(
                 selected = audience == Audience.PARTNER,
+                colors = blueChipColors(),
                 onClick = { onSelect(Audience.PARTNER) },
                 label = { Text(stringResource(R.string.target_partner, partnerLabel)) },
             )
             FilterChip(
                 selected = audience == Audience.BOTH,
+                colors = blueChipColors(),
                 onClick = { onSelect(Audience.BOTH) },
                 label = { Text(stringResource(R.string.target_both, myLabel, partnerLabel)) },
             )

@@ -32,6 +32,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -244,11 +245,13 @@ fun DashboardScreen(vm: AppViewModel) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = !editingYesterday,
+                        colors = blueChipColors(),
                         onClick = { vm.setEditingYesterday(false) },
                         label = { Text(stringResource(R.string.day_switch_today)) },
                     )
                     FilterChip(
                         selected = editingYesterday,
+                        colors = blueChipColors(),
                         onClick = { vm.setEditingYesterday(true) },
                         label = { Text(stringResource(R.string.day_switch_yesterday)) },
                     )
@@ -851,6 +854,7 @@ private fun WeeklyStatusBanner(
                 )
             }
             Text(rewardText, style = MaterialTheme.typography.bodySmall, color = onCard, textAlign = TextAlign.Center)
+            reward?.takeIf { it.tier > 0 }?.let { r -> Text(stringResource(R.string.reward_tier_label, r.tier, rewardDaysForTier(r.tier)), style = MaterialTheme.typography.labelLarge, color = onCard, textAlign = TextAlign.Center) }
             REWARD_TIER_BY_STREAK.keys.filter { it > streak }.minOrNull()?.let { milestone ->
                 Text(
                     stringResource(
@@ -1122,6 +1126,7 @@ private fun MealsCategoryCard(
                     MealLevel.entries.forEach { level ->
                         FilterChip(
                             selected = currentLevel == level,
+                            colors = blueChipColors(),
                             onClick = { onMealLevelSelected(mealKey, level) },
                             label = { Text(mealLevelLabel(level)) },
                         )
@@ -1330,6 +1335,7 @@ private fun SportCategoryCard(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FilterChip(
                     selected = hasEntry && minutes == 0,
+                    colors = blueChipColors(),
                     onClick = {
                         text = "0"
                         onMinutesChanged(0, true)
@@ -1338,6 +1344,7 @@ private fun SportCategoryCard(
                 )
                 FilterChip(
                     selected = hasEntry && minutes == 30,
+                    colors = blueChipColors(),
                     onClick = {
                         text = "30"
                         onMinutesChanged(30, true)
@@ -1346,6 +1353,7 @@ private fun SportCategoryCard(
                 )
                 FilterChip(
                     selected = hasEntry && minutes == 45,
+                    colors = blueChipColors(),
                     onClick = {
                         text = "45"
                         onMinutesChanged(45, true)
@@ -1354,6 +1362,7 @@ private fun SportCategoryCard(
                 )
                 FilterChip(
                     selected = hasEntry && minutes == 60,
+                    colors = blueChipColors(),
                     onClick = {
                         text = "60"
                         onMinutesChanged(60, true)
@@ -1560,6 +1569,7 @@ private fun RotationCategoryCard(
                     val isAvailable = task in available
                     FilterChip(
                         selected = selectedTask == task,
+                        colors = blueChipColors(),
                         onClick = { onSelectAndRate(task, stars) },
                         enabled = isAvailable || selectedTask == task,
                         label = {
@@ -1588,12 +1598,14 @@ private fun RotationCategoryCard(
                 val answered = values.containsKey(ROTATION_STARS)
                 FilterChip(
                     selected = answered && stars == MAX_STARS,
+                    colors = blueChipColors(),
                     onClick = { onSelectAndRate(selectedTask, MAX_STARS) },
                     label = { Text(stringResource(R.string.rotation_yes)) },
                 )
                 Spacer(Modifier.width(6.dp))
                 FilterChip(
                     selected = answered && stars == 0,
+                    colors = blueChipColors(),
                     onClick = { onSelectAndRate(selectedTask, 0) },
                     label = { Text(stringResource(R.string.rotation_no)) },
                 )
@@ -1739,6 +1751,15 @@ private fun DinnerTimeCard(
 }
 
 /** Schlafenszeit: Uhrzeit eintragen. Vor Mitternacht 5 Sterne, bis 3 Uhr abnehmend, danach 0. */
+/** Ausgewählte Auswahl-Buttons in den Kategorien: blau hinterlegt. */
+internal val SelectedChipBlue = Color(0xFF1565C0)
+
+@Composable
+internal fun blueChipColors() = FilterChipDefaults.filterChipColors(
+    selectedContainerColor = SelectedChipBlue,
+    selectedLabelColor = Color.White,
+)
+
 @Composable
 private fun BedtimeCategoryCard(
     category: Category,

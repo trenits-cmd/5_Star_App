@@ -55,6 +55,7 @@ import com.trenits.fivestar.domain.DayRecord
 import com.trenits.fivestar.domain.MAX_STARS
 import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
 import com.trenits.fivestar.domain.Task
+import com.trenits.fivestar.domain.rewardDaysForTier
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
 import com.trenits.fivestar.ui.theme.Amber
@@ -351,7 +352,7 @@ private fun ExpandableArchiveDayCard(
                                 Spacer(Modifier.height(6.dp))
                                 ArchiveTaskRow(
                                     who = if (task.ownerUid == myUid) myLabel else partnerLabel,
-                                    typeLabel = typeLabel(task.type),
+                                    typeLabel = typeLabel(task.type) + if (task.tier > 0) " · " + stringResource(R.string.reward_tier_label, task.tier, rewardDaysForTier(task.tier)) else "",
                                     action = if (task.title.isEmpty()) stringResource(R.string.no_action_chosen) else localizedCatalogTitle(task.title),
                                     statusLabel = statusLabel(task.status),
                                     isReward = task.type == TaskType.REWARD,
@@ -496,7 +497,7 @@ private fun ArchivedTaskCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "$who · ${typeLabel(task.type)}",
+                    "$who · ${typeLabel(task.type)}" + if (task.tier > 0) " · " + stringResource(R.string.reward_tier_label, task.tier, rewardDaysForTier(task.tier)) else "",
                     style = MaterialTheme.typography.titleSmall,
                     color = if (task.type == TaskType.REWARD) {
                         MaterialTheme.colorScheme.primary

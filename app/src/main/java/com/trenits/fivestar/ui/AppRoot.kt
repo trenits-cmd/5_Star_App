@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -25,6 +24,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -87,12 +87,12 @@ private fun MainTabs(viewModel: AppViewModel) {
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val partnerUid by viewModel.partnerUid.collectAsState()
-    val myPresetRole by viewModel.myPresetRole.collectAsState()
     val myName by viewModel.myName.collectAsState()
     val myPhoto by viewModel.myPhoto.collectAsState()
     val partnerName by viewModel.partnerName.collectAsState()
     val partnerPhoto by viewModel.partnerPhoto.collectAsState()
     val toast by viewModel.toastMessage.collectAsState()
+    val roleOverride by viewModel.roleOverride.collectAsState()
     val dinnerDay by NotificationTargets.dinnerDay.collectAsState()
 
     LaunchedEffect(dinnerDay) {
@@ -124,10 +124,14 @@ private fun MainTabs(viewModel: AppViewModel) {
             TopAppBar(
                 title = { Text(text = "5 Star App", style = MaterialTheme.typography.titleMedium) },
                 actions = {
-                    if (!(tab == Tab.TODAY && myPresetRole == "main_user")) {
-                        IconButton(onClick = { viewModel.signOut() }) {
-                            Icon(Icons.Filled.ExitToApp, contentDescription = stringResource(R.string.settings_sign_out))
-                        }
+                    // Test-only: wechselt die angezeigte Rolle (main_user <-> partner).
+                    TextButton(onClick = { viewModel.toggleTestRole() }) {
+                        Text(
+                            text = stringResource(
+                                if (roleOverride == "partner") R.string.test_switch_main_user else R.string.test_switch_partner
+                            ),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
                     }
                 },
             )

@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.04112026_1230)
+## Features (v1.04112026_1252)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.04112026_1230`** – (1) Bedtime card shows only the buttons. (2) Space after Glasses in the water card. (3) Archive details show bedtime, relationship total and per-aspect values for each person. (4) Green check from 80 %, below a red-to-yellow gradient (also daily status). (5) Rewards of the day shown in the archive day card. (6) Confirmed rewards re-laid out.
+- **Latest: `v1.04112026_1252`** – (1) Archive details now show counters per person (Details of main_user / Details of partner). (2) Sign-out icon removed from the top bar; replaced by a test-only role switch Partner ⇄ Main user. (3) CODE_INDEX.md refreshed (roles, no penalties, 5 tabs, settings).
+- `v1.04112026_1230` (1) Bedtime card shows only the buttons. (2) Space after Glasses in the water card. (3) Archive details show bedtime, relationship total and per-aspect values for each person. (4) Green check from 80 %, below a red-to-yellow gradient (also daily status). (5) Rewards of the day shown in the archive day card. (6) Confirmed rewards re-laid out.
 - `v1.04112026_1154` (1) Daily status and Relationship percentage colored red (0–69 %), yellow (70–99 %), green (100 %). Daily status card uses a light background. (2) Weekly status rewards info on separate lines. (3) Bedtime: description removed; buttons read Before midnight, Before 1 am, Before 2 am, Before 3 am, After 3 am.
 - `v1.04112026_0927` (1) Bedtime buttons: Before midnight (5), Before 1 (4), Before 2 (3), Before 3 (2), After 3 (0). (2) Category weight line no longer shows the priority text. (3) Rewards sorted by category, 3 to 1.
 - `v1.04112026_0911` (1) Bedtime quick buttons show blue selection like Sport. (2) Relationship shown as extra value in the dashboard (not part of the daily status). (3) Relationship score shown in the archive.

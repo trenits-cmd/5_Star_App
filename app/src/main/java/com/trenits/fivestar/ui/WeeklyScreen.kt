@@ -360,13 +360,15 @@ private fun ExpandableArchiveDayCard(
                                 ArchiveCategoryRow(localizedCategorySnapshotName(s.name), s.stars)
                             }
                         }
-                        val counterEntries = myRecord?.counters?.mapNotNull { (categoryId, values) ->
-                            categories.firstOrNull { it.id == categoryId }?.let { it to values }
-                        }.orEmpty()
-                        if (counterEntries.isNotEmpty()) {
-                            ArchiveSectionTitle(stringResource(R.string.archive_section_details))
-                            counterEntries.forEach { (category, values) ->
-                                CounterSummary(localizedCategoryName(category), values)
+                        listOf(myLabel to myRecord, partnerLabel to partnerRecord).forEach { (label, record) ->
+                            val counterEntries = record?.counters?.mapNotNull { (categoryId, values) ->
+                                categories.firstOrNull { it.id == categoryId }?.let { it to values }
+                            }.orEmpty()
+                            if (counterEntries.isNotEmpty()) {
+                                ArchiveSectionTitle(stringResource(R.string.archive_section_details_of, label))
+                                counterEntries.forEach { (category, values) ->
+                                    CounterSummary(localizedCategoryName(category), values)
+                                }
                             }
                         }
                         if (myRecord != null) ArchiveRelationshipDetails(myLabel, myRecord)

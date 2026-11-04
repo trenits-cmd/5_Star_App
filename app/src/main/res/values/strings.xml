@@ -239,6 +239,7 @@
     <string name="archive_status_reached">✓ ≥ 80 %</string>
     <string name="archive_status_missed">✗ &lt; 80 %</string>
     <string name="archive_status_pending">Pending</string>
+    <string name="archive_section_details_of">Details of %1$s</string>
     <string name="archive_section_categories">Categories of %1$s</string>
     <string name="archive_section_details">Details</string>
     <string name="archive_section_tasks">Rewards</string>
@@ -436,4 +437,8 @@
     <string name="archive_section_relationship">Relationship: %1$s</string>
     <string name="archive_relationship_total">Total: %1$s</string>
     <string name="archive_day_reward_line">Reward: %1$s (%2$s)</string>
+    <string name="test_switch_partner">Partner</string>
+    <string name="test_switch_main_user">Main user</string>
+    <string name="test_role_partner">Test: showing the partner view</string>
+    <string name="test_role_main_user">Test: showing the main user view</string>
 </resources>

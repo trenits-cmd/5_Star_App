@@ -121,8 +121,42 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val members = sharedFor { it.members() }
     val categories = sharedFor { it.categories() }
     val catalog = sharedFor { it.catalog() }
-    val days = sharedFor { it.days() }
+    private val rawDays = sharedFor { it.days() }
     val tasks = sharedFor { it.tasks() }
+
+    /**
+     * „Other tasks (alternating)“ (Rotation) existiert in keiner Preset-Vorlage mehr.
+     * Solange für eine Person keine aktive Rotations-Kategorie mehr da ist, werden deren
+     * Snapshot- und Zählerwerte aus allen Tagesständen gestrichen – sonst fließen sie
+     * weiter ins Nenner-Gewicht und die Prozentwerte in Dashboard, Partner, Archiv
+     * und Statistik würden falsch rechnen.
+     */
+    private val rotationCategoryIds: StateFlow<Set<String>> = categories
+        .map { list -> list.items.filter { it.kind == CategoryKind.ROTATION }.map { it.id }.toSet() }
+        .share(emptySet())
+
+    private val rotationOwners: StateFlow<Set<String>> = categories
+        .map { list ->
+            list.items.filter { !it.archived && it.kind == CategoryKind.ROTATION }.map { it.ownerUid }.toSet()
+        }
+        .share(emptySet())
+
+    val days: StateFlow<Listed<DayRecord>> =
+        combine(rawDays, rotationCategoryIds, rotationOwners) { list, rotationIds, owners ->
+            list.copy(items = list.items.map { stripRotationValues(it, rotationIds, owners) })
+        }.share(Listed(emptyList(), true))
+
+    private fun stripRotationValues(record: DayRecord, rotationIds: Set<String>, activeOwners: Set<String>): DayRecord {
+        if (record.ownerUid in activeOwners) return record
+        fun isRotation(id: String) = id in rotationIds || id.startsWith("preset_rotation_")
+        val touchesRotation = record.snapshots.any { isRotation(it.categoryId) } ||
+            record.counters.keys.any { isRotation(it) }
+        if (!touchesRotation) return record
+        return record.copy(
+            snapshots = record.snapshots.filterNot { isRotation(it.categoryId) },
+            counters = record.counters.filterKeys { !isRotation(it) },
+        )
+    }
 
     val todayKey: StateFlow<String> = clock.map { dayKeyOf(it, zone) }.share(dayKeyOf(clock.value, zone))
 
@@ -389,7 +423,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private fun effectiveCategories(list: List<Category>, forUid: String, isPartnerSet: Boolean): List<Category> {
         val canonical = if (isPartnerSet) canonicalPartnerCategories(forUid) else canonicalMainUserCategories(forUid)
         val storedIds = list.map { it.id }.toSet()
-        return canonical.filter { it.id !in storedIds } + list.filter { it.appliesTo(forUid) }
+        return (canonical.filter { it.id !in storedIds } + list.filter { it.appliesTo(forUid) })
+            .filterNot { it.kind == CategoryKind.ROTATION }
     }
 
     /** Kategorien, die ich angelegt habe, unabhängig davon, für wen sie gelten. */

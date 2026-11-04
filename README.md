@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.04112026_1514)
+## Features (v1.04112026_1550)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -36,7 +36,7 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 - **Categories, Weights & Scoring:**
   - Each category has a weight (1–5) that flows into the daily and weekly target.
-  - **Rosie:** Drink water (3×, min. 2.5 L in glasses or decimal liters), Alcohol limit (2×, 0 L = 5 ★, 2.5 L benchmark, Demi 0.25 L / Pint 0.5 L + decimal L), Other tasks / alternating (1×: Tidy up apartment, Take out trash, Wash dishes, Cook meal, Plan lessons – Yes = 5 ★, No = 0 ★), Dinner before 20h (3×: <20h = 5 ★, <21h = 1 ★, else 0 ★; entered by Andi & tracked in both apps), Meals (3×: breakfast, lunch, dinner – nothing/little/medium/healthy; all healthy = 5 ★).
+  - **Rosie:** Drink water (3×, min. 2.5 L in glasses or decimal liters), Alcohol limit (2×, 0 L = 5 ★, 2.5 L benchmark, Demi 0.25 L / Pint 0.5 L + decimal L), Dinner before 20h (3×: <20h = 5 ★, <21h = 1 ★, else 0 ★; entered by Andi & tracked in both apps), Meals (3×: breakfast, lunch, dinner – nothing/little/medium/healthy; all healthy = 5 ★).
   - **Andi (3 categories only):** Sport (3×: 3 days/week at least 45 min each, sport time in minutes entered daily), Drink water (2×: min. 2.5 L in glasses or decimal liters, 2.5 L = 5 ★, proportionally rounded down below), Reading (2×: pages read entered daily, 0–5 pages = 0 ★, >50 pages = 5 ★, 6–50 proportional).
   - **Dinner before 20h:** time options are shown without brackets (e.g. "Before 20h", "Before 21h", "21h+").
   - Each category has a meaningful illustrated icon (food, water, alcohol, fitness, home, mind, detox, stars, relationship, reading).
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.04112026_1514`** – (1) Sport card: input field renamed to Enter minutes with more spacing to the summary row. (2) Archive heading is just Archive. (3) Statistics: date dd.MM under each weekday in smaller type; Details section only for rewards. (4) Settings profile: no heading text, big bold name + e-mail next to a 96 dp photo. (5) Settings partner card shows the partner photo.
+- **Latest: `v1.04112026_1550`** - (1) The partner category `Other tasks (alternating)` is gone everywhere: Dashboard, Partner tab, Statistics, Archive and Settings no longer show it. (2) Old day records drop its snapshots and counters when no active rotation category exists anymore, so daily, archive and statistics percentages are calculated without its weight.
+- `v1.04112026_1514`  – (1) Sport card: input field renamed to Enter minutes with more spacing to the summary row. (2) Archive heading is just Archive. (3) Statistics: date dd.MM under each weekday in smaller type; Details section only for rewards. (4) Settings profile: no heading text, big bold name + e-mail next to a 96 dp photo. (5) Settings partner card shows the partner photo.
 - `v1.04112026_1432` Top bar has no action anymore (sign-out lives in Settings); the in-app role/test switch was removed. Switching to the partner account is done for real by signing out and signing in with the partner's e-mail link.
 - `v1.04112026_1252` (1) Archive details now show counters per person (Details of main_user / Details of partner). (2) Sign-out icon removed from the top bar; replaced by a test-only role switch Partner ⇄ Main user. (3) CODE_INDEX.md refreshed (roles, no penalties, 5 tabs, settings).
 - `v1.04112026_1230` (1) Bedtime card shows only the buttons. (2) Space after Glasses in the water card. (3) Archive details show bedtime, relationship total and per-aspect values for each person. (4) Green check from 80 %, below a red-to-yellow gradient (also daily status). (5) Rewards of the day shown in the archive day card. (6) Confirmed rewards re-laid out.

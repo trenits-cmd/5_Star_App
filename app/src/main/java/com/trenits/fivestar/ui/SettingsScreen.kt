@@ -76,7 +76,7 @@ fun SettingsScreen(vm: AppViewModel) {
     val catalog by vm.myCatalog.collectAsState()
     val storedCategories by vm.categories.collectAsState()
     val myPresetRole by vm.myPresetRole.collectAsState()
-    val myCategories = storedCategories.items.filter { it.ownerUid == vm.uid && !it.archived }
+    val myCategories = storedCategories.items.filter { it.ownerUid == vm.uid && !it.archived && it.kind != CategoryKind.ROTATION }
     val days by vm.days.collectAsState()
     val lastSync by vm.lastSync.collectAsState()
     val syncStatus by vm.syncStatus.collectAsState()

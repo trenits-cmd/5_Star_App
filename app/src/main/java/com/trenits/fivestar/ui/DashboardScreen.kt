@@ -1407,7 +1407,7 @@ private fun SportCategoryCard(
                     label = { Text(stringResource(R.string.sport_quick_60)) },
                 )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(10.dp))
             CounterRow(
                 label = stringResource(R.string.sport_minutes_summary, minutes),
                 value = minutes.toDouble(),

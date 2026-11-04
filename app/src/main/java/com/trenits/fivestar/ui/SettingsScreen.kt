@@ -83,6 +83,7 @@ fun SettingsScreen(vm: AppViewModel) {
     val myName by vm.myName.collectAsState()
     val myPhoto by vm.myPhoto.collectAsState()
     val partnerName by vm.partnerName.collectAsState()
+    val partnerPhoto by vm.partnerPhoto.collectAsState()
     val partnerAccountEmail by vm.partnerEmail.collectAsState()
     val partnerUid by vm.partnerUid.collectAsState()
 
@@ -126,26 +127,27 @@ fun SettingsScreen(vm: AppViewModel) {
                     Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Text(stringResource(R.string.profile_photo_title), style = MaterialTheme.typography.titleMedium)
-                    val account = Firebase.auth.currentUser
-                    Text(
-                        stringResource(
-                            R.string.account_signed_in_as,
-                            account?.email ?: account?.uid?.take(8).orEmpty(),
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                     Row(
                         Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        UserAvatar(photoBase64 = myPhoto, name = myLabel, size = 56.dp)
-                        Spacer(Modifier.width(12.dp))
+                        UserAvatar(photoBase64 = myPhoto, name = myLabel, size = 96.dp)
+                        Spacer(Modifier.width(16.dp))
                         Column(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
+                            Text(
+                                myLabel,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                Firebase.auth.currentUser?.email
+                                    ?: Firebase.auth.currentUser?.uid?.take(8).orEmpty(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                             OutlinedButton(
                                 onClick = { photoPickerLauncher.launch("image/*") },
                                 modifier = Modifier.fillMaxWidth(),
@@ -191,12 +193,29 @@ fun SettingsScreen(vm: AppViewModel) {
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(stringResource(R.string.settings_partner_info), style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        stringResource(R.string.settings_partner_name_value, partnerLabel),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    partnerAccountEmail?.let {
-                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        UserAvatar(photoBase64 = partnerPhoto, name = partnerLabel, size = 72.dp)
+                        Spacer(Modifier.width(16.dp))
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                partnerLabel,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            partnerAccountEmail?.let {
+                                Text(
+                                    it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
                     Text(
                         stringResource(R.string.settings_partner_info_hint),

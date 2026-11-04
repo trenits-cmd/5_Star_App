@@ -45,7 +45,6 @@
     <string name="partner_remove_confirm_message">Are you sure you want to remove your partner? This will disconnect your shared status and couple records.</string>
     <string name="partner_remove_confirm_yes">Yes, Remove</string>
 
-    <string name="profile_photo_title">Your profile picture (icon)</string>
     <string name="profile_photo_upload">Choose / upload photo</string>
     <string name="profile_photo_remove">Remove photo</string>
 
@@ -225,7 +224,8 @@
     <string name="waiting_task_you">You confirm: %1$s · counts as done at %2$s</string>
     <string name="waiting_task_partner">Waiting for %1$s to confirm: %2$s · counts as done at %3$s</string>
     <string name="waiting_dinner_you">You confirm the dinner time %1$s · counts as confirmed at %2$s</string>
-    <string name="waiting_dinner_partner">Waiting for %1$s to confirm the dinner time %2$s · counts as confirmed at %3$s</string>    <string name="week_title">Daily &amp; Weekly Status / Archive</string>
+    <string name="waiting_dinner_partner">Waiting for %1$s to confirm the dinner time %2$s · counts as confirmed at %3$s</string>
+    <string name="week_title">Archive</string>
     <string name="week_streak">Weekly status:\n%1$d of %2$d days in a row (≥ 80%%)</string>
     <string name="week_reward_unlocked">3 successful days in a row – reward unlocked!</string>
     <string name="week_no_reward">%1$d more consecutive day(s) until the next reward.</string>
@@ -286,7 +286,6 @@
     <string name="bedtime_quick_after3">After 3 am</string>
     <string name="cat_preset_bedtime">Bedtime</string>
     <string name="settings_partner_info">Partner</string>
-    <string name="settings_partner_name_value">Name: %1$s</string>
     <string name="settings_partner_info_hint">Set by your partner in their own settings. Read only here.</string>
     <string name="reward_tier_label">Category %1$d, after %2$d days in a row</string>
     <string name="settings_category_push">Push reminders per category</string>
@@ -389,7 +388,7 @@
     <string name="reading_pages_summary">%1$d pages read</string>
     <string name="sport_rules_hint">3 days/week at least 45 min each · Enter your sport duration in minutes every day</string>
     <string name="sport_weekly_progress">This week: %1$d / %2$d days with ≥ 45 min</string>
-    <string name="sport_minutes_label">Sport duration today (minutes)</string>
+    <string name="sport_minutes_label">Enter minutes</string>
     <string name="sport_minutes_summary">%1$d min today</string>
     <string name="sport_quick_0">0 min (Rest)</string>
     <string name="sport_quick_30">30 min</string>
@@ -425,7 +424,6 @@
     <string name="rel_communication">Communication</string>
     <string name="rel_intimacy">Intimacy</string>
     <string name="rel_sex">Sex</string>
-    <string name="account_signed_in_as">Signed in as: %1$s</string>
     <string name="relationship_partner_avatar_hint">Feedback from %1$s</string>
     <string name="confirm_today_title">Finish today</string>
     <string name="confirm_today_button">Confirm today</string>

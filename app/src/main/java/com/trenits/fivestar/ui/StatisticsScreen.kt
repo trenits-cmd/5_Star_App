@@ -47,11 +47,18 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.trenits.fivestar.R
@@ -384,11 +391,11 @@ fun StatisticsScreen(vm: AppViewModel) {
             }
         }
 
-        // Details unter der Grafik
-        item {
-            Text(stringResource(R.string.stats_details_title), style = MaterialTheme.typography.titleMedium)
-        }
+        // Details unter der Grafik – nur bei den Rewards
         if (isTaskGroup) {
+            item {
+                Text(stringResource(R.string.stats_details_title), style = MaterialTheme.typography.titleMedium)
+            }
             val rows = buildList {
                 if (showMe) addAll(myTasksByDay.values.flatten())
                 if (showPartner) addAll(partnerTasksByDay.values.flatten())
@@ -418,41 +425,6 @@ fun StatisticsScreen(vm: AppViewModel) {
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    }
-                }
-            }
-        } else {
-            val dayRows = periodDays.reversed().filter { d ->
-                (showMe && myRecords.containsKey(d)) || (showPartner && partnerHasCategory && partnerRecords.containsKey(d))
-            }
-            if (dayRows.isEmpty()) {
-                item {
-                    Text(
-                        stringResource(R.string.stats_no_data),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            items(dayRows, key = { it.toString() }) { d ->
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(formatDay(d.toString()), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                        if (showMe && myRecords.containsKey(d)) {
-                            Text(
-                                "$myLabel: ${formatPercent(percentOf(myRecords[d]))}" +
-                                    detailExtra(group, category, aspect, myRecords[d]),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        if (showPartner && partnerHasCategory && partnerRecords.containsKey(d)) {
-                            Text(
-                                "$partnerLabel: ${formatPercent(percentOf(partnerRecords[d]))}" +
-                                    detailExtra(group, category, aspect, partnerRecords[d]),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.tertiary,
-                            )
-                        }
                     }
                 }
             }
@@ -511,7 +483,7 @@ private fun StatsLineChart(
     val padLeft = with(density) { 36.dp.toPx() }
     val padRight = with(density) { 12.dp.toPx() }
     val padTop = with(density) { 12.dp.toPx() }
-    val padBottom = with(density) { 28.dp.toPx() }
+    val padBottom = with(density) { 40.dp.toPx() }
     val pointRadius = with(density) { 3.dp.toPx() }
     val strokeWidth = with(density) { 2.dp.toPx() }
     val hairline = with(density) { 1.dp.toPx() }
@@ -555,7 +527,7 @@ private fun StatsLineChart(
 
         val step = if (n <= maxLabels) 1 else ceil(n.toDouble() / maxLabels).toInt()
         labels.indices.filter { it % step == 0 }.forEach { i ->
-            val layout = textMeasurer.measure(labels[i], labelStyle)
+            val layout = axisLabelLayout(textMeasurer, labels[i], labelStyle)
             val x = (xOf(i) - layout.size.width / 2f).coerceIn(0f, (w - layout.size.width).coerceAtLeast(0f))
             drawText(layout, topLeft = Offset(x, plotBottom + 6.dp.toPx()))
         }
@@ -600,7 +572,7 @@ private fun StatsBarChart(
     val padLeft = with(density) { 36.dp.toPx() }
     val padRight = with(density) { 12.dp.toPx() }
     val padTop = with(density) { 12.dp.toPx() }
-    val padBottom = with(density) { 28.dp.toPx() }
+    val padBottom = with(density) { 40.dp.toPx() }
     val hairline = with(density) { 1.dp.toPx() }
     val yMax = ceil(series.maxOfOrNull { s -> s.values.maxOrNull() ?: 0.0 } ?: 0.0).toInt().coerceAtLeast(1)
 
@@ -641,7 +613,7 @@ private fun StatsBarChart(
 
             val step = if (n <= maxLabels) 1 else ceil(n.toDouble() / maxLabels).toInt()
             labels.indices.filter { it % step == 0 }.forEach { i ->
-                val layout = textMeasurer.measure(labels[i], labelStyle)
+                val layout = axisLabelLayout(textMeasurer, labels[i], labelStyle)
                 val center = plotLeft + i * groupW + groupW / 2f
                 val x = (center - layout.size.width / 2f).coerceIn(0f, (w - layout.size.width).coerceAtLeast(0f))
                 drawText(layout, topLeft = Offset(x, plotBottom + 6.dp.toPx()))
@@ -730,6 +702,28 @@ private fun groupLabelRes(group: StatsGroup): Int = when (group) {
 }
 
 private fun chartLabel(range: StatsRange, start: LocalDate): String = when (range) {
-    StatsRange.WEEK -> start.format(DateTimeFormatter.ofPattern("EEE", Locale.getDefault()))
+    StatsRange.WEEK -> start.format(DateTimeFormatter.ofPattern("EEE", Locale.getDefault())) +
+        "\n" + start.format(DateTimeFormatter.ofPattern("dd.MM", Locale.getDefault()))
     else -> start.format(DateTimeFormatter.ofPattern("dd.MM", Locale.getDefault()))
+}
+
+/**
+ * Achsen-Label: der Wochentag in kleiner Schrift, darunter das Datum (dd.MM) kleiner.
+ * Andere Zeiträume zeigen nur das Datum (eine Zeile).
+ */
+private fun axisLabelLayout(
+    measurer: TextMeasurer,
+    label: String,
+    style: TextStyle,
+): TextLayoutResult {
+    val lineBreak = label.indexOf('\n')
+    if (lineBreak < 0) return measurer.measure(label, style)
+    val text = buildAnnotatedString {
+        append(label.substring(0, lineBreak))
+        append('\n')
+        withStyle(SpanStyle(fontSize = 8.sp, color = style.color)) {
+            append(label.substring(lineBreak + 1))
+        }
+    }
+    return measurer.measure(text, style)
 }

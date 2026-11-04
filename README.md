@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.04112026_1432)
+## Features (v1.04112026_1514)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.04112026_1432`** – Top bar has no action anymore (sign-out lives in Settings); the in-app role/test switch was removed. Switching to the partner account is done for real by signing out and signing in with the partner's e-mail link.
+- **Latest: `v1.04112026_1514`** – (1) Sport card: input field renamed to Enter minutes with more spacing to the summary row. (2) Archive heading is just Archive. (3) Statistics: date dd.MM under each weekday in smaller type; Details section only for rewards. (4) Settings profile: no heading text, big bold name + e-mail next to a 96 dp photo. (5) Settings partner card shows the partner photo.
+- `v1.04112026_1432` Top bar has no action anymore (sign-out lives in Settings); the in-app role/test switch was removed. Switching to the partner account is done for real by signing out and signing in with the partner's e-mail link.
 - `v1.04112026_1252` (1) Archive details now show counters per person (Details of main_user / Details of partner). (2) Sign-out icon removed from the top bar; replaced by a test-only role switch Partner ⇄ Main user. (3) CODE_INDEX.md refreshed (roles, no penalties, 5 tabs, settings).
 - `v1.04112026_1230` (1) Bedtime card shows only the buttons. (2) Space after Glasses in the water card. (3) Archive details show bedtime, relationship total and per-aspect values for each person. (4) Green check from 80 %, below a red-to-yellow gradient (also daily status). (5) Rewards of the day shown in the archive day card. (6) Confirmed rewards re-laid out.
 - `v1.04112026_1154` (1) Daily status and Relationship percentage colored red (0–69 %), yellow (70–99 %), green (100 %). Daily status card uses a light background. (2) Weekly status rewards info on separate lines. (3) Bedtime: description removed; buttons read Before midnight, Before 1 am, Before 2 am, Before 3 am, After 3 am.

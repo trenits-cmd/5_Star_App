@@ -58,6 +58,8 @@ import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.rewardDaysForTier
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
+import com.trenits.fivestar.domain.relationshipScorePercent
+import com.trenits.fivestar.domain.relationshipStarsOf
 import com.trenits.fivestar.ui.theme.Amber
 import java.time.LocalDate
 import java.time.format.TextStyle
@@ -311,6 +313,13 @@ private fun ExpandableArchiveDayCard(
                         accent = MaterialTheme.colorScheme.tertiary,
                     )
                 }
+                Spacer(Modifier.height(10.dp))
+                ArchiveScoreRow(
+                    label = stringResource(R.string.status_relationship_title),
+                    score = myRecord?.let { relationshipScorePercent(relationshipStarsOf(it)) }
+                        ?: partnerRecord?.let { relationshipScorePercent(relationshipStarsOf(it)) },
+                    accent = MaterialTheme.colorScheme.secondary,
+                )
             }
             AnimatedVisibility(
                 visible = expanded,

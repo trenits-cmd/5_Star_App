@@ -283,6 +283,41 @@ fun DashboardScreen(vm: AppViewModel) {
             )
         }
 
+        // Relationship as an extra value (not part of the daily status)
+        item {
+            val myStars = relationshipStarsOf(myToday)
+            val myRelScore = relationshipScorePercent(myStars)
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            stringResource(R.string.status_relationship_title),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Text(
+                            formatPercent(myRelScore),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Text(
+                        stringResource(R.string.status_relationship_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
         // Gesonderte Anzeige 2: Wochenstand (7-Tage-Serie)
         item {
             WeeklyStatusBanner(
@@ -1799,11 +1834,35 @@ private fun BedtimeCategoryCard(
                 fontWeight = FontWeight.Medium,
             )
             Spacer(Modifier.height(8.dp))
+            var selectedBedtime by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+            LaunchedEffect(hour, minute) {
+                if (hour >= 0) selectedBedtime = Pair(hour, minute)
+            }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { onTimeSelected(23, 30) }) { Text(stringResource(R.string.bedtime_quick_2330)) }
-                OutlinedButton(onClick = { onTimeSelected(0, 30) }) { Text(stringResource(R.string.bedtime_quick_0030)) }
-                OutlinedButton(onClick = { onTimeSelected(1, 30) }) { Text(stringResource(R.string.bedtime_quick_0130)) }
-                OutlinedButton(onClick = { onTimeSelected(2, 30) }) { Text(stringResource(R.string.bedtime_quick_0230)) }
+                FilterChip(
+                    selected = selectedBedtime == Pair(23, 30),
+                    colors = blueChipColors(),
+                    onClick = { onTimeSelected(23, 30); selectedBedtime = Pair(23, 30) },
+                    label = { Text(stringResource(R.string.bedtime_quick_2330)) },
+                )
+                FilterChip(
+                    selected = selectedBedtime == Pair(0, 30),
+                    colors = blueChipColors(),
+                    onClick = { onTimeSelected(0, 30); selectedBedtime = Pair(0, 30) },
+                    label = { Text(stringResource(R.string.bedtime_quick_0030)) },
+                )
+                FilterChip(
+                    selected = selectedBedtime == Pair(1, 30),
+                    colors = blueChipColors(),
+                    onClick = { onTimeSelected(1, 30); selectedBedtime = Pair(1, 30) },
+                    label = { Text(stringResource(R.string.bedtime_quick_0130)) },
+                )
+                FilterChip(
+                    selected = selectedBedtime == Pair(2, 30),
+                    colors = blueChipColors(),
+                    onClick = { onTimeSelected(2, 30); selectedBedtime = Pair(2, 30) },
+                    label = { Text(stringResource(R.string.bedtime_quick_0230)) },
+                )
                 Button(
                     onClick = {
                         val initH = if (hour >= 0) hour else 23

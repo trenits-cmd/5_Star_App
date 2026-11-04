@@ -104,7 +104,8 @@
     <string name="status_daily_below">Below 80%% - the daily target is missed</string>
     <string name="status_weekly_title">Weekly Status (3-Day Streak)</string>
     <string name="status_weekly_progress">%1$d / %2$d consecutive days ≥ 80%%</string>
-    <string name="status_relationship_title">Relationship Mood Today</string>
+    <string name="status_relationship_note">Not part of the daily status, shown separately.</string>
+<string name="status_relationship_title">Relationship Mood Today</string>
     <string name="status_relationship_summary">Avg %1$.1f / 5 ★ (%2$s)</string>
     <string name="confirm_warn_title">Confirm or it counts as done: %1$s</string>
     <string name="confirm_warn_body">&quot;%1$s&quot; counts as executed automatically at %2$s unless you confirm it or choose &quot;Not yet&quot; (+24 h).</string>

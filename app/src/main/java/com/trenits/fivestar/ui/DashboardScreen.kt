@@ -306,7 +306,7 @@ fun DashboardScreen(vm: AppViewModel) {
                             formatPercent(myRelScore),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = progressStatusColor(myRelScore ?: 0.0),
                         )
                     }
                     Text(
@@ -737,35 +737,36 @@ private fun ScoreHero(score: Double?, title: String, showCountdown: Boolean = fa
     val effectiveScore = score ?: 0.0
     val progress = (effectiveScore / 100.0).toFloat().coerceIn(0f, 1f)
     val reached = effectiveScore >= THRESHOLD_PERCENT
+    val statusColor = progressStatusColor(effectiveScore)
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(Modifier.padding(20.dp)) {
             Text(
                 title,
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 formatPercent(effectiveScore),
                 fontSize = 44.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = statusColor,
             )
             Spacer(Modifier.height(10.dp))
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small),
-                color = Amber,
-                trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f),
+                color = statusColor,
+                trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
             )
             Spacer(Modifier.height(8.dp))
             Text(
                 stringResource(if (reached) R.string.status_daily_ok else R.string.status_daily_below),
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             if (showCountdown) {
                 DayCountdown(effectiveScore)
@@ -1818,11 +1819,6 @@ private fun BedtimeCategoryCard(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.bedtime_rules_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             Spacer(Modifier.height(6.dp))
             Text(
                 if (hour >= 0) {
@@ -2401,6 +2397,13 @@ internal fun TaskCard(
 private val StatusRed = Color(0xFFC62828)
 private val StatusYellow = Color(0xFFF9A825)
 private val StatusGreen = Color(0xFF2E7D32)
+
+/** Rot 0–69 %, gelb 70–99 %, grün 100 % (wie im Tagesstatus). */
+private fun progressStatusColor(percent: Double): Color = when {
+    percent >= 100.0 -> StatusGreen
+    percent >= THRESHOLD_PERCENT -> StatusYellow
+    else -> StatusRed
+}
 
 /** Sekunden bis 0 Uhr (nächste Mitternacht in der Gerätezeitzone), basierend auf der App-Uhr. */
 private fun secondsUntilMidnight(): Long {

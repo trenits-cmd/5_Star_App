@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.04112026_0927)
+## Features (v1.04112026_1154)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.04112026_0927`** – (1) Bedtime buttons: Before midnight (5), Before 1 (4), Before 2 (3), Before 3 (2), After 3 (0). (2) Category weight line no longer shows the priority text. (3) Rewards sorted by category, 3 to 1.
+- **Latest: `v1.04112026_1154`** – (1) Daily status and Relationship percentage colored red (0–69 %), yellow (70–99 %), green (100 %). Daily status card uses a light background. (2) Weekly status rewards info on separate lines. (3) Bedtime: description removed; buttons read Before midnight, Before 1 am, Before 2 am, Before 3 am, After 3 am.
+- `v1.04112026_0927` (1) Bedtime buttons: Before midnight (5), Before 1 (4), Before 2 (3), Before 3 (2), After 3 (0). (2) Category weight line no longer shows the priority text. (3) Rewards sorted by category, 3 to 1.
 - `v1.04112026_0911` (1) Bedtime quick buttons show blue selection like Sport. (2) Relationship shown as extra value in the dashboard (not part of the daily status). (3) Relationship score shown in the archive.
 - `v1.04112026_0111` (1) Selected category buttons are blue. (2) Reward category and days (day 3 = category 3, day 5 = category 2, day 7 = category 1) shown in the weekly status, archive and reward cards. (3) Tapping a dinner push scrolls to the confirmation card. (4) Legacy partner category 'Other tasks' is deleted from Firestore when the partner preset is applied.
 - `v1.04112026_0053` (1) Tapping a dinner push opens the app on the dinner day. (2) Penalty term removed everywhere; `TaskType` is now REWARD only, `DayOutcome.MISSED` replaces the old penalty outcome. (3) Partner category 'Other tasks' removed. (4) Category assignment (who has which category) removed from Settings; the structure is fixed in the app. (5) Input fields for pages, minutes and liters are narrower. (6) The date at the top shows the day being entered (yesterday before 06:00). (7) Reward tiers: day 3 = category 3, day 5 = category 2, day 7 = category 1.

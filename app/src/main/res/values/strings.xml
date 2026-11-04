@@ -279,10 +279,10 @@
     <string name="bedtime_rules_hint">Before midnight = 5 stars. 0:00–0:59 = 4, 1:00–1:59 = 3, 2:00–2:59 = 2, later = 0.</string>
     <string name="bedtime_current">Bedtime: %1$s</string>
     <string name="bedtime_quick_2330">Before midnight</string>
-    <string name="bedtime_quick_0030">Before 1</string>
-    <string name="bedtime_quick_0130">Before 2</string>
-    <string name="bedtime_quick_0230">Before 3</string>
-    <string name="bedtime_quick_after3">After 3</string>
+    <string name="bedtime_quick_0030">Before 1 am</string>
+    <string name="bedtime_quick_0130">Before 2 am</string>
+    <string name="bedtime_quick_0230">Before 3 am</string>
+    <string name="bedtime_quick_after3">After 3 am</string>
     <string name="cat_preset_bedtime">Bedtime</string>
     <string name="settings_partner_info">Partner</string>
     <string name="settings_partner_name_value">Name: %1$s</string>
@@ -293,7 +293,7 @@
     <string name="push_category_global">Global</string>
     <string name="day_cutoff_hint">The current day can be confirmed until 06:00 the next day. Entries before 06:00 count for the previous day.</string>
     <string name="week_next_reward">Next reward in %1$d days (category %2$d)</string>
-    <string name="reward_tiers_hint">Rewards: day 3 = category 3, day 5 = category 2, day 7 = category 1. After you choose a reward, counting starts again at day 0.</string>
+    <string name="reward_tiers_hint">Rewards:\nDay 3 = category 3\nDay 5 = category 2\nDay 7 = category 1\nAfter a reward, counting starts again at day 0.</string>
     <string name="dinner_locked">The dinner time is confirmed and can no longer be changed.</string>
     <string name="dinner_reject_button">Reject time</string>
     <string name="dinner_rejected_you">You rejected the dinner time. Waiting for %1$s to correct it.</string>

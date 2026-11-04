@@ -53,6 +53,7 @@ import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.DayOutcome
 import com.trenits.fivestar.domain.DayRecord
 import com.trenits.fivestar.domain.MAX_STARS
+import com.trenits.fivestar.domain.RelationshipAspect
 import com.trenits.fivestar.domain.STREAK_DAYS_FOR_REWARD
 import com.trenits.fivestar.domain.Task
 import com.trenits.fivestar.domain.rewardDaysForTier
@@ -288,7 +289,7 @@ private fun ExpandableArchiveDayCard(
                     fontWeight = FontWeight.Bold,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    DayStatusChip(hasAnyData = hasAnyData, outcome = outcome)
+                    DayStatusChip(hasAnyData = hasAnyData, outcome = outcome, percent = myRecord?.scorePercent)
                     Spacer(Modifier.width(4.dp))
                     Icon(
                         Icons.Filled.ArrowDropDown,
@@ -319,6 +320,19 @@ private fun ExpandableArchiveDayCard(
                     score = myRecord?.let { relationshipScorePercent(relationshipStarsOf(it)) }
                         ?: partnerRecord?.let { relationshipScorePercent(relationshipStarsOf(it)) },
                     accent = MaterialTheme.colorScheme.secondary,
+                )
+            }
+            dayTasks.filter { it.type == TaskType.REWARD }.forEach { task ->
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(
+                        R.string.archive_day_reward_line,
+                        if (task.title.isEmpty()) stringResource(R.string.no_action_chosen) else localizedCatalogTitle(task.title),
+                        statusLabel(task.status),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
             AnimatedVisibility(
@@ -355,6 +369,8 @@ private fun ExpandableArchiveDayCard(
                                 CounterSummary(localizedCategoryName(category), values)
                             }
                         }
+                        if (myRecord != null) ArchiveRelationshipDetails(myLabel, myRecord)
+                        if (showPartner && partnerRecord != null) ArchiveRelationshipDetails(partnerLabel, partnerRecord)
                         if (dayTasks.isNotEmpty()) {
                             ArchiveSectionTitle(stringResource(R.string.archive_section_tasks))
                             dayTasks.forEach { task ->
@@ -376,11 +392,28 @@ private fun ExpandableArchiveDayCard(
 }
 
 @Composable
-private fun DayStatusChip(hasAnyData: Boolean, outcome: DayOutcome?) {
+private fun ArchiveRelationshipDetails(label: String, record: DayRecord) {
+    val stars = relationshipStarsOf(record)
+    val total = relationshipScorePercent(stars)
+    Spacer(Modifier.height(8.dp))
+    ArchiveSectionTitle(stringResource(R.string.archive_section_relationship, label))
+    Text(
+        stringResource(R.string.archive_relationship_total, formatPercent(total)),
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Medium,
+        color = statusGradeColor(total ?: 0.0),
+    )
+    RelationshipAspect.entries.forEach { aspect ->
+        ArchiveCategoryRow(relationshipAspectLabel(aspect), stars[aspect] ?: 0)
+    }
+}
+
+@Composable
+private fun DayStatusChip(hasAnyData: Boolean, outcome: DayOutcome?, percent: Double?) {
     val (text, color) = when {
         !hasAnyData -> stringResource(R.string.archive_no_entry) to MaterialTheme.colorScheme.onSurfaceVariant
-        outcome == DayOutcome.REWARD -> stringResource(R.string.archive_status_reached) to MaterialTheme.colorScheme.primary
-        outcome == DayOutcome.MISSED -> stringResource(R.string.archive_status_missed) to MaterialTheme.colorScheme.error
+        outcome == DayOutcome.REWARD -> stringResource(R.string.archive_status_reached) to statusGradeColor(percent ?: 100.0)
+        outcome == DayOutcome.MISSED -> stringResource(R.string.archive_status_missed) to statusGradeColor(percent ?: 0.0)
         else -> stringResource(R.string.archive_status_pending) to MaterialTheme.colorScheme.onSurfaceVariant
     }
     Box(
@@ -498,50 +531,33 @@ private fun ArchivedTaskCard(
 ) {
     val who = if (task.ownerUid == myUid) myLabel else partnerLabel
     val action = if (task.title.isEmpty()) stringResource(R.string.no_action_chosen) else localizedCatalogTitle(task.title)
+    val accent = if (task.type == TaskType.REWARD) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(action, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("$who · ${typeLabel(task.type)}", style = MaterialTheme.typography.labelMedium, color = accent)
+            if (task.tier > 0) {
                 Text(
-                    "$who · ${typeLabel(task.type)}" + if (task.tier > 0) " · " + stringResource(R.string.reward_tier_label, task.tier, rewardDaysForTier(task.tier)) else "",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = if (task.type == TaskType.REWARD) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.error
-                    },
-                )
-                Text(
-                    statusLabel(task.status),
+                    stringResource(R.string.reward_tier_label, task.tier, rewardDaysForTier(task.tier)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Spacer(Modifier.height(4.dp))
             Text(
-                action,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                stringResource(
-                    R.string.archive_reward_date,
-                    formatDay(task.dayKey),
-                ),
+                stringResource(R.string.archive_reward_date, formatDay(task.dayKey)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                stringResource(
-                    R.string.archive_redeemed_date,
-                    formatDay(task.redeemedDayKey ?: task.dayKey),
-                ),
+                stringResource(R.string.archive_redeemed_date, formatDay(task.redeemedDayKey ?: task.dayKey)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                statusLabel(task.status),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

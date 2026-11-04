@@ -433,4 +433,7 @@
     <string name="confirm_today_done">Confirmed at %1$s. You can still add more values at any time.</string>
     <string name="confirm_today_missing_title">Still missing:</string>
     <string name="confirm_today_missing_hint">Please fill in these items so the day can be confirmed.</string>
+    <string name="archive_section_relationship">Relationship: %1$s</string>
+    <string name="archive_relationship_total">Total: %1$s</string>
+    <string name="archive_day_reward_line">Reward: %1$s (%2$s)</string>
 </resources>

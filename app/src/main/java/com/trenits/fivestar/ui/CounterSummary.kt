@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.trenits.fivestar.R
+import com.trenits.fivestar.domain.BEDTIME_HOUR
+import com.trenits.fivestar.domain.BEDTIME_MINUTE
 import com.trenits.fivestar.domain.DEMI
 import com.trenits.fivestar.domain.DINNER_HOUR
 import com.trenits.fivestar.domain.DINNER_MINUTE
@@ -74,6 +76,16 @@ fun CounterSummary(name: String, values: Map<String, Double>) {
         if (hour >= 0) {
             Text(
                 stringResource(R.string.dinner_time_current, "%02d:%02d".format(hour, minute)),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+    if (values.containsKey(BEDTIME_HOUR)) {
+        val hour = values[BEDTIME_HOUR]?.toInt() ?: -1
+        val minute = values[BEDTIME_MINUTE]?.toInt() ?: 0
+        if (hour >= 0) {
+            Text(
+                stringResource(R.string.bedtime_current, "%02d:%02d".format(hour, minute)),
                 style = MaterialTheme.typography.bodySmall,
             )
         }

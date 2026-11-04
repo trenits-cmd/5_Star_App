@@ -76,6 +76,7 @@ import java.time.ZoneId
 import java.time.Duration
 import kotlinx.coroutines.delay
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.runtime.produceState
 import androidx.compose.foundation.background
 import com.trenits.fivestar.data.AppClock
@@ -1534,6 +1535,7 @@ private fun CounterCard(
                 CounterRow(stringResource(R.string.counter_glasses), values[GLASSES] ?: 0.0, step = 1.0) {
                     onChange(GLASSES, it, true)
                 }
+                Spacer(Modifier.height(12.dp))
                 LitersField(
                     categoryId = category.id,
                     value = values[LITERS] ?: 0.0,
@@ -1819,16 +1821,6 @@ private fun BedtimeCategoryCard(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            Spacer(Modifier.height(6.dp))
-            Text(
-                if (hour >= 0) {
-                    stringResource(R.string.bedtime_current, "%02d:%02d".format(hour, minute))
-                } else {
-                    stringResource(R.string.dinner_time_not_set)
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-            )
             Spacer(Modifier.height(8.dp))
             var selectedBedtime by remember { mutableStateOf<Pair<Int, Int>?>(null) }
             LaunchedEffect(hour, minute) {
@@ -2399,11 +2391,12 @@ private val StatusYellow = Color(0xFFF9A825)
 private val StatusGreen = Color(0xFF2E7D32)
 
 /** Rot 0–69 %, gelb 70–99 %, grün 100 % (wie im Tagesstatus). */
-private fun progressStatusColor(percent: Double): Color = when {
-    percent >= 100.0 -> StatusGreen
-    percent >= THRESHOLD_PERCENT -> StatusYellow
-    else -> StatusRed
+internal fun statusGradeColor(percent: Double): Color = when {
+    percent >= THRESHOLD_PERCENT -> StatusGreen
+    else -> lerp(StatusRed, StatusYellow, (percent / THRESHOLD_PERCENT).toFloat().coerceIn(0f, 1f))
 }
+
+private fun progressStatusColor(percent: Double): Color = statusGradeColor(percent)
 
 /** Sekunden bis 0 Uhr (nächste Mitternacht in der Gerätezeitzone), basierend auf der App-Uhr. */
 private fun secondsUntilMidnight(): Long {

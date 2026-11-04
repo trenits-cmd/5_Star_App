@@ -2,7 +2,7 @@
 
 Two people (e.g. **Rosie & Andi**) track their daily goals and relationship together. Each person rates their own categories and relationship dimensions on a star scale; the partner sees everything in real time.
 
-## Features (v1.04112026_1550)
+## Features (v1.04112026_1755)
 
 > **AI & Developer Code Directory:** See [`CODE_INDEX.md`](./CODE_INDEX.md) for the complete, AI-readable table of contents and explanation of all source files, domain formulas, and Firestore schemas.
 
@@ -38,7 +38,7 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
   - Each category has a weight (1–5) that flows into the daily and weekly target.
   - **Rosie:** Drink water (3×, min. 2.5 L in glasses or decimal liters), Alcohol limit (2×, 0 L = 5 ★, 2.5 L benchmark, Demi 0.25 L / Pint 0.5 L + decimal L), Dinner before 20h (3×: <20h = 5 ★, <21h = 1 ★, else 0 ★; entered by Andi & tracked in both apps), Meals (3×: breakfast, lunch, dinner – nothing/little/medium/healthy; all healthy = 5 ★).
   - **Andi (3 categories only):** Sport (3×: 3 days/week at least 45 min each, sport time in minutes entered daily), Drink water (2×: min. 2.5 L in glasses or decimal liters, 2.5 L = 5 ★, proportionally rounded down below), Reading (2×: pages read entered daily, 0–5 pages = 0 ★, >50 pages = 5 ★, 6–50 proportional).
-  - **Dinner before 20h:** time options are shown without brackets (e.g. "Before 20h", "Before 21h", "21h+").
+  - **Dinner before 20h:** time options are shown without brackets (e.g. "Before 20h", "Before 21h", "21h+"). The partner enters the time with full-width buttons (Enter time, Before 20h, Before 21h, 21h+) - the same button style as on the main_user card, which only confirms or rejects. The confirmation document is the single source of truth, so both dashboards always show the same recorded time and the same stars. If main_user rejects the time, the partner gets a push notification ("Dinner time rejected") and must enter a new time; a corrected time triggers a fresh confirmation push to main_user. A rejected time is never auto-confirmed.
   - Each category has a meaningful illustrated icon (food, water, alcohol, fitness, home, mind, detox, stars, relationship, reading).
 
 - **Rewards & Penalties (managed in Partner tab):**
@@ -86,7 +86,8 @@ Two people (e.g. **Rosie & Andi**) track their daily goals and relationship toge
 
 ## Releases
 
-- **Latest: `v1.04112026_1550`** - (1) The partner category `Other tasks (alternating)` is gone everywhere: Dashboard, Partner tab, Statistics, Archive and Settings no longer show it. (2) Old day records drop its snapshots and counters when no active rotation category exists anymore, so daily, archive and statistics percentages are calculated without its weight.
+- **Latest: `v1.04112026_1755`** - (1) The partner dinner card now uses the same full-width buttons as the main_user card (Enter time, Before 20h, Before 21h, 21h+). (2) Fixed wrong dinner time: the confirmation document is the single source of truth, the sync no longer lets a stale main_user value overwrite a freshly entered time (both dashboards show the same time and stars, local cache included, active day instead of today). (3) After a rejection the partner gets a push ("Dinner time rejected") and must enter a new time; rejected times are never auto-confirmed and a corrected time triggers a fresh confirmation push to main_user.
+- `v1.04112026_1550` - (1) The partner category `Other tasks (alternating)` is gone everywhere: Dashboard, Partner tab, Statistics, Archive and Settings no longer show it. (2) Old day records drop its snapshots and counters when no active rotation category exists anymore, so daily, archive and statistics percentages are calculated without its weight.
 - `v1.04112026_1514`  – (1) Sport card: input field renamed to Enter minutes with more spacing to the summary row. (2) Archive heading is just Archive. (3) Statistics: date dd.MM under each weekday in smaller type; Details section only for rewards. (4) Settings profile: no heading text, big bold name + e-mail next to a 96 dp photo. (5) Settings partner card shows the partner photo.
 - `v1.04112026_1432` Top bar has no action anymore (sign-out lives in Settings); the in-app role/test switch was removed. Switching to the partner account is done for real by signing out and signing in with the partner's e-mail link.
 - `v1.04112026_1252` (1) Archive details now show counters per person (Details of main_user / Details of partner). (2) Sign-out icon removed from the top bar; replaced by a test-only role switch Partner ⇄ Main user. (3) CODE_INDEX.md refreshed (roles, no penalties, 5 tabs, settings).

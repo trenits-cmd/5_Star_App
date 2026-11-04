@@ -375,11 +375,15 @@ fun DashboardScreen(vm: AppViewModel) {
                 CategoryKind.DINNER_TIME -> {
                     val partnerDinnerValues = partnerToday?.counters?.get(category.id)
                         ?: partnerToday?.counters?.values?.firstOrNull { it.containsKey(DINNER_HOUR) }
-                    val effectiveValues = if (values.containsKey(DINNER_HOUR)) {
-                        values
-                    } else {
-                        partnerDinnerValues.orEmpty()
+                    // Die Bestätigung ist die Quelle der Wahrheit: beide Karten zeigen dieselbe Uhrzeit.
+                    val confirmationValues = activeDinnerConfirmation?.let { dc ->
+                        mapOf(
+                            DINNER_HOUR to dc.hour.toDouble(),
+                            DINNER_MINUTE to dc.minute.toDouble(),
+                        )
                     }
+                    val effectiveValues = confirmationValues
+                        ?: if (values.containsKey(DINNER_HOUR)) values else partnerDinnerValues.orEmpty()
                     
                     // Die Partner-Rolle trägt die Abendessen-Uhrzeit ein; main_user kann sie nicht ändern.
                     val canEditTime = myPresetRole == "partner" && activeDinnerConfirmation?.isConfirmed != true
@@ -1747,31 +1751,43 @@ private fun DinnerTimeCard(
             }
             if (canEditTime) {
                 Spacer(Modifier.height(8.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { onTimeSelected(19, 30) }) {
-                        Text(stringResource(R.string.dinner_quick_before_20))
-                    }
-                    OutlinedButton(onClick = { onTimeSelected(20, 30) }) {
-                        Text(stringResource(R.string.dinner_quick_before_21))
-                    }
-                    OutlinedButton(onClick = { onTimeSelected(21, 15) }) {
-                        Text(stringResource(R.string.dinner_quick_after_21))
-                    }
-                    Button(
-                        onClick = {
-                            val initH = if (hour >= 0) hour else 19
-                            val initM = if (hour >= 0) minute else 30
-                            TimePickerDialog(
-                                context,
-                                { _, h, m -> onTimeSelected(h, m) },
-                                initH,
-                                initM,
-                                true,
-                            ).show()
-                        },
-                    ) {
-                        Text(stringResource(R.string.dinner_pick_time))
-                    }
+                // Bedienung wie bei main_user: vollbreite Schaltflächen statt Chips in einer Reihe.
+                Button(
+                    onClick = {
+                        val initH = if (hour >= 0) hour else 19
+                        val initM = if (hour >= 0) minute else 30
+                        TimePickerDialog(
+                            context,
+                            { _, h, m -> onTimeSelected(h, m) },
+                            initH,
+                            initM,
+                            true,
+                        ).show()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.dinner_pick_time))
+                }
+                Spacer(Modifier.height(4.dp))
+                OutlinedButton(
+                    onClick = { onTimeSelected(19, 30) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.dinner_quick_before_20))
+                }
+                Spacer(Modifier.height(4.dp))
+                OutlinedButton(
+                    onClick = { onTimeSelected(20, 30) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.dinner_quick_before_21))
+                }
+                Spacer(Modifier.height(4.dp))
+                OutlinedButton(
+                    onClick = { onTimeSelected(21, 15) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.dinner_quick_after_21))
                 }
             }
             Spacer(Modifier.height(8.dp))

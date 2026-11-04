@@ -300,6 +300,7 @@
     <string name="dinner_rejected_partner">%1$s rejected the dinner time. Please correct it.</string>
     <string name="dinner_rejected_title">Dinner time rejected</string>
     <string name="dinner_rejected_body">Please correct the dinner time in the app.</string>
+    <string name="dinner_rejected_body_time">The dinner time %1$s was rejected. Please enter a new time in the app.</string>
     <string name="kind_sport">Sport (3×/week 45 min, daily time)</string>
 
     <string name="target_me">For %1$s</string>

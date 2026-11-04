@@ -623,7 +623,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
-            combine(categories, days, tasks, todayKey) { _, _, _, _ -> Unit }.collect {
+            combine(categories, days, tasks, todayKey, dinnerConfirmations) { _, _, _, _, _ -> Unit }.collect {
                 syncSharedDinnerTimeForToday()
                 evaluateStreakReward()
                 checkConfirmationRemindersAndAutoConfirm()
@@ -830,8 +830,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         )
         val updated = buildDayRecord(dayKey, uid, targeted.value, stored, counters)
             .copy(confirmedAt = current?.confirmedAt)
-        saveUpdatedDay(updated, showToast = true)
+        // Zuerst die Bestätigung speichern (neue Quelle der Wahrheit), dann die Zähler:
+        // der Sync zieht die Uhrzeit daraus, damit beide Apps dieselbe Zeit zeigen.
         repo()?.saveDinnerEntry(dayKey, uid, hour.coerceIn(0, 23), minute.coerceIn(0, 59), AppClock.now())
+        saveUpdatedDay(updated, showToast = true)
     }
 
     /** Speichert die Schlafenszeit (vor Mitternacht bis 3 Uhr). */
@@ -887,31 +889,48 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun syncSharedDinnerTimeForToday() {
         val repo = repo() ?: return
-        val partner = partnerToday.value ?: return
+        val dayKey = activeDayKey.value
         val dinnerCategories = targeted.value.filter { it.kind == CategoryKind.DINNER_TIME }
         if (dinnerCategories.isEmpty()) return
 
-        val myCurrent = myToday.value
-        val myCounters = myCurrent?.counters.orEmpty().toMutableMap()
-        var changed = false
+        // Quelle der Wahrheit ist das Bestätigungs-Dokument: beide Apps zeigen exakt dieselbe Uhrzeit.
+        val confirmation = dinnerConfirmations.value.items.firstOrNull { it.dayKey == dayKey }
+        val sourceHour: Double
+        val sourceMinute: Double
+        if (confirmation != null) {
+            sourceHour = confirmation.hour.toDouble()
+            sourceMinute = confirmation.minute.toDouble()
+        } else if (myPresetRole.value == "main_user") {
+            // Noch kein Eintrag da: main_user übernimmt den Partner-Stand – niemals umgekehrt,
+            // sonst würde der veraltete main_user-Wert die frisch eingetragene Zeit überschreiben.
+            val partnerCounters = partnerToday.value?.counters.orEmpty()
+            val partnerDinner = dinnerCategories.firstNotNullOfOrNull { partnerCounters[it.id] }
+                ?: partnerCounters.values.firstOrNull { it.containsKey(DINNER_HOUR) }
+                ?: return
+            sourceHour = partnerDinner[DINNER_HOUR] ?: return
+            sourceMinute = partnerDinner[DINNER_MINUTE] ?: 0.0
+        } else {
+            return
+        }
 
+        val myCurrent = myToday.value ?: return
+        val myCounters = myCurrent.counters.orEmpty().toMutableMap()
+        var changed = false
         for (cat in dinnerCategories) {
-            val partnerDinner = partner.counters[cat.id]
-                ?: partner.counters.values.firstOrNull { it.containsKey(DINNER_HOUR) }
-                ?: continue
-            val pHour = partnerDinner[DINNER_HOUR] ?: continue
-            val pMinute = partnerDinner[DINNER_MINUTE] ?: 0.0
             val mine = myCounters[cat.id].orEmpty()
-            if (mine[DINNER_HOUR] != pHour || mine[DINNER_MINUTE] != pMinute) {
-                myCounters[cat.id] = mine + mapOf(DINNER_HOUR to pHour, DINNER_MINUTE to pMinute)
+            if (mine[DINNER_HOUR] != sourceHour || mine[DINNER_MINUTE] != sourceMinute) {
+                myCounters[cat.id] = mine + mapOf(DINNER_HOUR to sourceHour, DINNER_MINUTE to sourceMinute)
                 changed = true
             }
         }
+        if (!changed) return
 
-        if (changed) {
-            val stored = myCurrent?.snapshots?.associate { it.categoryId to it.stars }.orEmpty()
-            repo.saveDay(buildDayRecord(todayKey.value, uid, categories.value.items, stored, myCounters))
-        }
+        val stored = myCurrent.snapshots.associate { it.categoryId to it.stars }
+        val updated = buildDayRecord(dayKey, uid, targeted.value, stored, myCounters)
+            .copy(confirmedAt = myCurrent.confirmedAt)
+        // Auch den lokalen Cache aktualisieren, sonst würde der ältere lokale Wert die Anzeige gewinnen.
+        localDayRecords.value = localDayRecords.value + (dayKey to updated)
+        repo.saveDay(updated)
     }
 
     /**
@@ -1434,18 +1453,32 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         dinnerConfirmations.value.items.forEach { dc ->
+            // Abgelehnt: nur der Eintragende (Partner) muss korrigieren – Push an ihn,
+            // keine Auto-Bestätigung, bis eine neue Zeit eingetragen wurde.
+            if (dc.isRejected) {
+                if (dc.enteredBy == uid) {
+                    val rejectedKey = "dinner_rejected_${dc.dayKey}_${(dc.rejectedAt ?: Instant.EPOCH).epochSecond}"
+                    if (!prefs.hasNotified(rejectedKey)) {
+                        ReminderScheduler.sendDinnerRejectedNotification(getApplication(), dc)
+                        prefs.markNotified(rejectedKey)
+                    }
+                }
+                return@forEach
+            }
             if (dc.isPending && dc.enteredBy != uid) {
                 if (dc.withAutoConfirmation(now).confirmedAt != null && dc.isPending) {
                     repo.confirmDinner(dc.dayKey, uid, now, auto = true)
                     return@forEach
                 }
-                if (dc.needsWarning(now) && !prefs.hasNotified("dinner_warn_${dc.dayKey}")) {
+                // Schlüssel je Eintrag: eine korrigierte Uhrzeit erneut eine Push aus.
+                val entryKey = dc.enteredAt.epochSecond
+                if (dc.needsWarning(now) && !prefs.hasNotified("dinner_warn_${dc.dayKey}_$entryKey")) {
                     ReminderScheduler.sendDinnerConfirmNotification(getApplication(), partnerDisplay, dc, warning = true)
-                    prefs.markNotified("dinner_warn_${dc.dayKey}")
+                    prefs.markNotified("dinner_warn_${dc.dayKey}_$entryKey")
                 }
-                if (!prefs.hasNotified("dinner_${dc.dayKey}")) {
+                if (!prefs.hasNotified("dinner_${dc.dayKey}_$entryKey")) {
                     ReminderScheduler.sendDinnerConfirmNotification(getApplication(), partnerDisplay, dc, warning = false)
-                    prefs.markNotified("dinner_${dc.dayKey}")
+                    prefs.markNotified("dinner_${dc.dayKey}_$entryKey")
                 }
             }
         }

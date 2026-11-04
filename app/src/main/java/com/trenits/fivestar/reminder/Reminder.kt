@@ -281,6 +281,44 @@ object ReminderScheduler {
         NotificationManagerCompat.from(context).notify(BASE_NOTIFICATION_ID + 700 + (dc.dayKey.hashCode() and 0xFF), notification)
     }
 
+    /**
+     * Push an die eintragende Person (Partner): die Uhrzeit wurde abgelehnt,
+     * sie muss eine neue Zeit eingeben. Läuft auch bei geschlossener App über den ReminderWorker.
+     */
+    @SuppressLint("MissingPermission")
+    fun sendDinnerRejectedNotification(context: Context, dc: DinnerConfirmation) {
+        createChannel(context)
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!allowed) return
+
+        val time = "%02d:%02d".format(dc.hour, dc.minute)
+        val title = context.getString(R.string.dinner_rejected_title)
+        val body = context.getString(R.string.dinner_rejected_body_time, time)
+        // Tap öffnet den Abendessen-Tag, damit direkt eine neue Zeit eingetragen werden kann.
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra("dinner_day_key", dc.dayKey)
+            putExtra("dinner_confirm", true)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+        NotificationManagerCompat.from(context)
+            .notify(BASE_NOTIFICATION_ID + 710 + (dc.dayKey.hashCode() and 0xFF), notification)
+    }
+
     /** Frühwarnung: bestaetigen oder "Not yet" waehlen, sonst gilt die Strafe zum Fristende als ausgefuehrt. */
     @SuppressLint("MissingPermission")
     fun sendDeadlineWarningNotification(context: Context, partnerDisplayName: String, task: Task, deadline: Instant) {
@@ -494,7 +532,11 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
         }
     }
 
-    /** Abendessen-Uhrzeit: Push an die bestätigende Person, Frühwarnung und Auto-Bestätigung nach 48 h. */
+    /**
+     * Abendessen-Uhrzeit: Push an die bestätigende Person, Frühwarnung und Auto-Bestätigung nach 48 h.
+     * Abgelehnte Einträge: Push an die eintragende Person ("Bitte korrigieren"), keine Auto-Bestätigung,
+     * bis eine neue Zeit eingetragen wurde – der neue Eintrag löst erneut eine Push an main_user aus.
+     */
     private suspend fun checkDinnerConfirmations(coupleRef: DocumentReference, uid: String, now: ZonedDateTime) {
         val prefs = ReminderPrefs(applicationContext)
         val instant = now.toInstant()
@@ -506,9 +548,32 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 val minute = doc.getLong("minute")?.toInt() ?: 0
                 val enteredAt = doc.getTimestamp("enteredAt")
                     ?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) } ?: return@runCatching
-                val confirmed = doc.getTimestamp("confirmedAt")
-                if (confirmed != null) return@runCatching
-                val dc = DinnerConfirmation(doc.id, enteredBy, hour, minute, enteredAt)
+                val confirmedAt = doc.getTimestamp("confirmedAt")
+                    ?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) }
+                val rejectedAt = doc.getTimestamp("rejectedAt")
+                    ?.let { Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()) }
+                val dc = DinnerConfirmation(
+                    dayKey = doc.id,
+                    enteredBy = enteredBy,
+                    hour = hour,
+                    minute = minute,
+                    enteredAt = enteredAt,
+                    confirmedAt = confirmedAt,
+                    rejectedAt = rejectedAt,
+                )
+                if (dc.isConfirmed) return@runCatching
+
+                if (dc.isRejected) {
+                    // Nur der Eintragende muss korrigieren: Push an ihn (einmal pro Ablehnung).
+                    if (dc.enteredBy != uid) return@runCatching
+                    val rejectedKey = "dinner_rejected_${dc.dayKey}_${(dc.rejectedAt ?: Instant.EPOCH).epochSecond}"
+                    if (!prefs.hasNotified(rejectedKey)) {
+                        ReminderScheduler.sendDinnerRejectedNotification(applicationContext, dc)
+                        prefs.markNotified(rejectedKey)
+                    }
+                    return@runCatching
+                }
+
                 if (enteredBy == uid) return@runCatching
                 if (!dc.withAutoConfirmation(instant).isPending) {
                     doc.reference.update(
@@ -522,13 +587,15 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 }
                 val partnerName = LocalProfileStore(applicationContext).partnerDisplayName.value
                     ?: applicationContext.getString(R.string.who_partner)
-                if (!prefs.hasNotified("dinner_${dc.dayKey}")) {
+                // Schlüssel je Eintrag: eine korrigierte Uhrzeit löst erneut eine Push aus.
+                val entryKey = dc.enteredAt.epochSecond
+                if (!prefs.hasNotified("dinner_${dc.dayKey}_$entryKey")) {
                     ReminderScheduler.sendDinnerConfirmNotification(applicationContext, partnerName, dc, warning = false)
-                    prefs.markNotified("dinner_${dc.dayKey}")
+                    prefs.markNotified("dinner_${dc.dayKey}_$entryKey")
                 }
-                if (dc.needsWarning(instant) && !prefs.hasNotified("dinner_warn_${dc.dayKey}")) {
+                if (dc.needsWarning(instant) && !prefs.hasNotified("dinner_warn_${dc.dayKey}_$entryKey")) {
                     ReminderScheduler.sendDinnerConfirmNotification(applicationContext, partnerName, dc, warning = true)
-                    prefs.markNotified("dinner_warn_${dc.dayKey}")
+                    prefs.markNotified("dinner_warn_${dc.dayKey}_$entryKey")
                 }
             }
         }

@@ -372,35 +372,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * Kategorien, die für mich gelten: gespeicherte Zuweisung (targets) bzw. Standard-Rolle,
      * solange für eine Preset-Kategorie noch kein Eintrag existiert.
      */
-    /**
-     * Test-only: lokale Rollen-Umschaltung (main_user <-> partner) ohne Neu-Anmeldung.
-     * Beeinflusst nur die Darstellung auf diesem Gerät, nicht die Daten in Firestore.
-     */
-    private val testRoleOverride = MutableStateFlow<String?>(null)
-
-    val roleOverride: StateFlow<String?> = testRoleOverride
-
-    fun toggleTestRole() {
-        val next = if (testRoleOverride.value == "partner") "main_user" else "partner"
-        testRoleOverride.value = next
-        toastMessage.value = if (next == "partner") {
-            text(R.string.test_role_partner)
-        } else {
-            text(R.string.test_role_main_user)
-        }
-    }
-
-    private fun effectiveRole(prof: UserProfile?, localName: String?, pName: String?, profileName: String?, cats: List<Category>): String =
-        testRoleOverride.value ?: resolveRole(prof?.presetRole, localName, pName, profileName, cats)
-    val targeted: StateFlow<List<Category>> = combine(categories, myName, partnerName, profile, testRoleOverride) { list, localName, pName, prof, _ ->
-        val role = effectiveRole(prof, localName, pName, prof?.displayName, list.items)
+    val targeted: StateFlow<List<Category>> = combine(categories, myName, partnerName, profile) { list, localName, pName, prof ->
+        val role = resolveRole(prof?.presetRole, localName, pName, prof?.displayName, list.items)
         effectiveCategories(list.items, uid, role == "partner")
     }.share(emptyList())
 
-
     /** Meine Rolle für die Kategorie-Vorlage: "main_user" oder "partner". */
-    val myPresetRole: StateFlow<String> = combine(profile, myName, partnerName, categories, testRoleOverride) { p, localName, pName, cats, _ ->
-        effectiveRole(p, localName, pName, p?.displayName, cats.items)
+    val myPresetRole: StateFlow<String> = combine(profile, myName, partnerName, categories) { p, localName, pName, cats ->
+        resolveRole(p?.presetRole, localName, pName, p?.displayName, cats.items)
     }.share("main_user")
 
     /** Kategorien einer Person (z. B. Partner) nach Zuweisung, Standard-Rolle als Fallback. */
@@ -425,8 +404,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         .share(null)
 
     /** Katalogeinträge (Belohnungen & Strafen) strikt passend zu meiner Rolle (Rosie vs. Andi). */
-    val myCatalog: StateFlow<List<CatalogItem>> = combine(catalog, myName, partnerName, profile, testRoleOverride) { _, localName, pName, prof, _ ->
-        val role = effectiveRole(prof, localName, pName, prof?.displayName, emptyList())
+    val myCatalog: StateFlow<List<CatalogItem>> = combine(catalog, myName, partnerName, profile) { _, localName, pName, prof ->
+        val role = resolveRole(prof?.presetRole, localName, pName, prof?.displayName, emptyList())
         if (role == "partner") {
             canonicalPartnerCatalog(uid)
         } else {

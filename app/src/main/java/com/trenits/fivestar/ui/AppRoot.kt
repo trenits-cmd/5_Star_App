@@ -24,7 +24,6 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -92,7 +91,6 @@ private fun MainTabs(viewModel: AppViewModel) {
     val partnerName by viewModel.partnerName.collectAsState()
     val partnerPhoto by viewModel.partnerPhoto.collectAsState()
     val toast by viewModel.toastMessage.collectAsState()
-    val roleOverride by viewModel.roleOverride.collectAsState()
     val dinnerDay by NotificationTargets.dinnerDay.collectAsState()
 
     LaunchedEffect(dinnerDay) {
@@ -123,17 +121,6 @@ private fun MainTabs(viewModel: AppViewModel) {
         topBar = {
             TopAppBar(
                 title = { Text(text = "5 Star App", style = MaterialTheme.typography.titleMedium) },
-                actions = {
-                    // Test-only: wechselt die angezeigte Rolle (main_user <-> partner).
-                    TextButton(onClick = { viewModel.toggleTestRole() }) {
-                        Text(
-                            text = stringResource(
-                                if (roleOverride == "partner") R.string.test_switch_main_user else R.string.test_switch_partner
-                            ),
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                    }
-                },
             )
         },
         bottomBar = {

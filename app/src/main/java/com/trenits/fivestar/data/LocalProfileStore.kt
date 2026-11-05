@@ -13,16 +13,24 @@ import kotlinx.coroutines.flow.asStateFlow
 class LocalProfileStore(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    private val _displayName = MutableStateFlow(prefs.getString(KEY_DISPLAY_NAME, null))
+    /** Liest einen Textwert; ist der gespeicherte Typ falsch, wird der Eintrag verworfen statt die App abstürzen zu lassen. */
+    private fun readString(key: String): String? = try {
+        prefs.getString(key, null)
+    } catch (e: ClassCastException) {
+        prefs.edit().remove(key).apply()
+        null
+    }
+
+    private val _displayName = MutableStateFlow(readString(KEY_DISPLAY_NAME))
     val displayName: StateFlow<String?> = _displayName.asStateFlow()
 
-    private val _photoBase64 = MutableStateFlow(prefs.getString(KEY_PHOTO_BASE64, null))
+    private val _photoBase64 = MutableStateFlow(readString(KEY_PHOTO_BASE64))
     val photoBase64: StateFlow<String?> = _photoBase64.asStateFlow()
 
-    private val _partnerDisplayName = MutableStateFlow(prefs.getString(KEY_PARTNER_DISPLAY_NAME, null))
+    private val _partnerDisplayName = MutableStateFlow(readString(KEY_PARTNER_DISPLAY_NAME))
     val partnerDisplayName: StateFlow<String?> = _partnerDisplayName.asStateFlow()
 
-    private val _partnerPhotoBase64 = MutableStateFlow(prefs.getString(KEY_PARTNER_PHOTO_BASE64, null))
+    private val _partnerPhotoBase64 = MutableStateFlow(readString(KEY_PARTNER_PHOTO_BASE64))
     val partnerPhotoBase64: StateFlow<String?> = _partnerPhotoBase64.asStateFlow()
 
     fun saveDisplayName(name: String) {
@@ -54,14 +62,14 @@ class LocalProfileStore(context: Context) {
         prefs.edit().putString(KEY_PENDING_EMAIL, email.trim()).apply()
     }
 
-    fun pendingEmail(): String? = prefs.getString(KEY_PENDING_EMAIL, null)?.takeIf { it.isNotBlank() }
+    fun pendingEmail(): String? = readString(KEY_PENDING_EMAIL)?.takeIf { it.isNotBlank() }
 
     fun clearPendingEmail() {
         prefs.edit().remove(KEY_PENDING_EMAIL).apply()
     }
 
     fun consumePendingRedeemCode(): String? {
-        val code = prefs.getString(KEY_PENDING_REDEEM_CODE, null)?.trim()?.takeIf { it.isNotEmpty() }
+        val code = readString(KEY_PENDING_REDEEM_CODE)?.trim()?.takeIf { it.isNotEmpty() }
         if (code != null) {
             prefs.edit().remove(KEY_PENDING_REDEEM_CODE).apply()
         }

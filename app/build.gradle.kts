@@ -13,8 +13,8 @@ android {
         applicationId = "com.trenits.fivestar"
         minSdk = 26
         targetSdk = 36
-        versionCode = 57
-        versionName = "1.05112026_0148"
+        versionCode = 58
+        versionName = "1.05112026_0210"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services)
     implementation(libs.googleid)

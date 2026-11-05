@@ -1,5 +1,6 @@
 package com.trenits.fivestar
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -40,7 +41,7 @@ class MainActivity : AppCompatActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxSize().safeDrawingPadding()) {
                         val authViewModel: AuthViewModel = viewModel()
-                        val user by authViewModel.user.collectAsState()
+                        val user by authViewModel.user.collectAsStateWithLifecycle()
                         val signedIn = user
 
                         if (signedIn == null) {

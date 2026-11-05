@@ -35,7 +35,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,20 +72,20 @@ fun SettingsScreen(vm: AppViewModel) {
     val context = LocalContext.current
     val prefs = remember { ReminderPrefs(context) }
 
-    val created by vm.created.collectAsState()
-    val catalog by vm.myCatalog.collectAsState()
-    val storedCategories by vm.categories.collectAsState()
-    val myPresetRole by vm.myPresetRole.collectAsState()
+    val created by vm.created.collectAsStateWithLifecycle()
+    val catalog by vm.myCatalog.collectAsStateWithLifecycle()
+    val storedCategories by vm.categories.collectAsStateWithLifecycle()
+    val myPresetRole by vm.myPresetRole.collectAsStateWithLifecycle()
     val myCategories = storedCategories.items.filter { it.ownerUid == vm.uid && !it.archived && it.kind != CategoryKind.ROTATION }
-    val days by vm.days.collectAsState()
-    val lastSync by vm.lastSync.collectAsState()
-    val syncStatus by vm.syncStatus.collectAsState()
-    val myName by vm.myName.collectAsState()
-    val myPhoto by vm.myPhoto.collectAsState()
-    val partnerName by vm.partnerName.collectAsState()
-    val partnerPhoto by vm.partnerPhoto.collectAsState()
-    val partnerAccountEmail by vm.partnerEmail.collectAsState()
-    val partnerUid by vm.partnerUid.collectAsState()
+    val days by vm.days.collectAsStateWithLifecycle()
+    val lastSync by vm.lastSync.collectAsStateWithLifecycle()
+    val syncStatus by vm.syncStatus.collectAsStateWithLifecycle()
+    val myName by vm.myName.collectAsStateWithLifecycle()
+    val myPhoto by vm.myPhoto.collectAsStateWithLifecycle()
+    val partnerName by vm.partnerName.collectAsStateWithLifecycle()
+    val partnerPhoto by vm.partnerPhoto.collectAsStateWithLifecycle()
+    val partnerAccountEmail by vm.partnerEmail.collectAsStateWithLifecycle()
+    val partnerUid by vm.partnerUid.collectAsStateWithLifecycle()
 
     var globalPushEnabled by remember { mutableStateOf(prefs.enabled()) }
     var reminder by remember { mutableStateOf(prefs.time()) }

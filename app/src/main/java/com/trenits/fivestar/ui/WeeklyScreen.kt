@@ -34,7 +34,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,18 +69,18 @@ import kotlin.math.roundToInt
 
 @Composable
 fun WeeklyScreen(vm: AppViewModel) {
-    val weekDays by vm.weekDays.collectAsState()
-    val weekOutcomes by vm.weekOutcomes.collectAsState()
-    val streak by vm.weekSuccessfulDays.collectAsState()
-    val weekRewardUnlocked by vm.weekRewardUnlocked.collectAsState()
-    val currentWeeklyReward by vm.currentWeeklyReward.collectAsState()
-    val archivedTasks by vm.archivedTasks.collectAsState()
-    val tasks by vm.tasks.collectAsState()
-    val days by vm.days.collectAsState()
-    val targeted by vm.targeted.collectAsState()
-    val partnerUid by vm.partnerUid.collectAsState()
-    val myName by vm.myName.collectAsState()
-    val partnerName by vm.partnerName.collectAsState()
+    val weekDays by vm.weekDays.collectAsStateWithLifecycle()
+    val weekOutcomes by vm.weekOutcomes.collectAsStateWithLifecycle()
+    val streak by vm.weekSuccessfulDays.collectAsStateWithLifecycle()
+    val weekRewardUnlocked by vm.weekRewardUnlocked.collectAsStateWithLifecycle()
+    val currentWeeklyReward by vm.currentWeeklyReward.collectAsStateWithLifecycle()
+    val archivedTasks by vm.archivedTasks.collectAsStateWithLifecycle()
+    val tasks by vm.tasks.collectAsStateWithLifecycle()
+    val days by vm.days.collectAsStateWithLifecycle()
+    val targeted by vm.targeted.collectAsStateWithLifecycle()
+    val partnerUid by vm.partnerUid.collectAsStateWithLifecycle()
+    val myName by vm.myName.collectAsStateWithLifecycle()
+    val partnerName by vm.partnerName.collectAsStateWithLifecycle()
 
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)

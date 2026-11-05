@@ -568,7 +568,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             var lastSyncedRole: String? = null
             combine(profile, myName, partnerName, categories, catalog) { p, localName, pName, cats, catItems ->
                 listOf(p, localName, pName, cats, catItems)
-            }.collect { args ->
+            }.collect { args -> guarded {
                 val p = args[0] as? UserProfile
                 val localName = args[1] as? String
                 val pName = args[2] as? String
@@ -577,7 +577,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 @Suppress("UNCHECKED_CAST")
                 val catItems = args[4] as Listed<CatalogItem>
 
-                val coupleId = p?.coupleId ?: return@collect
+                val coupleId = p?.coupleId ?: return@guarded
                 if (uid.isNotEmpty() && uid !in members.value.items) {
                     runCatching {
                         Firebase.firestore.collection("couples").document(coupleId)
@@ -620,13 +620,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 localDayRecords.value.values.forEach { pendingRecord ->
                     repo.saveDay(pendingRecord)
                 }
-            }
+            } }
         }
         viewModelScope.launch {
             combine(categories, days, tasks, todayKey, dinnerConfirmations) { _, _, _, _, _ -> Unit }.collect {
-                syncSharedDinnerTimeForToday()
-                evaluateStreakReward()
-                checkConfirmationRemindersAndAutoConfirm()
+                guarded {
+                    syncSharedDinnerTimeForToday()
+                    evaluateStreakReward()
+                    checkConfirmationRemindersAndAutoConfirm()
+                }
             }
         }
         viewModelScope.launch {
@@ -644,14 +646,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             incomingRequest.collect { invite ->
-                if (invite?.status == "confirmed") {
-                    val joinedLabel = invite.requestedEmail?.takeIf { it.isNotBlank() }
-                        ?: partnerName.value
-                        ?: text(R.string.who_partner)
-                    ReminderScheduler.sendPartnerJoinedNotification(getApplication(), joinedLabel)
-                    toastMessage.value = text(R.string.partner_joined_toast)
-                    inviteCode = null
-                    userRepository.acknowledgeConfirmedInvite(invite.code)
+                guarded {
+                    if (invite?.status == "confirmed") {
+                        val joinedLabel = invite.requestedEmail?.takeIf { it.isNotBlank() }
+                            ?: partnerName.value
+                            ?: text(R.string.who_partner)
+                        ReminderScheduler.sendPartnerJoinedNotification(getApplication(), joinedLabel)
+                        toastMessage.value = text(R.string.partner_joined_toast)
+                        inviteCode = null
+                        userRepository.acknowledgeConfirmedInvite(invite.code)
+                    }
                 }
             }
         }
@@ -678,11 +682,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             while (true) {
                 clock.value = AppClock.now()
-                checkConfirmationRemindersAndAutoConfirm()
+                guarded { checkConfirmationRemindersAndAutoConfirm() }
                 delay(60_000)
             }
         }
         fillDeadline()
+    }
+
+    /** Führt [block] aus, ohne dass eine Exception den übergeordneten Flow-Collector beendet. */
+    private suspend fun guarded(block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            error = text(R.string.error_generic)
+        }
     }
 
     /**

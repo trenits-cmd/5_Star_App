@@ -1,5 +1,6 @@
 package com.trenits.fivestar.ui
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,15 +43,15 @@ import com.trenits.fivestar.ui.theme.Amber
 
 @Composable
 fun RelationshipScreen(vm: AppViewModel) {
-    val myToday by vm.myToday.collectAsState()
-    val partnerToday by vm.partnerToday.collectAsState()
-    val partnerUid by vm.partnerUid.collectAsState()
-    val myName by vm.myName.collectAsState()
-    val partnerName by vm.partnerName.collectAsState()
-    val myPhoto by vm.myPhoto.collectAsState()
-    val partnerPhoto by vm.partnerPhoto.collectAsState()
-    val weekDays by vm.weekDays.collectAsState()
-    val days by vm.days.collectAsState()
+    val myToday by vm.myToday.collectAsStateWithLifecycle()
+    val partnerToday by vm.partnerToday.collectAsStateWithLifecycle()
+    val partnerUid by vm.partnerUid.collectAsStateWithLifecycle()
+    val myName by vm.myName.collectAsStateWithLifecycle()
+    val partnerName by vm.partnerName.collectAsStateWithLifecycle()
+    val myPhoto by vm.myPhoto.collectAsStateWithLifecycle()
+    val partnerPhoto by vm.partnerPhoto.collectAsStateWithLifecycle()
+    val weekDays by vm.weekDays.collectAsStateWithLifecycle()
+    val days by vm.days.collectAsStateWithLifecycle()
 
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
@@ -212,14 +213,14 @@ fun RelationshipScreen(vm: AppViewModel) {
  */
 @Composable
 fun RelationshipTodaySection(vm: AppViewModel, editable: Boolean = true) {
-    val myToday by vm.myToday.collectAsState()
-    val partnerToday by vm.partnerToday.collectAsState()
-    val partnerUid by vm.partnerUid.collectAsState()
-    val myName by vm.myName.collectAsState()
-    val partnerName by vm.partnerName.collectAsState()
-    val partnerPhoto by vm.partnerPhoto.collectAsState()
-    val weekDays by vm.weekDays.collectAsState()
-    val days by vm.days.collectAsState()
+    val myToday by vm.myToday.collectAsStateWithLifecycle()
+    val partnerToday by vm.partnerToday.collectAsStateWithLifecycle()
+    val partnerUid by vm.partnerUid.collectAsStateWithLifecycle()
+    val myName by vm.myName.collectAsStateWithLifecycle()
+    val partnerName by vm.partnerName.collectAsStateWithLifecycle()
+    val partnerPhoto by vm.partnerPhoto.collectAsStateWithLifecycle()
+    val weekDays by vm.weekDays.collectAsStateWithLifecycle()
+    val days by vm.days.collectAsStateWithLifecycle()
 
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)

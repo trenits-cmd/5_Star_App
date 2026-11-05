@@ -27,7 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -49,7 +49,7 @@ import com.trenits.fivestar.reminder.ReminderScheduler
 
 @Composable
 fun AppRoot(viewModel: AppViewModel) {
-    val profile by viewModel.profile.collectAsState()
+    val profile by viewModel.profile.collectAsStateWithLifecycle()
     when {
         profile == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
@@ -85,13 +85,13 @@ private fun MainTabs(viewModel: AppViewModel) {
     var tab by rememberSaveable { mutableStateOf(Tab.TODAY) }
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
-    val partnerUid by viewModel.partnerUid.collectAsState()
-    val myName by viewModel.myName.collectAsState()
-    val myPhoto by viewModel.myPhoto.collectAsState()
-    val partnerName by viewModel.partnerName.collectAsState()
-    val partnerPhoto by viewModel.partnerPhoto.collectAsState()
-    val toast by viewModel.toastMessage.collectAsState()
-    val dinnerDay by NotificationTargets.dinnerDay.collectAsState()
+    val partnerUid by viewModel.partnerUid.collectAsStateWithLifecycle()
+    val myName by viewModel.myName.collectAsStateWithLifecycle()
+    val myPhoto by viewModel.myPhoto.collectAsStateWithLifecycle()
+    val partnerName by viewModel.partnerName.collectAsStateWithLifecycle()
+    val partnerPhoto by viewModel.partnerPhoto.collectAsStateWithLifecycle()
+    val toast by viewModel.toastMessage.collectAsStateWithLifecycle()
+    val dinnerDay by NotificationTargets.dinnerDay.collectAsStateWithLifecycle()
 
     LaunchedEffect(dinnerDay) {
         val day = dinnerDay ?: return@LaunchedEffect

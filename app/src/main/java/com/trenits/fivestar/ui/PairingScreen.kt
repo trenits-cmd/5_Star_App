@@ -1,5 +1,6 @@
 package com.trenits.fivestar.ui
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -34,7 +35,7 @@ import com.trenits.fivestar.R
 @Composable
 fun PairingScreen(viewModel: AppViewModel) {
     val context = LocalContext.current
-    val pendingCode by viewModel.pendingInviteCode.collectAsState()
+    val pendingCode by viewModel.pendingInviteCode.collectAsStateWithLifecycle()
     var code by rememberSaveable { mutableStateOf("") }
     var partnerEmail by rememberSaveable { mutableStateOf("") }
 

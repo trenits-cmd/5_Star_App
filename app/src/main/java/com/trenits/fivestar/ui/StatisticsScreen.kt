@@ -1,5 +1,6 @@
 package com.trenits.fivestar.ui
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -97,12 +98,12 @@ private enum class PersonFilter { ME, PARTNER, BOTH }
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun StatisticsScreen(vm: AppViewModel) {
-    val days by vm.days.collectAsState()
-    val tasks by vm.tasks.collectAsState()
-    val targeted by vm.targeted.collectAsState()
-    val partnerUid by vm.partnerUid.collectAsState()
-    val myName by vm.myName.collectAsState()
-    val partnerName by vm.partnerName.collectAsState()
+    val days by vm.days.collectAsStateWithLifecycle()
+    val tasks by vm.tasks.collectAsStateWithLifecycle()
+    val targeted by vm.targeted.collectAsStateWithLifecycle()
+    val partnerUid by vm.partnerUid.collectAsStateWithLifecycle()
+    val myName by vm.myName.collectAsStateWithLifecycle()
+    val partnerName by vm.partnerName.collectAsStateWithLifecycle()
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 

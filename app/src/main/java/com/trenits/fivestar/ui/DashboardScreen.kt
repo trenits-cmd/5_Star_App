@@ -44,7 +44,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -144,39 +144,39 @@ import com.trenits.fivestar.domain.missingRelationshipAspects
 
 @Composable
 fun DashboardScreen(vm: AppViewModel) {
-    val targeted by vm.targeted.collectAsState()
+    val targeted by vm.targeted.collectAsStateWithLifecycle()
     val sortedCategories = remember(targeted) { targeted.sortedByDescending { it.weight } }
     val weightedList = remember(sortedCategories) {
         sortedCategories.map { WeightedCategory(it.id, it.weight) }
     }
-    val myName by vm.myName.collectAsState()
-    val myPhoto by vm.myPhoto.collectAsState()
-    val partnerName by vm.partnerName.collectAsState()
-    val partnerPhoto by vm.partnerPhoto.collectAsState()
-    val myToday by vm.myToday.collectAsState()
-    val partnerToday by vm.partnerToday.collectAsState()
-    val partnerUid by vm.partnerUid.collectAsState()
-    val members by vm.members.collectAsState()
-    val incomingRequest by vm.incomingRequest.collectAsState()
-    val days by vm.days.collectAsState()
-    val tasks by vm.tasks.collectAsState()
-    val catalog by vm.catalog.collectAsState()
-    val myCatalog by vm.myCatalog.collectAsState()
-    val weekRecordsBeforeToday by vm.isoWeekRecordsBeforeToday.collectAsState()
-    val streak by vm.weekSuccessfulDays.collectAsState()
-    val weekRewardUnlocked by vm.weekRewardUnlocked.collectAsState()
-    val canEditYesterday by vm.canEditYesterday.collectAsState()
-    val editingYesterday by vm.editingYesterday.collectAsState()
-    val activeDayKey by vm.activeDayKey.collectAsState()
-    val activeDinnerConfirmation by vm.activeDinnerConfirmation.collectAsState()
-    val allDinnerConfirmations by vm.dinnerConfirmations.collectAsState()
+    val myName by vm.myName.collectAsStateWithLifecycle()
+    val myPhoto by vm.myPhoto.collectAsStateWithLifecycle()
+    val partnerName by vm.partnerName.collectAsStateWithLifecycle()
+    val partnerPhoto by vm.partnerPhoto.collectAsStateWithLifecycle()
+    val myToday by vm.myToday.collectAsStateWithLifecycle()
+    val partnerToday by vm.partnerToday.collectAsStateWithLifecycle()
+    val partnerUid by vm.partnerUid.collectAsStateWithLifecycle()
+    val members by vm.members.collectAsStateWithLifecycle()
+    val incomingRequest by vm.incomingRequest.collectAsStateWithLifecycle()
+    val days by vm.days.collectAsStateWithLifecycle()
+    val tasks by vm.tasks.collectAsStateWithLifecycle()
+    val catalog by vm.catalog.collectAsStateWithLifecycle()
+    val myCatalog by vm.myCatalog.collectAsStateWithLifecycle()
+    val weekRecordsBeforeToday by vm.isoWeekRecordsBeforeToday.collectAsStateWithLifecycle()
+    val streak by vm.weekSuccessfulDays.collectAsStateWithLifecycle()
+    val weekRewardUnlocked by vm.weekRewardUnlocked.collectAsStateWithLifecycle()
+    val canEditYesterday by vm.canEditYesterday.collectAsStateWithLifecycle()
+    val editingYesterday by vm.editingYesterday.collectAsStateWithLifecycle()
+    val activeDayKey by vm.activeDayKey.collectAsStateWithLifecycle()
+    val activeDinnerConfirmation by vm.activeDinnerConfirmation.collectAsStateWithLifecycle()
+    val allDinnerConfirmations by vm.dinnerConfirmations.collectAsStateWithLifecycle()
     val pendingDinner = allDinnerConfirmations.items.filter { it.isPending }.maxByOrNull { it.enteredAt }
-    val weekDays by vm.weekDays.collectAsState()
-    val weekOutcomes by vm.weekOutcomes.collectAsState()
-    val currentWeeklyReward by vm.currentWeeklyReward.collectAsState()
-    val simulatedToday by vm.simulatedToday.collectAsState()
-    val simulatedOffset by vm.simulatedOffset.collectAsState()
-    val myPresetRole by vm.myPresetRole.collectAsState()
+    val weekDays by vm.weekDays.collectAsStateWithLifecycle()
+    val weekOutcomes by vm.weekOutcomes.collectAsStateWithLifecycle()
+    val currentWeeklyReward by vm.currentWeeklyReward.collectAsStateWithLifecycle()
+    val simulatedToday by vm.simulatedToday.collectAsStateWithLifecycle()
+    val simulatedOffset by vm.simulatedOffset.collectAsStateWithLifecycle()
+    val myPresetRole by vm.myPresetRole.collectAsStateWithLifecycle()
 
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
@@ -195,7 +195,7 @@ fun DashboardScreen(vm: AppViewModel) {
         .sortedWith(compareByDescending<Task> { it.dayKey }.thenByDescending { it.createdAt })
 
     val listState = rememberLazyListState()
-    val dinnerFocus by NotificationTargets.dinnerDay.collectAsState()
+    val dinnerFocus by NotificationTargets.dinnerDay.collectAsStateWithLifecycle()
     LaunchedEffect(dinnerFocus) {
         if (dinnerFocus == null) return@LaunchedEffect
         val incomingShown = incomingRequest?.takeIf { it.status == "requested" && partnerUid == null } != null
@@ -1918,23 +1918,23 @@ private fun PartnerCard(
 fun PartnerTodayScreen(vm: AppViewModel) {
     val hintText = stringResource(R.string.readonly_hint)
     val hintContext = LocalContext.current
-    val myName by vm.myName.collectAsState()
-    val partnerName by vm.partnerName.collectAsState()
-    val partnerPhoto by vm.partnerPhoto.collectAsState()
-    val myToday by vm.myToday.collectAsState()
-    val partnerToday by vm.partnerToday.collectAsState()
-    val days by vm.days.collectAsState()
-    val partnerUid by vm.partnerUid.collectAsState()
-    val allCategories by vm.categories.collectAsState()
-    val myPresetRole by vm.myPresetRole.collectAsState()
-    val tasks by vm.tasks.collectAsState()
+    val myName by vm.myName.collectAsStateWithLifecycle()
+    val partnerName by vm.partnerName.collectAsStateWithLifecycle()
+    val partnerPhoto by vm.partnerPhoto.collectAsStateWithLifecycle()
+    val myToday by vm.myToday.collectAsStateWithLifecycle()
+    val partnerToday by vm.partnerToday.collectAsStateWithLifecycle()
+    val days by vm.days.collectAsStateWithLifecycle()
+    val partnerUid by vm.partnerUid.collectAsStateWithLifecycle()
+    val allCategories by vm.categories.collectAsStateWithLifecycle()
+    val myPresetRole by vm.myPresetRole.collectAsStateWithLifecycle()
+    val tasks by vm.tasks.collectAsStateWithLifecycle()
 
     val myLabel = myName ?: stringResource(R.string.who_you)
     val partnerLabel = partnerName ?: stringResource(R.string.who_partner)
 
     val pUid = partnerUid ?: partnerToday?.ownerUid ?: vm.uid
     val partnerIsPartnerSet = myPresetRole == "main_user"
-    val allCategoriesState by vm.categories.collectAsState()
+    val allCategoriesState by vm.categories.collectAsStateWithLifecycle()
     val partnerCategories = remember(pUid, partnerIsPartnerSet, allCategoriesState) {
         vm.categoriesFor(pUid, partnerIsPartnerSet)
     }

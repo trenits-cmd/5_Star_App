@@ -24,7 +24,9 @@ import com.trenits.fivestar.domain.CatalogItem
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryIcon
 import com.trenits.fivestar.domain.CategoryKind
+import com.trenits.fivestar.domain.ConfirmationActionType
 import com.trenits.fivestar.domain.DinnerConfirmation
+import com.trenits.fivestar.domain.planConfirmationActions
 import com.trenits.fivestar.domain.needsWarning
 import com.trenits.fivestar.domain.withAutoConfirmation
 import com.trenits.fivestar.domain.DEFAULT_ALCOHOL_LIMIT
@@ -1442,58 +1444,59 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val now = AppClock.now()
         val prefs = ReminderPrefs(getApplication())
         val partnerDisplay = partnerName.value ?: text(R.string.who_partner)
+        val tasksById = tasks.value.items.associateBy { it.id }
+        val dinnersByDay = dinnerConfirmations.value.items.associateBy { it.dayKey }
 
-        tasks.value.items.forEach { task ->
-            if (task.ownerUid != uid) {
-                if (task.needsPartnerConfirmationReminder(now) && !prefs.hasNotified("confirm_${task.id}")) {
+        planConfirmationActions(
+            now = now,
+            uid = uid,
+            tasks = tasks.value.items,
+            dinners = dinnerConfirmations.value.items,
+        ).forEach { action ->
+            fun alreadyNotified() = action.dedupKey?.let { prefs.hasNotified(it) } ?: false
+            fun markNotified() = action.dedupKey?.let { prefs.markNotified(it) }
+
+            when (action.type) {
+                ConfirmationActionType.CONFIRM_REMINDER -> {
+                    val task = tasksById[action.taskId] ?: return@forEach
+                    if (alreadyNotified()) return@forEach
                     ReminderScheduler.sendConfirmationReminderNotification(
                         context = getApplication(),
                         partnerDisplayName = partnerDisplay,
                         task = task,
                     )
-                    prefs.markNotified("confirm_${task.id}")
+                    markNotified()
                 }
-                if (task.needsDeadlineWarning(now)) {
-                    val key = "warn_${task.id}_${task.autoConfirmAt.epochSecond}"
-                    if (!prefs.hasNotified(key)) {
-                        ReminderScheduler.sendDeadlineWarningNotification(
-                            getApplication(), partnerDisplay, task, task.autoConfirmAt,
-                        )
-                        prefs.markNotified(key)
-                    }
+                ConfirmationActionType.DEADLINE_WARNING -> {
+                    val task = tasksById[action.taskId] ?: return@forEach
+                    if (alreadyNotified()) return@forEach
+                    ReminderScheduler.sendDeadlineWarningNotification(
+                        getApplication(), partnerDisplay, task, action.autoConfirmAt ?: task.autoConfirmAt,
+                    )
+                    markNotified()
                 }
-            }
-            if (task.withAutoConfirmation(now).status != task.status) {
-                repo.autoConfirmTask(task.id, todayKey.value)
-            }
-        }
-        dinnerConfirmations.value.items.forEach { dc ->
-            // Abgelehnt: nur der Eintragende (Partner) muss korrigieren – Push an ihn,
-            // keine Auto-Bestätigung, bis eine neue Zeit eingetragen wurde.
-            if (dc.isRejected) {
-                if (dc.enteredBy == uid) {
-                    val rejectedKey = "dinner_rejected_${dc.dayKey}_${(dc.rejectedAt ?: Instant.EPOCH).epochSecond}"
-                    if (!prefs.hasNotified(rejectedKey)) {
-                        ReminderScheduler.sendDinnerRejectedNotification(getApplication(), dc)
-                        prefs.markNotified(rejectedKey)
-                    }
+                ConfirmationActionType.TASK_AUTO_CONFIRM -> {
+                    action.taskId?.let { repo.autoConfirmTask(it, todayKey.value) }
                 }
-                return@forEach
-            }
-            if (dc.isPending && dc.enteredBy != uid) {
-                if (dc.withAutoConfirmation(now).confirmedAt != null && dc.isPending) {
-                    repo.confirmDinner(dc.dayKey, uid, now, auto = true)
-                    return@forEach
+                ConfirmationActionType.DINNER_REJECTED -> {
+                    val dinner = dinnersByDay[action.dayKey] ?: return@forEach
+                    if (alreadyNotified()) return@forEach
+                    ReminderScheduler.sendDinnerRejectedNotification(getApplication(), dinner)
+                    markNotified()
                 }
-                // Schlüssel je Eintrag: eine korrigierte Uhrzeit erneut eine Push aus.
-                val entryKey = dc.enteredAt.epochSecond
-                if (dc.needsWarning(now) && !prefs.hasNotified("dinner_warn_${dc.dayKey}_$entryKey")) {
-                    ReminderScheduler.sendDinnerConfirmNotification(getApplication(), partnerDisplay, dc, warning = true)
-                    prefs.markNotified("dinner_warn_${dc.dayKey}_$entryKey")
+                ConfirmationActionType.DINNER_AUTO_CONFIRM -> {
+                    action.dayKey?.let { repo.confirmDinner(it, uid, now, auto = true) }
                 }
-                if (!prefs.hasNotified("dinner_${dc.dayKey}_$entryKey")) {
-                    ReminderScheduler.sendDinnerConfirmNotification(getApplication(), partnerDisplay, dc, warning = false)
-                    prefs.markNotified("dinner_${dc.dayKey}_$entryKey")
+                ConfirmationActionType.DINNER_WARNING, ConfirmationActionType.DINNER_REMINDER -> {
+                    val dinner = dinnersByDay[action.dayKey] ?: return@forEach
+                    if (alreadyNotified()) return@forEach
+                    ReminderScheduler.sendDinnerConfirmNotification(
+                        getApplication(),
+                        partnerDisplay,
+                        dinner,
+                        warning = action.type == ConfirmationActionType.DINNER_WARNING,
+                    )
+                    markNotified()
                 }
             }
         }

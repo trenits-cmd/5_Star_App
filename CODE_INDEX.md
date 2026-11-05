@@ -1,7 +1,7 @@
 # CODE_INDEX.md – AI-Readable Architecture & Code Directory (5 Star App)
 
 > **Purpose for AI Agents & Developers:**  
-> This document is the canonical, structured table of contents and architectural reference for the **5 Star – Daily Synergy & Motivation** Android application (`com.trenits.fivestar`, current release `v1.05112026_0210`, `versionCode = 58`). Keep this file updated whenever source files, UI structure, domain rules, or Firestore schemas change.
+> This document is the canonical, structured table of contents and architectural reference for the **5 Star – Daily Synergy & Motivation** Android application (`com.trenits.fivestar`, current release `v1.05112026_0800`, `versionCode = 59`). Keep this file updated whenever source files, UI structure, domain rules, or Firestore schemas change.
 
 ---
 
@@ -12,7 +12,7 @@
 | `settings.gradle.kts` | Gradle root configuration (`rootProject.name = "5_Star_App"`, module `:app`). |
 | `build.gradle.kts` | Top-level Gradle plugins (`android.application`, `kotlin.android`, `kotlin.compose`, `google.services`). |
 | `gradle/libs.versions.toml` | Version catalog defining AGP, Kotlin, Jetpack Compose BOM, Material 3, Firebase BOM (Auth + Firestore), Credential Manager, and WorkManager versions. |
-| `app/build.gradle.kts` | App module configuration (includes `lifecycle-runtime-compose` for `collectAsStateWithLifecycle()` in all Compose screens; `namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 58`, `versionName = "1.05112026_0210"`). |
+| `app/build.gradle.kts` | App module configuration (includes `lifecycle-runtime-compose` for `collectAsStateWithLifecycle()` in all Compose screens; `namespace = "com.trenits.fivestar"`, `compileSdk = 36`, `minSdk = 26`, `versionCode = 59`, `versionName = "1.05112026_0800"`). |
 | `app/src/main/res/values/strings.xml` | Single-language (English) string resources for all tabs, cards, categories, rewards, penalties, dialogs, notifications, and status messages. |
 | `firestore.rules` | Cloud Firestore security rules for `/users/{uid}`, `/invites/{code}`, and `/couples/{coupleId}` (`categories`, `catalog`, `days`, `tasks`). |
 | `rules-tests/rules.test.mjs` | Node.js unit tests verifying `firestore.rules` against the Firebase Firestore Emulator. |
@@ -82,6 +82,7 @@
 | `DinnerConfirmation.kt` | `DinnerConfirmation`, `needsWarning`, `withAutoConfirmation` | Dinner-time confirmation model: entered by the partner role, confirmed or rejected by main_user (48 h auto-confirm, 6 h warning). A rejected entry stays rejected (no auto-confirm) until the partner saves a new time, which resets the document to pending. Stored in `couples/{id}/dinnerConfirmations/{dayKey}`. |
 | `StatisticsScreen.kt` | `StatisticsScreen`, `StatsLineChart`, `StatsBarChart`, `StatsSummaryCard`, `StatsTotalCard`, `axisLabelLayout` | **Statistics Tab:** filter chips for period and person; groups: overall, categories, relationship, rewards. Line chart drawn with `Canvas` (0-100 % y-axis, tap to select a point); rewards use a grouped bar chart (counts per period, per person). X-axis labels via `axisLabelLayout`: weekday with the date `dd.MM` underneath in smaller type (week range), date only for longer ranges; bottom padding enlarged to fit two lines. Partner series is hidden if the partner has no such category. Summary cards: average, best day, days ≥ 80 % or reward totals. The *Details* list is rendered only for the rewards group. |
 | `CounterSummary.kt` | `CounterSummary` (`showName` hides the category title when the card header already shows it) | Compact read-only summary of counter values (Alcohol Demi/Pint/L, Water glasses/L, Rotation task Yes/No, Dinner time, Meals levels, Reading pages, Sport minutes). |
+| `ConfirmationPlan.kt` | `ConfirmationActionType`, `ConfirmationAction`, `planConfirmationActions(now, uid, tasks, dinners)` | Pure decision layer of `AppViewModel.checkConfirmationRemindersAndAutoConfirm`: which reminders and deadline warnings are due, which tasks/dinner times auto-confirm, plus the per-entry dedup keys (`confirm_<id>`, `warn_<id>_<epoch>`, `dinner_<day>_<entryEpoch>`, `dinner_warn_<day>_<entryEpoch>`, `dinner_rejected_<day>_<rejectedEpoch>`). The ViewModel only performs the side effects. |
 | `theme/Theme.kt` | `FiveStarTheme`, `Amber` | Material 3 color scheme and typography definitions. |
 
 ---
@@ -92,6 +93,16 @@
 |---|---|
 | `CounterTest.kt` | Water, Alcohol, Dinner time, Meals, Reading pages, Sport minutes, and Rotation task star calculations. |
 | `StarRulesTest.kt` | Bedtime boundaries and no-entry case, dinner 19/20/21 h, meals all-healthy/all-none/mixed, reading limits, sport 22/45/60 min and rest-day release, ISO week keys across New Year, reward tiers per streak length. |
+| `ConfirmationPlanTest.kt` | Reminder/auto-confirm decisions used by the ViewModel: partner reminder after 3 h, own task and postponed task stay silent, deadline-warning key contains the deadline epoch, auto-confirm after 48 h, rejected dinner only notifies the entering partner, dinner reminder/warning keys per entry, dinner auto-confirm, confirmed entries stay silent, a corrected time gets a new key. |
+
+### 2.7 Compose UI Tests (`app/src/androidTest/java/com/trenits/fivestar/ui/`)
+
+Instrumented tests, run with `gradlew :app:connectedDebugAndroidTest` (Android 13+ emulator; Espresso 3.7 is required for API 37).
+
+| File | Coverage |
+|---|---|
+| `CounterSummaryTest.kt` | Water glasses and total, hidden/shown extra liters, alcohol pint/demi/total, meals levels, reading pages, sport minutes, `showName = false` hides the category title. |
+| `InviteCodeRowTest.kt` | Invitation code, hint text and copy button are shown; the copy button has a click action and the row stays intact after a click. (Clipboard content cannot be read back on Android 13+ because only the focused app may read it.) |
 | `DailyCheckTest.kt` | Missing category & relationship aspect detection and quiet hours evaluation. |
 | `DayRecordTest.kt` | `DayRecord` construction and snapshot serialization. |
 | `EvaluationTest.kt` | Daily outcome evaluation and consecutive 7-day streak calculation. |

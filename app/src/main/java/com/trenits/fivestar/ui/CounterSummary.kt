@@ -34,13 +34,15 @@ import com.trenits.fivestar.domain.waterLiters
  * einer Person für eine Kategorie an.
  */
 @Composable
-fun CounterSummary(name: String, values: Map<String, Double>) {
-    Spacer(Modifier.height(8.dp))
-    Text(
-        name,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+fun CounterSummary(name: String, values: Map<String, Double>, showName: Boolean = true) {
+    if (showName) {
+        Spacer(Modifier.height(8.dp))
+        Text(
+            name,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
     val isAlcohol = values.containsKey(PINT) || values.containsKey(DEMI)
     val isWater = !isAlcohol && (values.containsKey(GLASSES) || values.containsKey(LITERS))
     val isRotation = values.containsKey(ROTATION_TASK_INDEX) || values.containsKey(ROTATION_STARS)
@@ -85,7 +87,7 @@ fun CounterSummary(name: String, values: Map<String, Double>) {
         val minute = values[BEDTIME_MINUTE]?.toInt() ?: 0
         if (hour >= 0) {
             Text(
-                stringResource(R.string.bedtime_current, "%02d:%02d".format(hour, minute)),
+                stringResource(R.string.bedtime_current, bedtimeLabel(hour, minute)),
                 style = MaterialTheme.typography.bodySmall,
             )
         }

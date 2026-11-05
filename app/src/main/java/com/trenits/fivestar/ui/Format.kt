@@ -30,12 +30,14 @@ import com.trenits.fivestar.R
 import com.trenits.fivestar.domain.Category
 import com.trenits.fivestar.domain.CategoryIcon
 import com.trenits.fivestar.domain.CategoryKind
+import com.trenits.fivestar.domain.MAX_STARS
 import com.trenits.fivestar.domain.MealLevel
 import com.trenits.fivestar.domain.Period
 import com.trenits.fivestar.domain.RelationshipAspect
 import com.trenits.fivestar.domain.RotationTask
 import com.trenits.fivestar.domain.TaskStatus
 import com.trenits.fivestar.domain.TaskType
+import com.trenits.fivestar.domain.bedtimeStars
 import java.io.ByteArrayOutputStream
 import java.time.Instant
 import java.time.LocalDate
@@ -47,6 +49,23 @@ import kotlin.math.min
 @Composable
 fun formatPercent(value: Double?): String =
     if (value == null) "–" else stringResource(R.string.percent_value, value)
+
+/**
+ * Schlafenszeit-Anzeige in derselben Sprache wie die Schnell-Buttons
+ * ("Before midnight", "Before 1 am", "Before 2 am", "Before 3 am", "After 3 am"),
+ * damit Archiv und Zusammenfassungen den Button-Wortlaut loggen statt einer Uhrzeit.
+ */
+@Composable
+fun bedtimeLabel(hour: Int, minute: Int = 0): String {
+    if (hour < 0) return ""
+    return when (bedtimeStars(hour, minute)) {
+        MAX_STARS -> stringResource(R.string.bedtime_quick_2330)
+        4 -> stringResource(R.string.bedtime_quick_0030)
+        3 -> stringResource(R.string.bedtime_quick_0130)
+        2 -> stringResource(R.string.bedtime_quick_0230)
+        else -> stringResource(R.string.bedtime_quick_after3)
+    }
+}
 
 fun formatDay(dayKey: String): String =
     runCatching { LocalDate.parse(dayKey).format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) }

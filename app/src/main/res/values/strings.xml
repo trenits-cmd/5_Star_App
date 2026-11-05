@@ -333,8 +333,15 @@
     <string name="settings_target_label">%1$s · %2$s</string>
     <string name="settings_goal_alcohol">Max limit for 0 ★ (liters, 0 L = 5 ★)</string>
     <string name="settings_goal_water">Daily goal in liters (e.g. 2.5)</string>
-    <string name="counter_rating">Rating: %1$s (%2$d/5 ★)</string>
     <string name="counter_total_liters">Total today: %1$.2f liters</string>
+    <!-- Category card steppers (dashboard input) -->
+    <string name="stepper_glasses">Glasses</string>
+    <string name="stepper_liters">Liters</string>
+    <string name="stepper_demi">Demi (0.25 L)</string>
+    <string name="stepper_pint">Pint (0.5 L)</string>
+    <string name="stepper_pages">Pages</string>
+    <string name="stepper_minutes">Minutes</string>
+    <string name="cancel">Cancel</string>
 
     <!-- Meals: Breakfast, Lunch, Dinner -->
     <string name="meals_hint">All 3 healthy = 5 ★, otherwise proportionally fewer stars.</string>
@@ -385,11 +392,9 @@
     <string name="cat_preset_sport">Sport</string>
     <string name="cat_preset_reading">Reading</string>
     <string name="reading_rules_hint">0–5 pages = 0 ★ · &gt; 50 pages = 5 ★ · 6–50 pages proportional (1–4 ★)</string>
-    <string name="reading_pages_label">Pages read today</string>
     <string name="reading_pages_summary">%1$d pages read</string>
     <string name="sport_rules_hint">3 days/week at least 45 min each · Enter your sport duration in minutes every day</string>
     <string name="sport_weekly_progress">This week: %1$d / %2$d days with ≥ 45 min</string>
-    <string name="sport_minutes_label">Enter minutes</string>
     <string name="sport_minutes_summary">%1$d min today</string>
     <string name="sport_quick_0">0 min (Rest)</string>
     <string name="sport_quick_30">30 min</string>

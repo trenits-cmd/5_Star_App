@@ -8,11 +8,13 @@ import android.content.ClipData
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +28,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,14 +54,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trenits.fivestar.R
@@ -69,6 +73,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitEachGesture
 import kotlin.math.roundToInt
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import java.util.Locale
 import java.time.format.TextStyle
 import com.trenits.fivestar.domain.DayOutcome
@@ -405,6 +410,9 @@ fun DashboardScreen(vm: AppViewModel) {
                         category = category,
                         sharePercent = sharePercent,
                         values = values,
+                        // main_user wählt nur aus den Schnell-Buttons; das Eingabefeld
+                        // für eine eigene Uhrzeit gibt es ausschließlich beim Partner.
+                        canEnterCustomTime = myPresetRole != "main_user",
                         onTimeSelected = { h, m -> vm.setBedtime(category.id, h, m) },
                     )
                 }
@@ -598,23 +606,20 @@ private fun PartnerCategorySummaryCard(
     val counters = values
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CategoryImage(category = category, size = 38.dp)
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
-                    CategoryWeightSubtitle(category.weight, sharePercent)
-                }
-            }
+            CategoryCardHeader(category, sharePercent, stars)
             when (category.kind) {
-                CategoryKind.STARS -> StarsRow(stars)
+                CategoryKind.STARS -> Unit
                 CategoryKind.WATER, CategoryKind.ALCOHOL -> {
                     if (values.containsKey(LITERS) || values.containsKey(GLASSES) ||
                         values.containsKey(PINT) || values.containsKey(DEMI)
                     ) {
-                        CounterSummary(localizedCategoryName(category), values)
+                        CounterSummary(
+                            name = "",
+                            values = values,
+                            showName = false,
+                        )
                     } else {
-                        StarsRow(stars)
+                        Unit
                     }
                 }
                 CategoryKind.DINNER_TIME -> {
@@ -638,7 +643,7 @@ private fun PartnerCategorySummaryCard(
                     val minute = counters[BEDTIME_MINUTE]?.toInt() ?: 0
                     if (hour >= 0) {
                         Text(
-                            stringResource(R.string.bedtime_current, "%02d:%02d".format(hour, minute)),
+                            stringResource(R.string.bedtime_current, bedtimeLabel(hour, minute)),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     } else {
@@ -681,20 +686,10 @@ private fun PartnerCategorySummaryCard(
                     }
                 }
                 CategoryKind.ROTATION -> RotationSummaryRow(counters)
-                else -> StarsRow(stars)
+                else -> Unit
             }
         }
     }
-}
-
-@Composable
-private fun StarsRow(stars: Int) {
-    Text(
-        "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
-        color = Amber,
-        fontWeight = FontWeight.Bold,
-        fontSize = 18.sp,
-    )
 }
 
 @Composable
@@ -735,6 +730,196 @@ private fun CategoryWeightSubtitle(weight: Int, sharePercent: Int) {
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+}
+
+/** Gemeinsamer Kartenkopf: Icon, Name, Gewicht/Anteil und rechts das Stern-Badge. */
+@Composable
+private fun CategoryCardHeader(category: Category, sharePercent: Int, stars: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        CategoryImage(category = category, size = 40.dp)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
+            CategoryWeightSubtitle(category.weight, sharePercent)
+        }
+        Spacer(Modifier.width(8.dp))
+        StarBadge(stars)
+    }
+}
+
+/** Sterne als kompaktes Badge oben rechts statt als eigene Textzeile unter dem Inhalt. */
+@Composable
+private fun StarBadge(stars: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        for (n in 1..MAX_STARS) {
+            Text(
+                if (n <= stars) "★" else "☆",
+                fontSize = 15.sp,
+                color = if (n <= stars) Amber else MaterialTheme.colorScheme.outline,
+            )
+        }
+    }
+}
+
+/** Kurzer Hinweistext direkt unter dem Kartenkopf. */
+@Composable
+private fun CardHint(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+/**
+ * Raster mit gleich breiten Zellen: die Spaltenzahl folgt der Breite (schmale Geräte
+ * 2 Spalten, breite bis 4), damit die Felder nicht unruhig umbrechen.
+ */
+@Composable
+private fun CellGrid(cells: List<@Composable () -> Unit>, minCellWidth: Dp = 130.dp) {
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val columns = (maxWidth.value / minCellWidth.value).toInt().coerceIn(1, 4)
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            cells.chunked(columns).forEach { rowCells ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    rowCells.forEach { cell ->
+                        Box(Modifier.weight(1f)) { cell() }
+                    }
+                    repeat(columns - rowCells.size) { Box(Modifier.weight(1f)) {} }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Einheitliche Zahleneingabe: − [Wert] +. Ein Tipp auf den Wert öffnet ein Eingabefeld;
+ * ein separater Save-Button entfällt, die Änderung wird sofort gespeichert.
+ */
+@Composable
+private fun ValueStepper(
+    label: String,
+    value: Double,
+    step: Double,
+    decimal: Boolean,
+    onChange: (Double) -> Unit,
+) {
+    var showEdit by remember { mutableStateOf(false) }
+    val displayValue = if (decimal) {
+        val whole = value.toLong().toDouble()
+        if (value == whole) value.toLong().toString()
+        else "%.2f".format(value).trimEnd('0').trimEnd('.')
+    } else {
+        value.toInt().toString()
+    }
+
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        OutlinedButton(
+            onClick = { onChange((value - step).coerceAtLeast(0.0)) },
+            modifier = Modifier.size(46.dp),
+            contentPadding = PaddingValues(0.dp),
+        ) { Text("−", fontSize = 20.sp) }
+        Column(
+            Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(10.dp))
+                .clickable { showEdit = true }
+                .padding(vertical = 2.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(displayValue, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
+        Button(
+            onClick = { onChange(value + step) },
+            modifier = Modifier.size(46.dp),
+            contentPadding = PaddingValues(0.dp),
+        ) { Text("+", fontSize = 20.sp) }
+    }
+
+    if (showEdit) {
+        NumberEditDialog(
+            label = label,
+            initial = if (decimal) value.toString() else value.toInt().toString(),
+            decimal = decimal,
+            onDismiss = { showEdit = false },
+            onConfirm = { newValue ->
+                showEdit = false
+                onChange(newValue)
+            },
+        )
+    }
+}
+
+/** Kleiner Dialog für einen freien Zahlenwert (Tipp auf den Stepper-Wert). */
+@Composable
+private fun NumberEditDialog(
+    label: String,
+    initial: String,
+    decimal: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (Double) -> Unit,
+) {
+    var text by rememberSaveable(label, initial) { mutableStateOf(initial) }
+    val submit = {
+        text.trim().replace(',', '.').toDoubleOrNull()?.coerceAtLeast(0.0)?.let(onConfirm)
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(label) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(onDone = { submit() }),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { submit() }) { Text(stringResource(R.string.settings_save)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+/** Ein Segment der Essen-Tabelle: vier gleich breite Felder je Mahlzeit. */
+@Composable
+private fun RowScope.MealSegment(label: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .weight(1f)
+            .height(34.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (selected) SelectedChipBlue else MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+        )
+    }
 }
 
 @Composable
@@ -1140,52 +1325,36 @@ private fun MealsCategoryCard(
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CategoryImage(category = category, size = 42.dp)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
-                    CategoryWeightSubtitle(category.weight, sharePercent)
-                }
-            }
+            CategoryCardHeader(category, sharePercent, stars)
             Spacer(Modifier.height(6.dp))
-            Text(
-                stringResource(R.string.meals_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(8.dp))
+            CardHint(stringResource(R.string.meals_hint))
+            Spacer(Modifier.height(14.dp))
 
-            meals.forEach { (mealKey, mealLabel) ->
+            meals.forEachIndexed { index, (mealKey, mealLabel) ->
+                if (index > 0) Spacer(Modifier.height(8.dp))
                 val currentLevel = MealLevel.fromPoints(values[mealKey]?.toInt() ?: 0)
-                Text(
-                    mealLabel,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                )
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        mealLabel,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1.4f),
+                    )
                     MealLevel.entries.forEach { level ->
-                        FilterChip(
+                        MealSegment(
+                            label = mealLevelLabel(level),
                             selected = currentLevel == level,
-                            colors = blueChipColors(),
                             onClick = { onMealLevelSelected(mealKey, level) },
-                            label = { Text(mealLevelLabel(level)) },
                         )
                     }
                 }
-                Spacer(Modifier.height(4.dp))
             }
-
-            Spacer(Modifier.height(4.dp))
-            Text(
-                stringResource(
-                    R.string.counter_rating,
-                    "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
-                    stars,
-                ),
-                color = Amber,
-                fontWeight = FontWeight.Bold,
-            )
         }
     }
 }
@@ -1202,111 +1371,23 @@ private fun ReadingCategoryCard(
     values: Map<String, Double>,
     onPagesChanged: (Int, Boolean) -> Unit,
 ) {
-    val focusManager = LocalFocusManager.current
-    val hasEntry = values.containsKey(PAGES)
     val pages = (values[PAGES] ?: 0.0).toInt().coerceAtLeast(0)
     val stars = counterStars(category, values)
-    var text by rememberSaveable(category.id) { mutableStateOf(if (!hasEntry && pages == 0) "" else pages.toString()) }
-    var isFocused by remember { mutableStateOf(false) }
-    var hadFocus by remember { mutableStateOf(false) }
-
-    LaunchedEffect(pages, hasEntry, isFocused) {
-        if (!isFocused) {
-            text = if (!hasEntry && pages == 0) "" else pages.toString()
-        }
-    }
-
-    val commitCurrentText: (Boolean) -> Unit = { showToast ->
-        val parsed = text.trim().toIntOrNull()?.coerceAtLeast(0) ?: 0
-        text = parsed.toString()
-        onPagesChanged(parsed, showToast)
-    }
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CategoryImage(category = category, size = 42.dp)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
-                    CategoryWeightSubtitle(category.weight, sharePercent)
-                }
-            }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                stringResource(R.string.reading_rules_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            CategoryCardHeader(category, sharePercent, stars)
             Spacer(Modifier.height(8.dp))
-            CounterRow(
-                label = stringResource(R.string.reading_pages_summary, pages),
+            CardHint(stringResource(R.string.reading_rules_hint))
+            Spacer(Modifier.height(14.dp))
+            ValueStepper(
+                label = stringResource(R.string.stepper_pages),
                 value = pages.toDouble(),
                 step = 1.0,
-            ) { newVal ->
-                val updated = newVal.toInt().coerceAtLeast(0)
-                text = updated.toString()
-                onPagesChanged(updated, true)
+                decimal = false,
+            ) { newPages ->
+                onPagesChanged(newPages.toInt().coerceAtLeast(0), true)
             }
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { input ->
-                        text = input
-                        if (input.isBlank()) {
-                            onPagesChanged(0, false)
-                        } else {
-                            input.trim().toIntOrNull()?.let { onPagesChanged(it.coerceAtLeast(0), false) }
-                        }
-                    },
-                    label = { Text(stringResource(R.string.reading_pages_label)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Done,
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = {
-                            commitCurrentText(true)
-                            focusManager.clearFocus()
-                        },
-                    ),
-                    modifier = Modifier.width(120.dp)
-                        .onFocusChanged { state ->
-                            isFocused = state.isFocused
-                            if (state.isFocused) {
-                                hadFocus = true
-                            } else if (hadFocus) {
-                                hadFocus = false
-                                if (text.isNotBlank()) {
-                                    commitCurrentText(true)
-                                }
-                            }
-                        },
-                )
-                Button(
-                    onClick = {
-                        commitCurrentText(true)
-                        focusManager.clearFocus()
-                    },
-                ) {
-                    Text(stringResource(R.string.settings_save))
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(
-                    R.string.counter_rating,
-                    "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
-                    stars,
-                ),
-                color = Amber,
-                fontWeight = FontWeight.Bold,
-            )
         }
     }
 }
@@ -1323,7 +1404,6 @@ private fun SportCategoryCard(
     weekRecordsBeforeToday: List<DayRecord>,
     onMinutesChanged: (Int, Boolean) -> Unit,
 ) {
-    val focusManager = LocalFocusManager.current
     val hasEntry = values.containsKey(SPORT_MINUTES)
     val minutes = (values[SPORT_MINUTES] ?: 0.0).toInt().coerceAtLeast(0)
     val stars = counterStars(category, values)
@@ -1331,40 +1411,12 @@ private fun SportCategoryCard(
         sportDaysInWeek(category.id, weekRecordsBeforeToday)
     }
     val doneThisWeek = doneBeforeToday + if (minutes >= 45) 1 else 0
-    var text by rememberSaveable(category.id) {
-        mutableStateOf(if (!hasEntry) "" else minutes.toString())
-    }
-    var isFocused by remember { mutableStateOf(false) }
-    var hadFocus by remember { mutableStateOf(false) }
-
-    LaunchedEffect(minutes, hasEntry, isFocused) {
-        if (!isFocused) {
-            text = if (!hasEntry) "" else minutes.toString()
-        }
-    }
-
-    val commitCurrentMinutes: (Boolean) -> Unit = { showToast ->
-        val parsed = text.trim().toIntOrNull()?.coerceAtLeast(0) ?: 0
-        text = parsed.toString()
-        onMinutesChanged(parsed, showToast)
-    }
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CategoryImage(category = category, size = 42.dp)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
-                    CategoryWeightSubtitle(category.weight, sharePercent)
-                }
-            }
+            CategoryCardHeader(category, sharePercent, stars)
             Spacer(Modifier.height(6.dp))
-            Text(
-                stringResource(R.string.sport_rules_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            CardHint(stringResource(R.string.sport_rules_hint))
             Spacer(Modifier.height(4.dp))
             Text(
                 stringResource(R.string.sport_weekly_progress, doneThisWeek, SPORT_WEEKLY_DAYS_GOAL),
@@ -1372,116 +1424,52 @@ private fun SportCategoryCard(
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Medium,
             )
-            Spacer(Modifier.height(8.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FilterChip(
-                    selected = hasEntry && minutes == 0,
-                    colors = blueChipColors(),
-                    onClick = {
-                        text = "0"
-                        onMinutesChanged(0, true)
-                    },
-                    label = { Text(stringResource(R.string.sport_quick_0)) },
-                )
-                FilterChip(
-                    selected = hasEntry && minutes == 30,
-                    colors = blueChipColors(),
-                    onClick = {
-                        text = "30"
-                        onMinutesChanged(30, true)
-                    },
-                    label = { Text(stringResource(R.string.sport_quick_30)) },
-                )
-                FilterChip(
-                    selected = hasEntry && minutes == 45,
-                    colors = blueChipColors(),
-                    onClick = {
-                        text = "45"
-                        onMinutesChanged(45, true)
-                    },
-                    label = { Text(stringResource(R.string.sport_quick_45)) },
-                )
-                FilterChip(
-                    selected = hasEntry && minutes == 60,
-                    colors = blueChipColors(),
-                    onClick = {
-                        text = "60"
-                        onMinutesChanged(60, true)
-                    },
-                    label = { Text(stringResource(R.string.sport_quick_60)) },
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            CounterRow(
-                label = stringResource(R.string.sport_minutes_summary, minutes),
+            Spacer(Modifier.height(12.dp))
+            val quickOptions: List<@Composable () -> Unit> = listOf(
+                sportQuickCell(stringResource(R.string.sport_quick_0), hasEntry && minutes == 0) {
+                    onMinutesChanged(0, true)
+                },
+                sportQuickCell(stringResource(R.string.sport_quick_30), hasEntry && minutes == 30) {
+                    onMinutesChanged(30, true)
+                },
+                sportQuickCell(stringResource(R.string.sport_quick_45), hasEntry && minutes == 45) {
+                    onMinutesChanged(45, true)
+                },
+                sportQuickCell(stringResource(R.string.sport_quick_60), hasEntry && minutes == 60) {
+                    onMinutesChanged(60, true)
+                },
+            )
+            CellGrid(quickOptions)
+            Spacer(Modifier.height(12.dp))
+            ValueStepper(
+                label = stringResource(R.string.stepper_minutes),
                 value = minutes.toDouble(),
                 step = 1.0,
-            ) { newVal ->
-                val updated = newVal.toInt().coerceAtLeast(0)
-                text = updated.toString()
-                onMinutesChanged(updated, true)
+                decimal = false,
+            ) { newMinutes ->
+                onMinutesChanged(newMinutes.toInt().coerceAtLeast(0), true)
             }
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { input ->
-                        text = input
-                        if (input.isBlank()) {
-                            onMinutesChanged(0, false)
-                        } else {
-                            input.trim().toIntOrNull()?.let { onMinutesChanged(it.coerceAtLeast(0), false) }
-                        }
-                    },
-                    label = { Text(stringResource(R.string.sport_minutes_label)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Done,
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = {
-                            commitCurrentMinutes(true)
-                            focusManager.clearFocus()
-                        },
-                    ),
-                    modifier = Modifier.width(120.dp)
-                        .onFocusChanged { state ->
-                            isFocused = state.isFocused
-                            if (state.isFocused) {
-                                hadFocus = true
-                            } else if (hadFocus) {
-                                hadFocus = false
-                                if (text.isNotBlank()) {
-                                    commitCurrentMinutes(true)
-                                }
-                            }
-                        },
-                )
-                Button(
-                    onClick = {
-                        commitCurrentMinutes(true)
-                        focusManager.clearFocus()
-                    },
-                ) {
-                    Text(stringResource(R.string.settings_save))
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(
-                    R.string.counter_rating,
-                    "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
-                    stars,
-                ),
-                color = Amber,
-                fontWeight = FontWeight.Bold,
-            )
         }
     }
+}
+
+/** Ein Schnell-Button der Sportkarte als gleich breite Zelle im Raster. */
+private fun sportQuickCell(label: String, selected: Boolean, onClick: () -> Unit): @Composable () -> Unit = {
+    FilterChip(
+        selected = selected,
+        colors = blueChipColors(),
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        label = {
+            Text(
+                label,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+    )
 }
 
 @Composable
@@ -1494,35 +1482,33 @@ private fun CounterCard(
     val stars = counterStars(category, values)
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CategoryImage(category = category, size = 42.dp)
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
-                    CategoryWeightSubtitle(category.weight, sharePercent)
-                }
-            }
+            CategoryCardHeader(category, sharePercent, stars)
             Spacer(Modifier.height(8.dp))
             if (category.kind == CategoryKind.ALCOHOL) {
                 val limit = if (category.goal > 0.0) category.goal else DEFAULT_ALCOHOL_LIMIT
-                Text(
-                    stringResource(R.string.counter_alcohol_goal_hint, limit),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(4.dp))
-                CounterRow(stringResource(R.string.counter_demi), values[DEMI] ?: 0.0, step = 1.0) {
-                    onChange(DEMI, it, true)
-                }
-                CounterRow(stringResource(R.string.counter_pint), values[PINT] ?: 0.0, step = 1.0) {
-                    onChange(PINT, it, true)
-                }
-                LitersField(
-                    categoryId = category.id,
+                CardHint(stringResource(R.string.counter_alcohol_goal_hint, limit))
+                Spacer(Modifier.height(12.dp))
+                ValueStepper(
+                    label = stringResource(R.string.stepper_demi),
+                    value = values[DEMI] ?: 0.0,
+                    step = 1.0,
+                    decimal = false,
+                ) { onChange(DEMI, it, true) }
+                Spacer(Modifier.height(8.dp))
+                ValueStepper(
+                    label = stringResource(R.string.stepper_pint),
+                    value = values[PINT] ?: 0.0,
+                    step = 1.0,
+                    decimal = false,
+                ) { onChange(PINT, it, true) }
+                Spacer(Modifier.height(8.dp))
+                ValueStepper(
+                    label = stringResource(R.string.stepper_liters),
                     value = values[LITERS] ?: 0.0,
-                    onChange = { liters, showToast -> onChange(LITERS, liters, showToast) },
-                )
-                Spacer(Modifier.height(4.dp))
+                    step = 0.1,
+                    decimal = true,
+                ) { onChange(LITERS, it, true) }
+                Spacer(Modifier.height(12.dp))
                 Text(
                     stringResource(R.string.counter_total_liters, alcoholLiters(values)),
                     style = MaterialTheme.typography.bodySmall,
@@ -1530,38 +1516,28 @@ private fun CounterCard(
                 )
             } else {
                 val goal = if (category.goal > 0.0) category.goal else DEFAULT_WATER_GOAL
-                Text(
-                    stringResource(R.string.counter_water_goal_hint, goal),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(4.dp))
-                CounterRow(stringResource(R.string.counter_glasses), values[GLASSES] ?: 0.0, step = 1.0) {
-                    onChange(GLASSES, it, true)
-                }
+                CardHint(stringResource(R.string.counter_water_goal_hint, goal))
                 Spacer(Modifier.height(12.dp))
-                LitersField(
-                    categoryId = category.id,
+                ValueStepper(
+                    label = stringResource(R.string.stepper_glasses),
+                    value = values[GLASSES] ?: 0.0,
+                    step = 1.0,
+                    decimal = false,
+                ) { onChange(GLASSES, it, true) }
+                Spacer(Modifier.height(8.dp))
+                ValueStepper(
+                    label = stringResource(R.string.stepper_liters),
                     value = values[LITERS] ?: 0.0,
-                    onChange = { liters, showToast -> onChange(LITERS, liters, showToast) },
-                )
-                Spacer(Modifier.height(4.dp))
+                    step = 0.25,
+                    decimal = true,
+                ) { onChange(LITERS, it, true) }
+                Spacer(Modifier.height(12.dp))
                 Text(
                     stringResource(R.string.counter_total_liters, waterLiters(values)),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
                 )
             }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(
-                    R.string.counter_rating,
-                    "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
-                    stars,
-                ),
-                color = Amber,
-                fontWeight = FontWeight.Bold,
-            )
         }
     }
 }
@@ -1589,20 +1565,9 @@ private fun RotationCategoryCard(
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CategoryImage(category = category, size = 42.dp)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
-                    CategoryWeightSubtitle(category.weight, sharePercent)
-                }
-            }
+            CategoryCardHeader(category, sharePercent, stars)
             Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.rotation_today_label),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            CardHint(stringResource(R.string.rotation_today_label))
             Spacer(Modifier.height(6.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 RotationTask.entries.forEach { task ->
@@ -1677,20 +1642,9 @@ private fun DinnerTimeCard(
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CategoryImage(category = category, size = 42.dp)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
-                    CategoryWeightSubtitle(category.weight, sharePercent)
-                }
-            }
+            CategoryCardHeader(category, sharePercent, stars)
             Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.dinner_rules_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            CardHint(stringResource(R.string.dinner_rules_hint))
             Spacer(Modifier.height(6.dp))
             Text(
                 if (hour >= 0) {
@@ -1750,56 +1704,54 @@ private fun DinnerTimeCard(
                 }
             }
             if (canEditTime) {
-                Spacer(Modifier.height(8.dp))
-                // Bedienung wie bei main_user: vollbreite Schaltflächen statt Chips in einer Reihe.
-                Button(
-                    onClick = {
-                        val initH = if (hour >= 0) hour else 19
-                        val initM = if (hour >= 0) minute else 30
-                        TimePickerDialog(
-                            context,
-                            { _, h, m -> onTimeSelected(h, m) },
-                            initH,
-                            initM,
-                            true,
-                        ).show()
+                Spacer(Modifier.height(10.dp))
+                // Vier gleich breite Zellen (2 Spalten auf schmalen Geräten): Uhrzeit-Dialog + 3 Schnellwerte.
+                val entryCells: List<@Composable () -> Unit> = listOf(
+                    {
+                        Button(
+                            onClick = {
+                                val initH = if (hour >= 0) hour else 19
+                                val initM = if (hour >= 0) minute else 30
+                                TimePickerDialog(
+                                    context,
+                                    { _, h, m -> onTimeSelected(h, m) },
+                                    initH,
+                                    initM,
+                                    true,
+                                ).show()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.dinner_pick_time), maxLines = 1)
+                        }
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.dinner_pick_time))
-                }
-                Spacer(Modifier.height(4.dp))
-                OutlinedButton(
-                    onClick = { onTimeSelected(19, 30) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.dinner_quick_before_20))
-                }
-                Spacer(Modifier.height(4.dp))
-                OutlinedButton(
-                    onClick = { onTimeSelected(20, 30) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.dinner_quick_before_21))
-                }
-                Spacer(Modifier.height(4.dp))
-                OutlinedButton(
-                    onClick = { onTimeSelected(21, 15) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.dinner_quick_after_21))
-                }
+                    {
+                        OutlinedButton(
+                            onClick = { onTimeSelected(19, 30) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.dinner_quick_before_20), maxLines = 1)
+                        }
+                    },
+                    {
+                        OutlinedButton(
+                            onClick = { onTimeSelected(20, 30) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.dinner_quick_before_21), maxLines = 1)
+                        }
+                    },
+                    {
+                        OutlinedButton(
+                            onClick = { onTimeSelected(21, 15) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.dinner_quick_after_21), maxLines = 1)
+                        }
+                    },
+                )
+                CellGrid(entryCells)
             }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(
-                    R.string.counter_rating,
-                    "★".repeat(stars) + "☆".repeat(MAX_STARS - stars),
-                    stars,
-                ),
-                color = Amber,
-                fontWeight = FontWeight.Bold,
-            )
         }
     }
 }
@@ -1819,162 +1771,64 @@ private fun BedtimeCategoryCard(
     category: Category,
     sharePercent: Int,
     values: Map<String, Double>,
+    canEnterCustomTime: Boolean,
     onTimeSelected: (Int, Int) -> Unit,
 ) {
-    val context = LocalContext.current
     val hour = values[BEDTIME_HOUR]?.toInt() ?: -1
     val minute = values[BEDTIME_MINUTE]?.toInt() ?: 0
     val stars = counterStars(category, values)
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CategoryImage(category = category, size = 42.dp)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(localizedCategoryName(category), style = MaterialTheme.typography.titleMedium)
-                    CategoryWeightSubtitle(category.weight, sharePercent)
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            Spacer(Modifier.height(8.dp))
+            CategoryCardHeader(category, sharePercent, stars)
+            Spacer(Modifier.height(12.dp))
             var selectedBedtime by remember { mutableStateOf<Pair<Int, Int>?>(null) }
             LaunchedEffect(hour, minute) {
                 if (hour >= 0) selectedBedtime = Pair(hour, minute)
             }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+            fun bedtimeCell(time: Pair<Int, Int>, labelRes: Int): @Composable () -> Unit = {
                 FilterChip(
-                    selected = selectedBedtime == Pair(23, 30),
+                    selected = selectedBedtime == time,
                     colors = blueChipColors(),
-                    onClick = { onTimeSelected(23, 30); selectedBedtime = Pair(23, 30) },
-                    label = { Text(stringResource(R.string.bedtime_quick_2330)) },
-                )
-                FilterChip(
-                    selected = selectedBedtime == Pair(0, 30),
-                    colors = blueChipColors(),
-                    onClick = { onTimeSelected(0, 30); selectedBedtime = Pair(0, 30) },
-                    label = { Text(stringResource(R.string.bedtime_quick_0030)) },
-                )
-                FilterChip(
-                    selected = selectedBedtime == Pair(1, 30),
-                    colors = blueChipColors(),
-                    onClick = { onTimeSelected(1, 30); selectedBedtime = Pair(1, 30) },
-                    label = { Text(stringResource(R.string.bedtime_quick_0130)) },
-                )
-                FilterChip(
-                    selected = selectedBedtime == Pair(2, 30),
-                    colors = blueChipColors(),
-                    onClick = { onTimeSelected(2, 30); selectedBedtime = Pair(2, 30) },
-                    label = { Text(stringResource(R.string.bedtime_quick_0230)) },
-                )
-                FilterChip(
-                    selected = selectedBedtime == Pair(3, 30),
-                    colors = blueChipColors(),
-                    onClick = { onTimeSelected(3, 30); selectedBedtime = Pair(3, 30) },
-                    label = { Text(stringResource(R.string.bedtime_quick_after3)) },
-                )
-                Button(
                     onClick = {
-                        val initH = if (hour >= 0) hour else 23
-                        val initM = if (hour >= 0) minute else 0
-                        TimePickerDialog(context, { _, h, m -> onTimeSelected(h, m) }, initH, initM, true).show()
+                        onTimeSelected(time.first, time.second)
+                        selectedBedtime = time
                     },
-                ) { Text(stringResource(R.string.dinner_pick_time)) }
+                    modifier = Modifier.fillMaxWidth(),
+                    label = {
+                        Text(
+                            stringResource(labelRes),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    },
+                )
             }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.counter_rating, "★".repeat(stars) + "☆".repeat(MAX_STARS - stars), stars),
-                color = Amber,
-                fontWeight = FontWeight.Bold,
+
+            val cells = mutableListOf<@Composable () -> Unit>(
+                bedtimeCell(Pair(23, 30), R.string.bedtime_quick_2330),
+                bedtimeCell(Pair(0, 30), R.string.bedtime_quick_0030),
+                bedtimeCell(Pair(1, 30), R.string.bedtime_quick_0130),
+                bedtimeCell(Pair(2, 30), R.string.bedtime_quick_0230),
+                bedtimeCell(Pair(3, 30), R.string.bedtime_quick_after3),
             )
-        }
-    }
-}
-
-@Composable
-private fun CounterRow(label: String, value: Double, step: Double, onChange: (Double) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(label, modifier = Modifier.weight(1f))
-        OutlinedButton(onClick = { onChange((value - step).coerceAtLeast(0.0)) }) { Text("−") }
-        Text(
-            "%d".format(value.toInt()),
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
-        Button(onClick = { onChange(value + step) }) { Text("+") }
-    }
-}
-
-@Composable
-private fun LitersField(categoryId: String, value: Double, onChange: (Double, Boolean) -> Unit) {
-    val focusManager = LocalFocusManager.current
-    var text by rememberSaveable(categoryId) { mutableStateOf(if (value == 0.0) "" else value.toString()) }
-    var isFocused by remember { mutableStateOf(false) }
-    var hadFocus by remember { mutableStateOf(false) }
-
-    LaunchedEffect(value, isFocused) {
-        if (!isFocused) {
-            text = if (value == 0.0) "" else value.toString()
-        }
-    }
-
-    val commitLiters: (Boolean) -> Unit = { showToast ->
-        val parsed = text.trim().replace(',', '.').toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
-        text = if (parsed == 0.0) "" else parsed.toString()
-        onChange(parsed, showToast)
-    }
-
-    Row(
-        Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        OutlinedTextField(
-            value = text,
-            onValueChange = { input ->
-                text = input
-                if (input.isBlank()) {
-                    onChange(0.0, false)
-                } else {
-                    input.trim().replace(',', '.').toDoubleOrNull()?.let { onChange(it.coerceAtLeast(0.0), false) }
+            if (canEnterCustomTime) {
+                val context = LocalContext.current
+                cells.add {
+                    Button(
+                        onClick = {
+                            val initH = if (hour >= 0) hour else 23
+                            val initM = if (hour >= 0) minute else 0
+                            TimePickerDialog(context, { _, h, m -> onTimeSelected(h, m) }, initH, initM, true).show()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.dinner_pick_time), maxLines = 1) }
                 }
-            },
-            label = { Text(stringResource(R.string.counter_liters)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Decimal,
-                imeAction = ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    commitLiters(true)
-                    focusManager.clearFocus()
-                },
-            ),
-            modifier = Modifier.width(120.dp)
-                .onFocusChanged { state ->
-                    isFocused = state.isFocused
-                    if (state.isFocused) {
-                        hadFocus = true
-                    } else if (hadFocus) {
-                        hadFocus = false
-                        if (text.isNotBlank()) {
-                            commitLiters(true)
-                        }
-                    }
-                },
-        )
-        Button(
-            onClick = {
-                commitLiters(true)
-                focusManager.clearFocus()
-            },
-        ) {
-            Text(stringResource(R.string.settings_save))
+            }
+            CellGrid(cells)
         }
     }
 }
